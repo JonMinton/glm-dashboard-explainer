@@ -368,11 +368,11 @@
 
     <div class="tutorials-grid">
 
-      <!-- Tutorial 1: Gaussian (COMPLETE - reveal answer) -->
+      <!-- Tutorial 1: Heart Rate Prediction -->
       <div class="tutorial-card">
-        <div class="card-header gaussian">
+        <div class="card-header unknown">
           <h3>1. Heart Rate Prediction</h3>
-          <div class="family">Gaussian + Identity Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
@@ -381,22 +381,21 @@
             <div class="label">Dataset</div>
             <div class="value">UCI Heart Disease (Cleveland)</div>
           </div>
-          <div class="revealed-answer">
-            <strong>You discovered:</strong>
-            Heart rate is continuous and approximately symmetric&mdash;the Gaussian family with identity link is appropriate. OLS and Gaussian GLM give identical results.
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> What type of outcome is heart rate? What constraints does it have? Which GLM family fits best?
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge complete">Complete</span>
-          <a href="tutorials/01-gaussian/systematic.html" class="start-btn">Review Tutorial</a>
+          <span></span>
+          <a href="tutorials/01-gaussian/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 
-      <!-- Tutorial 2: Logistic (COMPLETE - reveal answer) -->
+      <!-- Tutorial 2: Heart Disease Classification -->
       <div class="tutorial-card">
-        <div class="card-header binomial">
+        <div class="card-header unknown">
           <h3>2. Heart Disease Classification</h3>
-          <div class="family">Binomial + Logit Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
@@ -405,22 +404,21 @@
             <div class="label">Dataset</div>
             <div class="value">UCI Heart Disease (Cleveland)</div>
           </div>
-          <div class="revealed-answer">
-            <strong>You discovered:</strong>
-            Heart disease presence is a binary outcome (yes/no)&mdash;the Binomial family with logit link gives us logistic regression. Coefficients represent log-odds ratios.
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> The outcome is yes/no. What link function maps probabilities to a linear predictor?
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge complete">Complete</span>
-          <a href="tutorials/02-logistic/systematic.html" class="start-btn">Review Tutorial</a>
+          <span></span>
+          <a href="tutorials/02-logistic/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 
-      <!-- Tutorial 3: Poisson (COMPLETE - reveal answer) -->
+      <!-- Tutorial 3: Bike Rental Demand -->
       <div class="tutorial-card">
-        <div class="card-header poisson">
+        <div class="card-header unknown">
           <h3>3. Bike Rental Demand</h3>
-          <div class="family">Poisson + Log Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
@@ -429,62 +427,59 @@
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing Dataset</div>
           </div>
-          <div class="revealed-answer">
-            <strong>You discovered:</strong>
-            Rental counts are non-negative integers&mdash;the Poisson family with log link handles count data. Coefficients give rate ratios (exp(&beta;) = multiplicative effect). The data shows overdispersion, previewing Tutorial 4.
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> Rentals are counts (0, 1, 2, ...). What distribution models count data? What might go wrong?
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge complete">Complete</span>
-          <a href="tutorials/03-poisson/systematic.html" class="start-btn">Review Tutorial</a>
+          <span></span>
+          <a href="tutorials/03-poisson/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 
-      <!-- Tutorial 4: Negative Binomial (COMPLETE - reveal answer) -->
+      <!-- Tutorial 4: Handling Overdispersion -->
       <div class="tutorial-card">
-        <div class="card-header negbin">
+        <div class="card-header unknown">
           <h3>4. Handling Overdispersion</h3>
-          <div class="family">Negative Binomial + Log Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
-          <p>Fix the overdispersion problem discovered in Tutorial 3.</p>
+          <p>The model from Tutorial 3 has a problem. Can you diagnose and fix it?</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing (revisited)</div>
           </div>
-          <div class="revealed-answer">
-            <strong>You discovered:</strong>
-            When Var > Mean (overdispersion), Poisson standard errors are too small. Negative Binomial adds a dispersion parameter &theta;, giving ~25x larger (honest) standard errors and proper inference.
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> When variance exceeds the mean, standard errors become unreliable. What's the solution?
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge complete">Complete</span>
-          <a href="tutorials/04-negbin/systematic.html" class="start-btn">Review Tutorial</a>
+          <span></span>
+          <a href="tutorials/04-negbin/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 
-      <!-- Tutorial 5: Gamma (COMPLETE - reveal answer) -->
+      <!-- Tutorial 5: Blood Pressure Prediction -->
       <div class="tutorial-card">
-        <div class="card-header gamma">
+        <div class="card-header unknown">
           <h3>5. Blood Pressure Prediction</h3>
-          <div class="family">Gamma + Log Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
-          <p>Predict resting blood pressure - a strictly positive outcome.</p>
+          <p>Predict resting blood pressure&mdash;a strictly positive, continuous outcome.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Heart Disease (revisited)</div>
           </div>
-          <div class="revealed-answer">
-            <strong>You discovered:</strong>
-            Blood pressure is always positive (min 94 mmHg). Gamma with log link ensures positive predictions and gives multiplicative effects: each year of age multiplies BP by ~1.004 (+0.4%).
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> Blood pressure can't be negative. What GLM family handles positive continuous data?
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge complete">Complete</span>
-          <a href="tutorials/05-gamma/systematic.html" class="start-btn">Review Tutorial</a>
+          <span></span>
+          <a href="tutorials/05-gamma/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 
