@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced - Log-Likelihood Derivation</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.8;
+      font-size: 0.95em;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e74c3c;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    /* Section styling */
+    .section {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      color: #2c3e50;
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .section h3 {
+      color: #34495e;
+      font-size: 1.1em;
+      margin: 20px 0 10px 0;
+    }
+
+    .section p {
+      margin-bottom: 12px;
+      color: #555;
+    }
+
+    /* Math blocks */
+    .math-block {
+      background: #f8f9fa;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      margin: 15px 0;
+      overflow-x: auto;
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 1.1em;
+    }
+
+    .math-block.highlight {
+      background: #e8f4fd;
+      border-left-color: #2980b9;
+    }
+
+    .math-inline {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-style: italic;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .derivation-step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .derivation-step:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .step-num {
+      background: #3498db;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content .math {
+      font-family: 'Times New Roman', Georgia, serif;
+      font-size: 1.05em;
+      margin: 8px 0;
+    }
+
+    .step-content .explanation {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    /* Note boxes */
+    .note {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .note-title {
+      font-weight: 600;
+      color: #856404;
+      margin-bottom: 5px;
+    }
+
+    .note p {
+      color: #856404;
+      margin: 0;
+      font-size: 0.95em;
+    }
+
+    /* Code sections */
+    .code-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .code-tab {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px 6px 0 0;
+      background: #dee2e6;
+      color: #666;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.2s;
+    }
+
+    .code-tab:hover {
+      background: #e9ecef;
+    }
+
+    .code-tab.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .code-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 6px 6px 6px;
+      padding: 20px;
+    }
+
+    .code-content.active {
+      display: block;
+    }
+
+    pre {
+      margin: 0;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      color: #ecf0f1;
+    }
+
+    code {
+      font-family: inherit;
+    }
+
+    /* Syntax highlighting */
+    .comment { color: #7f8c8d; }
+    .keyword { color: #e74c3c; }
+    .string { color: #2ecc71; }
+    .function { color: #9b59b6; }
+    .variable { color: #f39c12; }
+    .number { color: #3498db; }
+    .operator { color: #e74c3c; }
+
+    .output-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #4a5568;
+    }
+
+    .output-section h4 {
+      color: #7f8c8d;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .output-example {
+      background: #1a252f;
+      border-radius: 4px;
+      padding: 15px;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.8em;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      color: #bdc3c7;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid #dee2e6;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #219a52;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    /* Table of contents */
+    .toc {
+      background: #f0f7ff;
+      border: 1px solid #bee3f8;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .toc h3 {
+      color: #2980b9;
+      margin-bottom: 12px;
+      font-size: 1em;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc li {
+      padding: 6px 0;
+    }
+
+    .toc a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .toc a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+
+      .section {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Going Further: Log-Likelihood & Maximum Likelihood Estimation <span class="badge">Advanced</span></h1>
+      <p>Understanding the mathematics behind GLM fitting</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Table of Contents -->
+    <div class="toc">
+      <h3>On This Page</h3>
+      <ul>
+        <li><a href="#likelihood">1. The Likelihood Function</a></li>
+        <li><a href="#loglik">2. Log-Likelihood for Gaussian GLM</a></li>
+        <li><a href="#derivation">3. Deriving the Score Equations</a></li>
+        <li><a href="#implementation">4. Implementation from Scratch</a></li>
+        <li><a href="#comparison">5. Comparing Results</a></li>
+      </ul>
+    </div>
+
+    <!-- Section 1: Likelihood Function -->
+    <div class="section" id="likelihood">
+      <h2>1. The Likelihood Function</h2>
+
+      <p>
+        Maximum Likelihood Estimation (MLE) finds the parameter values that make the observed data
+        most probable. For a Gaussian GLM with identity link, we model:
+      </p>
+
+      <div class="math-block highlight">
+        y<sub>i</sub> ~ Normal(&mu;<sub>i</sub>, &sigma;&sup2;) where &mu;<sub>i</sub> = <b>x</b><sub>i</sub><sup>T</sup><b>&beta;</b>
+      </div>
+
+      <p>
+        In matrix notation, with <b>X</b> as our n &times; p design matrix (including intercept column)
+        and <b>y</b> as our n &times; 1 response vector:
+      </p>
+
+      <div class="math-block">
+        <b>&mu;</b> = <b>X&beta;</b>
+      </div>
+
+      <p>
+        The probability density for a single observation is:
+      </p>
+
+      <div class="math-block">
+        f(y<sub>i</sub> | &mu;<sub>i</sub>, &sigma;&sup2;) = (2&pi;&sigma;&sup2;)<sup>-1/2</sup> exp(-&frac12; (y<sub>i</sub> - &mu;<sub>i</sub>)&sup2; / &sigma;&sup2;)
+      </div>
+
+      <p>
+        Assuming independence, the <strong>likelihood</strong> for all n observations is the product:
+      </p>
+
+      <div class="math-block highlight">
+        L(<b>&beta;</b>, &sigma;&sup2; | <b>y</b>) = &prod;<sub>i=1</sub><sup>n</sup> f(y<sub>i</sub> | &mu;<sub>i</sub>, &sigma;&sup2;)
+      </div>
+    </div>
+
+    <!-- Section 2: Log-Likelihood -->
+    <div class="section" id="loglik">
+      <h2>2. Log-Likelihood for Gaussian GLM</h2>
+
+      <p>
+        Working with products is unwieldy, so we take the natural logarithm. Since log is monotonic,
+        maximising the log-likelihood gives the same estimates as maximising the likelihood.
+      </p>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="math">
+              &ell;(<b>&beta;</b>, &sigma;&sup2;) = log L(<b>&beta;</b>, &sigma;&sup2; | <b>y</b>) = &sum;<sub>i=1</sub><sup>n</sup> log f(y<sub>i</sub> | &mu;<sub>i</sub>, &sigma;&sup2;)
+            </div>
+            <div class="explanation">Take the log of the product, which becomes a sum of logs.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="math">
+              &ell; = &sum;<sub>i=1</sub><sup>n</sup> [ -&frac12; log(2&pi;&sigma;&sup2;) - &frac12;(y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;/&sigma;&sup2; ]
+            </div>
+            <div class="explanation">Substitute the normal density and apply log rules.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="math">
+              &ell; = -&frac{n}{2} log(2&pi;) - &frac{n}{2} log(&sigma;&sup2;) - &frac{1}{2&sigma;&sup2;} &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;
+            </div>
+            <div class="explanation">Separate terms. The sum of squared residuals appears!</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="math">
+              &ell;(<b>&beta;</b>, &sigma;&sup2;) = -&frac{n}{2} log(2&pi;&sigma;&sup2;) - &frac{1}{2&sigma;&sup2;} (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
+            </div>
+            <div class="explanation">
+              <strong>Final form in matrix notation.</strong> The sum of squared residuals is
+              (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>) = ||<b>y</b> - <b>X&beta;</b>||&sup2;
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="note-title">Key Insight</div>
+        <p>
+          For fixed &sigma;&sup2;, maximising the log-likelihood is equivalent to <em>minimising</em>
+          the sum of squared residuals - exactly what OLS does! This is why OLS and MLE give identical
+          coefficient estimates for Gaussian linear models.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 3: Derivation -->
+    <div class="section" id="derivation">
+      <h2>3. Deriving the Score Equations</h2>
+
+      <p>
+        To find the MLE, we differentiate the log-likelihood with respect to <b>&beta;</b> and set equal to zero.
+        The derivative of the log-likelihood is called the <strong>score function</strong>.
+      </p>
+
+      <h3>Score for &beta;</h3>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="math">
+              &part;&ell;/&part;<b>&beta;</b> = &part;/&part;<b>&beta;</b> [ -&frac{1}{2&sigma;&sup2;} (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>) ]
+            </div>
+            <div class="explanation">Only the residual term depends on <b>&beta;</b>.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="math">
+              = -&frac{1}{2&sigma;&sup2;} &times; (-2<b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>))
+            </div>
+            <div class="explanation">
+              Apply matrix calculus: &part;(<b>y</b>-<b>X&beta;</b>)<sup>T</sup>(<b>y</b>-<b>X&beta;</b>)/&part;<b>&beta;</b> = -2<b>X</b><sup>T</sup>(<b>y</b>-<b>X&beta;</b>)
+            </div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="math">
+              = &frac{1}{&sigma;&sup2;} <b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
+            </div>
+            <div class="explanation">Simplify.</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Setting Score to Zero</h3>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="math">
+              <b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>) = <b>0</b>
+            </div>
+            <div class="explanation">Set score equal to zero (the &sigma;&sup2; cancels).</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="math">
+              <b>X</b><sup>T</sup><b>X&beta;</b> = <b>X</b><sup>T</sup><b>y</b>
+            </div>
+            <div class="explanation">The <strong>normal equations</strong> - familiar from OLS!</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="math highlight">
+              <b>&beta;</b><sub>MLE</sub> = (<b>X</b><sup>T</sup><b>X</b>)<sup>-1</sup><b>X</b><sup>T</sup><b>y</b>
+            </div>
+            <div class="explanation">
+              <strong>The closed-form solution!</strong> Multiply both sides by (<b>X</b><sup>T</sup><b>X</b>)<sup>-1</sup>.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>MLE for &sigma;&sup2;</h3>
+
+      <p>Similarly, differentiating with respect to &sigma;&sup2; and solving:</p>
+
+      <div class="math-block highlight">
+        &sigma;&sup2;<sub>MLE</sub> = &frac{1}{n} &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - <b>x</b><sub>i</sub><sup>T</sup><b>&beta;</b><sub>MLE</sub>)&sup2; = &frac{RSS}{n}
+      </div>
+
+      <div class="note">
+        <div class="note-title">Note on Degrees of Freedom</div>
+        <p>
+          The MLE for &sigma;&sup2; divides by n, not (n-p) as in the unbiased OLS estimator.
+          R's <code>glm()</code> reports the "dispersion parameter" using (n-p), which is why
+          you may see slight differences.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 4: Implementation -->
+    <div class="section" id="implementation">
+      <h2>4. Implementation from Scratch</h2>
+
+      <p>
+        Let's implement MLE using numerical optimisation. We'll define the negative log-likelihood
+        (since optimisers typically <em>minimise</em>) and use general-purpose optimisation.
+      </p>
+
+      <div class="code-tabs">
+        <button class="code-tab active" onclick="showCode('r')">R</button>
+        <button class="code-tab" onclick="showCode('python')">Python</button>
+      </div>
+
+      <div class="code-content active" id="r-code">
+        <pre><code><span class="comment"># Load and prepare data</span>
+<span class="variable">heart</span> <span class="operator">&lt;-</span> <span class="function">read.csv</span>(<span class="string">"heart.csv"</span>, <span class="keyword">header</span> <span class="operator">=</span> <span class="keyword">FALSE</span>)
+<span class="function">names</span>(<span class="variable">heart</span>) <span class="operator">&lt;-</span> <span class="function">c</span>(<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>,
+                <span class="string">"fbs"</span>, <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>,
+                <span class="string">"oldpeak"</span>, <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"num"</span>)
+
+<span class="comment"># Prepare design matrix X and response y</span>
+<span class="variable">X</span> <span class="operator">&lt;-</span> <span class="function">cbind</span>(<span class="number">1</span>, <span class="variable">heart</span><span class="operator">$</span><span class="variable">age</span>, <span class="variable">heart</span><span class="operator">$</span><span class="variable">exang</span>, <span class="variable">heart</span><span class="operator">$</span><span class="variable">oldpeak</span>)
+<span class="variable">y</span> <span class="operator">&lt;-</span> <span class="variable">heart</span><span class="operator">$</span><span class="variable">thalach</span>
+<span class="variable">n</span> <span class="operator">&lt;-</span> <span class="function">length</span>(<span class="variable">y</span>)
+
+<span class="comment"># Define negative log-likelihood function</span>
+<span class="variable">neg_loglik</span> <span class="operator">&lt;-</span> <span class="keyword">function</span>(<span class="variable">params</span>, <span class="variable">X</span>, <span class="variable">y</span>) {
+  <span class="variable">p</span> <span class="operator">&lt;-</span> <span class="function">ncol</span>(<span class="variable">X</span>)
+  <span class="variable">beta</span> <span class="operator">&lt;-</span> <span class="variable">params</span>[<span class="number">1</span><span class="operator">:</span><span class="variable">p</span>]
+  <span class="variable">sigma2</span> <span class="operator">&lt;-</span> <span class="function">exp</span>(<span class="variable">params</span>[<span class="variable">p</span> <span class="operator">+</span> <span class="number">1</span>])  <span class="comment"># exp() ensures sigma2 > 0</span>
+
+  <span class="variable">mu</span> <span class="operator">&lt;-</span> <span class="variable">X</span> <span class="operator">%*%</span> <span class="variable">beta</span>
+  <span class="variable">resid</span> <span class="operator">&lt;-</span> <span class="variable">y</span> <span class="operator">-</span> <span class="variable">mu</span>
+  <span class="variable">n</span> <span class="operator">&lt;-</span> <span class="function">length</span>(<span class="variable">y</span>)
+
+  <span class="comment"># Negative log-likelihood</span>
+  <span class="variable">nll</span> <span class="operator">&lt;-</span> (<span class="variable">n</span><span class="operator">/</span><span class="number">2</span>) <span class="operator">*</span> <span class="function">log</span>(<span class="number">2</span> <span class="operator">*</span> <span class="variable">pi</span> <span class="operator">*</span> <span class="variable">sigma2</span>) <span class="operator">+</span>
+         <span class="function">sum</span>(<span class="variable">resid</span><span class="operator">^</span><span class="number">2</span>) <span class="operator">/</span> (<span class="number">2</span> <span class="operator">*</span> <span class="variable">sigma2</span>)
+
+  <span class="keyword">return</span>(<span class="variable">nll</span>)
+}
+
+<span class="comment"># Initial values (using OLS estimates as starting point)</span>
+<span class="variable">beta_init</span> <span class="operator">&lt;-</span> <span class="function">coef</span>(<span class="function">lm</span>(<span class="variable">y</span> <span class="operator">~</span> <span class="variable">X</span>[,<span class="number">2</span><span class="operator">:</span><span class="number">4</span>]))
+<span class="variable">sigma2_init</span> <span class="operator">&lt;-</span> <span class="function">var</span>(<span class="variable">y</span>)
+<span class="variable">params_init</span> <span class="operator">&lt;-</span> <span class="function">c</span>(<span class="variable">beta_init</span>, <span class="function">log</span>(<span class="variable">sigma2_init</span>))
+
+<span class="comment"># Optimise using optim()</span>
+<span class="variable">result</span> <span class="operator">&lt;-</span> <span class="function">optim</span>(
+  <span class="keyword">par</span> <span class="operator">=</span> <span class="variable">params_init</span>,
+  <span class="keyword">fn</span> <span class="operator">=</span> <span class="variable">neg_loglik</span>,
+  <span class="variable">X</span> <span class="operator">=</span> <span class="variable">X</span>,
+  <span class="variable">y</span> <span class="operator">=</span> <span class="variable">y</span>,
+  <span class="keyword">method</span> <span class="operator">=</span> <span class="string">"BFGS"</span>,
+  <span class="keyword">hessian</span> <span class="operator">=</span> <span class="keyword">TRUE</span>
+)
+
+<span class="comment"># Extract estimates</span>
+<span class="variable">beta_mle</span> <span class="operator">&lt;-</span> <span class="variable">result</span><span class="operator">$</span><span class="variable">par</span>[<span class="number">1</span><span class="operator">:</span><span class="number">4</span>]
+<span class="variable">sigma2_mle</span> <span class="operator">&lt;-</span> <span class="function">exp</span>(<span class="variable">result</span><span class="operator">$</span><span class="variable">par</span>[<span class="number">5</span>])
+
+<span class="comment"># Standard errors from Hessian</span>
+<span class="variable">se</span> <span class="operator">&lt;-</span> <span class="function">sqrt</span>(<span class="function">diag</span>(<span class="function">solve</span>(<span class="variable">result</span><span class="operator">$</span><span class="variable">hessian</span>)))[<span class="number">1</span><span class="operator">:</span><span class="number">4</span>]
+
+<span class="comment"># Display results</span>
+<span class="function">cat</span>(<span class="string">"=== MLE from optim() ===\n"</span>)
+<span class="function">cat</span>(<span class="string">"Coefficients:\n"</span>)
+<span class="function">print</span>(<span class="function">data.frame</span>(
+  <span class="variable">Estimate</span> <span class="operator">=</span> <span class="function">round</span>(<span class="variable">beta_mle</span>, <span class="number">4</span>),
+  <span class="variable">Std.Error</span> <span class="operator">=</span> <span class="function">round</span>(<span class="variable">se</span>, <span class="number">4</span>),
+  <span class="keyword">row.names</span> <span class="operator">=</span> <span class="function">c</span>(<span class="string">"Intercept"</span>, <span class="string">"age"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>)
+))
+<span class="function">cat</span>(<span class="string">"\nSigma^2 (MLE):"</span>, <span class="function">round</span>(<span class="variable">sigma2_mle</span>, <span class="number">4</span>), <span class="string">"\n"</span>)
+<span class="function">cat</span>(<span class="string">"Log-likelihood:"</span>, <span class="function">round</span>(<span class="operator">-</span><span class="variable">result</span><span class="operator">$</span><span class="variable">value</span>, <span class="number">2</span>), <span class="string">"\n"</span>)
+
+<span class="comment"># Compare with glm()</span>
+<span class="function">cat</span>(<span class="string">"\n=== Comparison with glm() ===\n"</span>)
+<span class="variable">glm_fit</span> <span class="operator">&lt;-</span> <span class="function">glm</span>(<span class="variable">thalach</span> <span class="operator">~</span> <span class="variable">age</span> <span class="operator">+</span> <span class="variable">exang</span> <span class="operator">+</span> <span class="variable">oldpeak</span>,
+               <span class="keyword">data</span> <span class="operator">=</span> <span class="variable">heart</span>, <span class="keyword">family</span> <span class="operator">=</span> <span class="function">gaussian</span>())
+<span class="function">print</span>(<span class="function">coef</span>(<span class="variable">glm_fit</span>))</code></pre>
+
+        <div class="output-section">
+          <h4>Expected Output</h4>
+          <div class="output-example">=== MLE from optim() ===
+Coefficients:
+          Estimate Std.Error
+Intercept 203.3660    6.7011
+age        -0.8298    0.1238
+exang     -14.2542    2.4357
+oldpeak    -3.7805    1.0024
+
+Sigma^2 (MLE): 362.1373
+Log-likelihood: -1322.58
+
+=== Comparison with glm() ===
+(Intercept)         age       exang     oldpeak
+203.3659562  -0.8297581 -14.2541607  -3.7805194</div>
+        </div>
+      </div>
+
+      <div class="code-content" id="python-code">
+        <pre><code><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">from</span> scipy.optimize <span class="keyword">import</span> minimize
+<span class="keyword">import</span> statsmodels.formula.api <span class="keyword">as</span> smf
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+
+<span class="comment"># Load and prepare data</span>
+<span class="variable">col_names</span> <span class="operator">=</span> [<span class="string">'age'</span>, <span class="string">'sex'</span>, <span class="string">'cp'</span>, <span class="string">'trestbps'</span>, <span class="string">'chol'</span>,
+             <span class="string">'fbs'</span>, <span class="string">'restecg'</span>, <span class="string">'thalach'</span>, <span class="string">'exang'</span>,
+             <span class="string">'oldpeak'</span>, <span class="string">'slope'</span>, <span class="string">'ca'</span>, <span class="string">'thal'</span>, <span class="string">'num'</span>]
+<span class="variable">heart</span> <span class="operator">=</span> pd.<span class="function">read_csv</span>(<span class="string">"heart.csv"</span>, <span class="keyword">names</span><span class="operator">=</span><span class="variable">col_names</span>)
+
+<span class="comment"># Prepare design matrix X and response y</span>
+<span class="variable">X</span> <span class="operator">=</span> np.<span class="function">column_stack</span>([
+    np.<span class="function">ones</span>(<span class="function">len</span>(<span class="variable">heart</span>)),
+    <span class="variable">heart</span>[<span class="string">'age'</span>],
+    <span class="variable">heart</span>[<span class="string">'exang'</span>],
+    <span class="variable">heart</span>[<span class="string">'oldpeak'</span>]
+])
+<span class="variable">y</span> <span class="operator">=</span> <span class="variable">heart</span>[<span class="string">'thalach'</span>].<span class="variable">values</span>
+<span class="variable">n</span> <span class="operator">=</span> <span class="function">len</span>(<span class="variable">y</span>)
+
+<span class="keyword">def</span> <span class="function">neg_loglik</span>(<span class="variable">params</span>, <span class="variable">X</span>, <span class="variable">y</span>):
+    <span class="string">"""Negative log-likelihood for Gaussian GLM"""</span>
+    <span class="variable">p</span> <span class="operator">=</span> <span class="variable">X</span>.<span class="variable">shape</span>[<span class="number">1</span>]
+    <span class="variable">beta</span> <span class="operator">=</span> <span class="variable">params</span>[:<span class="variable">p</span>]
+    <span class="variable">sigma2</span> <span class="operator">=</span> np.<span class="function">exp</span>(<span class="variable">params</span>[<span class="variable">p</span>])  <span class="comment"># exp() ensures sigma2 > 0</span>
+
+    <span class="variable">mu</span> <span class="operator">=</span> <span class="variable">X</span> <span class="operator">@</span> <span class="variable">beta</span>
+    <span class="variable">resid</span> <span class="operator">=</span> <span class="variable">y</span> <span class="operator">-</span> <span class="variable">mu</span>
+    <span class="variable">n</span> <span class="operator">=</span> <span class="function">len</span>(<span class="variable">y</span>)
+
+    <span class="comment"># Negative log-likelihood</span>
+    <span class="variable">nll</span> <span class="operator">=</span> (<span class="variable">n</span>/<span class="number">2</span>) <span class="operator">*</span> np.<span class="function">log</span>(<span class="number">2</span> <span class="operator">*</span> np.<span class="variable">pi</span> <span class="operator">*</span> <span class="variable">sigma2</span>) <span class="operator">+</span> \
+          np.<span class="function">sum</span>(<span class="variable">resid</span><span class="operator">**</span><span class="number">2</span>) <span class="operator">/</span> (<span class="number">2</span> <span class="operator">*</span> <span class="variable">sigma2</span>)
+
+    <span class="keyword">return</span> <span class="variable">nll</span>
+
+<span class="comment"># Initial values</span>
+<span class="variable">beta_init</span> <span class="operator">=</span> np.linalg.<span class="function">lstsq</span>(<span class="variable">X</span>, <span class="variable">y</span>, <span class="keyword">rcond</span><span class="operator">=</span><span class="keyword">None</span>)[<span class="number">0</span>]
+<span class="variable">sigma2_init</span> <span class="operator">=</span> np.<span class="function">var</span>(<span class="variable">y</span>)
+<span class="variable">params_init</span> <span class="operator">=</span> np.<span class="function">append</span>(<span class="variable">beta_init</span>, np.<span class="function">log</span>(<span class="variable">sigma2_init</span>))
+
+<span class="comment"># Optimise using scipy.optimize.minimize</span>
+<span class="variable">result</span> <span class="operator">=</span> <span class="function">minimize</span>(
+    <span class="variable">neg_loglik</span>,
+    <span class="variable">params_init</span>,
+    <span class="keyword">args</span><span class="operator">=</span>(<span class="variable">X</span>, <span class="variable">y</span>),
+    <span class="keyword">method</span><span class="operator">=</span><span class="string">'BFGS'</span>
+)
+
+<span class="comment"># Extract estimates</span>
+<span class="variable">beta_mle</span> <span class="operator">=</span> <span class="variable">result</span>.<span class="variable">x</span>[:<span class="number">4</span>]
+<span class="variable">sigma2_mle</span> <span class="operator">=</span> np.<span class="function">exp</span>(<span class="variable">result</span>.<span class="variable">x</span>[<span class="number">4</span>])
+
+<span class="comment"># Standard errors from inverse Hessian</span>
+<span class="variable">se</span> <span class="operator">=</span> np.<span class="function">sqrt</span>(np.<span class="function">diag</span>(<span class="variable">result</span>.<span class="variable">hess_inv</span>))[:<span class="number">4</span>]
+
+<span class="comment"># Display results</span>
+<span class="function">print</span>(<span class="string">"=== MLE from scipy.optimize ==="</span>)
+<span class="function">print</span>(<span class="string">"Coefficients:"</span>)
+<span class="variable">params_df</span> <span class="operator">=</span> pd.<span class="function">DataFrame</span>({
+    <span class="string">'Estimate'</span>: np.<span class="function">round</span>(<span class="variable">beta_mle</span>, <span class="number">4</span>),
+    <span class="string">'Std.Error'</span>: np.<span class="function">round</span>(<span class="variable">se</span>, <span class="number">4</span>)
+}, <span class="keyword">index</span><span class="operator">=</span>[<span class="string">'Intercept'</span>, <span class="string">'age'</span>, <span class="string">'exang'</span>, <span class="string">'oldpeak'</span>])
+<span class="function">print</span>(<span class="variable">params_df</span>)
+<span class="function">print</span>(<span class="string">f"\nSigma^2 (MLE): {sigma2_mle:.4f}"</span>)
+<span class="function">print</span>(<span class="string">f"Log-likelihood: {-result.fun:.2f}"</span>)
+
+<span class="comment"># Compare with statsmodels</span>
+<span class="function">print</span>(<span class="string">"\n=== Comparison with statsmodels GLM ==="</span>)
+<span class="variable">glm_fit</span> <span class="operator">=</span> smf.<span class="function">glm</span>(
+    <span class="keyword">formula</span><span class="operator">=</span><span class="string">"thalach ~ age + exang + oldpeak"</span>,
+    <span class="keyword">data</span><span class="operator">=</span><span class="variable">heart</span>,
+    <span class="keyword">family</span><span class="operator">=</span>sm.families.<span class="function">Gaussian</span>()
+).<span class="function">fit</span>()
+<span class="function">print</span>(<span class="variable">glm_fit</span>.<span class="variable">params</span>)</code></pre>
+
+        <div class="output-section">
+          <h4>Expected Output</h4>
+          <div class="output-example">=== MLE from scipy.optimize ===
+Coefficients:
+           Estimate  Std.Error
+Intercept  203.3660     6.7011
+age         -0.8298     0.1238
+exang      -14.2542     2.4357
+oldpeak     -3.7805     1.0024
+
+Sigma^2 (MLE): 362.1373
+Log-likelihood: -1322.58
+
+=== Comparison with statsmodels GLM ===
+Intercept    203.365956
+age           -0.829758
+exang        -14.254161
+oldpeak       -3.780519
+dtype: float64</div>
+          <p style="margin-top: 10px; font-size: 0.85em; color: #7f8c8d;">
+            <strong>Note:</strong> Standard errors from BFGS's approximate inverse Hessian
+            may differ slightly from R's numerical Hessian. For exact SEs, use
+            <code>scipy.optimize.approx_fprime</code> or <code>numdifftools</code>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Comparison -->
+    <div class="section" id="comparison">
+      <h2>5. Comparing Results</h2>
+
+      <p>
+        The coefficient estimates from our manual MLE implementation match the built-in functions exactly.
+        Any small differences arise from:
+      </p>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Source of Difference</th>
+          <th>Explanation</th>
+        </tr>
+        <tr>
+          <td>Standard errors</td>
+          <td>
+            Built-in functions may use observed vs expected information matrix,
+            or different finite-sample corrections
+          </td>
+        </tr>
+        <tr>
+          <td>Dispersion estimate</td>
+          <td>
+            MLE uses n in denominator; R's <code>glm()</code> uses (n-p) for the unbiased estimate
+          </td>
+        </tr>
+        <tr>
+          <td>Convergence tolerance</td>
+          <td>
+            Different optimisers use different convergence criteria
+          </td>
+        </tr>
+        <tr>
+          <td>Numerical precision</td>
+          <td>
+            Floating-point arithmetic can introduce tiny differences
+          </td>
+        </tr>
+      </table>
+
+      <div class="note">
+        <div class="note-title">Why Learn This?</div>
+        <p>
+          Understanding the log-likelihood and its optimisation helps you:
+          (1) debug when models don't converge,
+          (2) extend GLMs to custom distributions,
+          (3) understand model comparison via likelihood ratio tests and AIC,
+          (4) appreciate what the computer is actually doing behind "fit model".
+        </p>
+      </div>
+
+      <h3>Key Takeaways</h3>
+
+      <ul style="margin: 15px 0 0 20px; color: #555;">
+        <li style="margin-bottom: 8px;">
+          <strong>Log-likelihood</strong> measures how well parameters explain the observed data
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>MLE</strong> finds parameters that maximise the log-likelihood
+        </li>
+        <li style="margin-bottom: 8px;">
+          For Gaussian GLMs, MLE gives the same <b>&beta;</b> estimates as OLS
+        </li>
+        <li style="margin-bottom: 8px;">
+          The <strong>score equations</strong> (derivatives = 0) lead to the normal equations
+        </li>
+        <li>
+          General-purpose optimisers like <code>optim()</code> and <code>scipy.minimize()</code>
+          can fit any model where you can write down the likelihood
+        </li>
+      </ul>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="tutorial-code.html" class="btn btn-secondary">&larr; Back to Implementation</a>
+      <a href="tutorial.html" class="btn btn-primary">Start Tutorial Over &circlearrowleft;</a>
+    </div>
+  </div>
+
+  <script>
+    function showCode(lang) {
+      // Update tabs
+      document.querySelectorAll('.code-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Update content
+      document.querySelectorAll('.code-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${lang}-code`).classList.add('active');
+    }
+  </script>
+</body>
+</html>
