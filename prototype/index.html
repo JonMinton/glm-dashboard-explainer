@@ -416,11 +416,11 @@
         </div>
       </div>
 
-      <!-- Tutorial 3: Poisson (NOT STARTED - hide answer) -->
-      <div class="tutorial-card coming-soon">
-        <div class="card-header unknown">
+      <!-- Tutorial 3: Poisson (COMPLETE - reveal answer) -->
+      <div class="tutorial-card">
+        <div class="card-header poisson">
           <h3>3. Bike Rental Demand</h3>
-          <div class="family">Which GLM family?</div>
+          <div class="family">Poisson + Log Link</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
@@ -429,13 +429,14 @@
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing Dataset</div>
           </div>
-          <div class="challenge-text">
-            The outcome is the number of rentals per day (0, 1, 2, 3, ...). What kind of model handles counts?
+          <div class="revealed-answer">
+            <strong>You discovered:</strong>
+            Rental counts are non-negative integers&mdash;the Poisson family with log link handles count data. Coefficients give rate ratios (exp(&beta;) = multiplicative effect). The data shows overdispersion, previewing Tutorial 4.
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge coming-soon">Coming Soon</span>
-          <span class="start-btn disabled">Start Tutorial</span>
+          <span class="status-badge complete">Complete</span>
+          <a href="tutorials/03-poisson/systematic.html" class="start-btn">Review Tutorial</a>
         </div>
       </div>
 

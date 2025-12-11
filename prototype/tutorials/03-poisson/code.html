@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Poisson Regression Implementation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #8e44ad;
+    }
+
+    /* Intro panel */
+    .intro-panel {
+      background: #f9f3fc;
+      border-left: 4px solid #9b59b6;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .intro-panel h2 {
+      color: #8e44ad;
+      margin-bottom: 10px;
+    }
+
+    .intro-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Language tabs */
+    .language-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .lang-tab {
+      padding: 12px 24px;
+      background: #dee2e6;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 1em;
+      transition: all 0.2s ease;
+    }
+
+    .lang-tab:hover:not(.active) {
+      background: #ced4da;
+    }
+
+    .lang-tab.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .lang-tab.r-tab.active {
+      background: #276dc3;
+    }
+
+    .lang-tab.python-tab.active {
+      background: #3776ab;
+    }
+
+    /* Code panels */
+    .code-panel {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      overflow: hidden;
+    }
+
+    .code-panel.active {
+      display: block;
+    }
+
+    .code-section {
+      padding: 20px;
+      border-bottom: 1px solid #34495e;
+    }
+
+    .code-section:last-child {
+      border-bottom: none;
+    }
+
+    .code-section h3 {
+      color: #ecf0f1;
+      font-size: 0.9em;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    pre {
+      background: #1a252f;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 15px;
+    }
+
+    code {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #ecf0f1;
+      line-height: 1.5;
+    }
+
+    .output-block {
+      background: #1a252f;
+      padding: 15px;
+      border-radius: 6px;
+      border-left: 3px solid #9b59b6;
+    }
+
+    .output-block pre {
+      background: transparent;
+      padding: 0;
+      margin: 0;
+    }
+
+    .output-block code {
+      color: #bdc3c7;
+      font-size: 0.85em;
+    }
+
+    /* Interpretation panel */
+    .interpretation-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-top: 25px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .interpretation-panel h2 {
+      color: #8e44ad;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f3e8f9;
+    }
+
+    .coef-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .coef-table th, .coef-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .coef-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .coef-table td {
+      font-size: 0.95em;
+    }
+
+    .coef-table .var-name {
+      font-weight: 600;
+    }
+
+    .coef-table .positive {
+      color: #27ae60;
+    }
+
+    .coef-table .negative {
+      color: #e74c3c;
+    }
+
+    .rate-ratio {
+      font-weight: 600;
+    }
+
+    .interpretation-note {
+      background: #f3e8f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    .interpretation-note h4 {
+      color: #8e44ad;
+      margin-bottom: 10px;
+    }
+
+    /* Overdispersion warning */
+    .overdispersion-panel {
+      background: #fff3cd;
+      border-left: 4px solid #f39c12;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 25px;
+    }
+
+    .overdispersion-panel h3 {
+      color: #856404;
+      margin-bottom: 12px;
+    }
+
+    .overdispersion-panel p {
+      color: #856404;
+      margin-bottom: 10px;
+    }
+
+    .overdispersion-panel .diagnostic {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      margin: 15px 0;
+    }
+
+    .overdispersion-panel .preview-link {
+      color: #8e44ad;
+      font-weight: 600;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #7d3c98;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 3: Implementation in R and Python</h1>
+      <p>Fit the Poisson regression model to predict bike rental counts</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <div class="intro-panel">
+      <h2>Putting It All Together</h2>
+      <p>
+        Now we'll implement our Poisson GLM using real code. Both R and Python have excellent GLM support,
+        and the results will be identical (within rounding).
+      </p>
+      <p>
+        <strong>Our model:</strong> $\text{Count} \sim \text{Poisson}(\mu)$ with $\ln(\mu) = \beta_0 + \beta_1 \cdot \text{temp} + \beta_2 \cdot \text{hum} + \beta_3 \cdot \text{windspeed} + \beta_4 \cdot \text{workingday} + \beta_5 \cdot \text{weathersit}$
+      </p>
+    </div>
+
+    <!-- Language tabs -->
+    <div class="language-tabs">
+      <button class="lang-tab r-tab active" data-lang="r">R</button>
+      <button class="lang-tab python-tab" data-lang="python">Python</button>
+    </div>
+
+    <!-- R Code Panel -->
+    <div class="code-panel active" id="r-panel">
+      <div class="code-section">
+        <h3>1. Load and Explore Data</h3>
+        <pre><code># Load the UCI Bike Sharing dataset (daily aggregates)
+bike <- read.csv("day.csv")
+
+# Quick look at the data
+dim(bike)
+# [1] 731  16
+
+summary(bike$cnt)
+#    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#      22    3152    4548    4504    5956    8714</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h3>2. Fit the Poisson GLM</h3>
+        <pre><code># Fit Poisson regression with log link (the default for Poisson)
+fit <- glm(cnt ~ temp + hum + windspeed + workingday + weathersit,
+           family = poisson(link = "log"),
+           data = bike)
+
+summary(fit)</code></pre>
+        <div class="output-block">
+          <pre><code>Call:
+glm(formula = cnt ~ temp + hum + windspeed + workingday + weathersit,
+    family = poisson(link = "log"), data = bike)
+
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)
+(Intercept)  8.239119   0.003845 2142.57   <2e-16 ***
+temp         1.397084   0.003179  439.44   <2e-16 ***
+hum         -0.356839   0.005271  -67.69   <2e-16 ***
+windspeed   -0.967277   0.008000 -120.91   <2e-16 ***
+workingday   0.038946   0.001202   32.39   <2e-16 ***
+weathersit  -0.129765   0.001380  -94.02   <2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for poisson family taken to be 1)
+
+    Null deviance: 668801  on 730  degrees of freedom
+Residual deviance: 380005  on 725  degrees of freedom
+AIC: 387415
+
+Number of Fisher Scoring iterations: 4</code></pre>
+        </div>
+      </div>
+
+      <div class="code-section">
+        <h3>3. Calculate Rate Ratios</h3>
+        <pre><code># For Poisson regression, exp(coefficient) gives the rate ratio
+exp(coef(fit))
+#  (Intercept)         temp          hum    windspeed   workingday   weathersit
+# 3.779e+03    4.043e+00    7.001e-01    3.800e-01    1.040e+00    8.783e-01
+
+# With 95% confidence intervals
+exp(confint(fit))</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h3>4. Check for Overdispersion</h3>
+        <pre><code># Key diagnostic: residual deviance should be close to df
+# Ratio >> 1 indicates overdispersion
+fit$deviance / fit$df.residual
+# [1] 524.1</code></pre>
+        <div class="output-block">
+          <pre><code># Severe overdispersion detected!
+# Residual deviance: 380,005
+# Degrees of freedom: 725
+# Ratio: 524.1 (should be ~1 for Poisson to be appropriate)</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Python Code Panel -->
+    <div class="code-panel" id="python-panel">
+      <div class="code-section">
+        <h3>1. Load and Explore Data</h3>
+        <pre><code>import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import numpy as np
+
+# Load the UCI Bike Sharing dataset
+bike = pd.read_csv("day.csv")
+
+# Quick look at the data
+print(bike.shape)
+# (731, 16)
+
+print(bike['cnt'].describe())
+# count     731.000000
+# mean     4504.348837
+# std      1937.211452
+# min        22.000000
+# 25%      3152.000000
+# 50%      4548.000000
+# 75%      5956.000000
+# max      8714.000000</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h3>2. Fit the Poisson GLM</h3>
+        <pre><code># Fit Poisson regression with log link
+fit = smf.glm('cnt ~ temp + hum + windspeed + workingday + weathersit',
+              data=bike,
+              family=sm.families.Poisson()).fit()
+
+print(fit.summary())</code></pre>
+        <div class="output-block">
+          <pre><code>                 Generalized Linear Model Regression Results
+==============================================================================
+Dep. Variable:                    cnt   No. Observations:                  731
+Model:                            GLM   Df Residuals:                      725
+Model Family:                 Poisson   Df Model:                            5
+Link Function:                    Log   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:            -1.9370e+05
+Date:                Wed, 11 Dec 2025   Deviance:                   3.8000e+05
+Time:                        16:58:06   Pearson chi2:                 3.68e+05
+No. Iterations:                     5   Pseudo R-squ. (CS):              1.000
+Covariance Type:            nonrobust
+==============================================================================
+                 coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      8.2391      0.004   2142.559      0.000       8.232       8.247
+temp           1.3971      0.003    439.442      0.000       1.391       1.403
+hum           -0.3568      0.005    -67.693      0.000      -0.367      -0.347
+windspeed     -0.9673      0.008   -120.911      0.000      -0.983      -0.952
+workingday     0.0389      0.001     32.390      0.000       0.037       0.041
+weathersit    -0.1298      0.001    -94.024      0.000      -0.132      -0.127
+==============================================================================</code></pre>
+        </div>
+      </div>
+
+      <div class="code-section">
+        <h3>3. Calculate Rate Ratios</h3>
+        <pre><code># For Poisson regression, exp(coefficient) gives the rate ratio
+print("Rate Ratios:")
+print(np.exp(fit.params))
+# Intercept     3779.086
+# temp             4.043
+# hum              0.700
+# windspeed        0.380
+# workingday       1.040
+# weathersit       0.878
+
+# With 95% confidence intervals
+print("\nRate Ratios with 95% CI:")
+print(np.exp(fit.conf_int()))</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h3>4. Check for Overdispersion</h3>
+        <pre><code># Key diagnostic: deviance / df_residual should be ~1
+overdispersion_ratio = fit.deviance / fit.df_resid
+print(f"Overdispersion ratio: {overdispersion_ratio:.1f}")
+# Overdispersion ratio: 524.1</code></pre>
+        <div class="output-block">
+          <pre><code># Severe overdispersion detected!
+# Deviance: 380,005
+# Degrees of freedom: 725
+# Ratio: 524.1 (should be ~1 for Poisson to be appropriate)</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interpretation -->
+    <div class="interpretation-panel">
+      <h2>Interpreting the Results</h2>
+      <p>
+        The coefficients are on the <strong>log scale</strong>. To interpret them, we exponentiate to get
+        <strong>rate ratios</strong> - the multiplicative effect on expected count.
+      </p>
+
+      <table class="coef-table">
+        <thead>
+          <tr>
+            <th>Predictor</th>
+            <th>Coefficient ($\beta$)</th>
+            <th>Rate Ratio ($e^\beta$)</th>
+            <th>Interpretation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="var-name">temp</td>
+            <td class="positive">+1.397</td>
+            <td class="rate-ratio">4.04</td>
+            <td>Full temp range (0 to 1) = 4x more rentals</td>
+          </tr>
+          <tr>
+            <td class="var-name">hum</td>
+            <td class="negative">-0.357</td>
+            <td class="rate-ratio">0.70</td>
+            <td>Full humidity range = 30% fewer rentals</td>
+          </tr>
+          <tr>
+            <td class="var-name">windspeed</td>
+            <td class="negative">-0.967</td>
+            <td class="rate-ratio">0.38</td>
+            <td>Full wind range = 62% fewer rentals</td>
+          </tr>
+          <tr>
+            <td class="var-name">workingday</td>
+            <td class="positive">+0.039</td>
+            <td class="rate-ratio">1.04</td>
+            <td>Working days = 4% more rentals</td>
+          </tr>
+          <tr>
+            <td class="var-name">weathersit</td>
+            <td class="negative">-0.130</td>
+            <td class="rate-ratio">0.88</td>
+            <td>Each worse weather category = 12% fewer rentals</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="interpretation-note">
+        <h4>Rate Ratio Interpretation</h4>
+        <p>
+          <strong>Temperature effect:</strong> $e^{1.397} = 4.04$ means that going from the coldest to
+          warmest temperature (normalized 0-1) multiplies expected rentals by 4. Temperature is the
+          strongest predictor.
+        </p>
+        <p style="margin-top: 10px;">
+          <strong>Note:</strong> These predictors are normalized (0-1 scale), so the coefficients represent
+          the effect across their full range, not a "one unit" change in the original scale.
+        </p>
+      </div>
+    </div>
+
+    <!-- Overdispersion warning -->
+    <div class="overdispersion-panel">
+      <h3>Overdispersion: A Key Limitation</h3>
+      <p>
+        The model diagnostics reveal <strong>severe overdispersion</strong>. The Poisson model assumes
+        Mean = Variance, but our data has variance much greater than the mean.
+      </p>
+      <div class="diagnostic">
+        Residual Deviance / df = 380,005 / 725 = <strong>524.1</strong><br>
+        (Should be close to 1 for Poisson to be appropriate)
+      </div>
+      <p>
+        <strong>What does this mean?</strong>
+      </p>
+      <ul style="margin: 10px 0 10px 20px; color: #856404;">
+        <li>The standard errors are <em>underestimated</em> (too small)</li>
+        <li>P-values are too optimistic (appear more significant than they are)</li>
+        <li>Confidence intervals are too narrow</li>
+        <li>The model structure may be correct, but statistical inference is unreliable</li>
+      </ul>
+      <p>
+        <strong>The solution?</strong> Use the <span class="preview-link">Negative Binomial distribution</span>
+        (Tutorial 4), which has an extra parameter to account for overdispersion.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced Topics &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.lang-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Update tab styles
+        document.querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        // Show corresponding panel
+        const lang = tab.dataset.lang;
+        document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`${lang}-panel`).classList.add('active');
+      });
+    });
+
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

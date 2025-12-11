@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Poisson Log-Likelihood Derivation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #8e44ad;
+    }
+
+    /* Intro panel */
+    .intro-panel {
+      background: #f9f3fc;
+      border-left: 4px solid #9b59b6;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .intro-panel h2 {
+      color: #8e44ad;
+      margin-bottom: 10px;
+    }
+
+    /* Math sections */
+    .math-section {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .math-section h2 {
+      color: #8e44ad;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f3e8f9;
+    }
+
+    .math-section h3 {
+      color: #6c3483;
+      margin: 20px 0 15px 0;
+      font-size: 1.1em;
+    }
+
+    .math-section p {
+      margin-bottom: 15px;
+    }
+
+    .math-block {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      overflow-x: auto;
+    }
+
+    .derivation-step {
+      background: #f0f7ff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      border-left: 3px solid #3498db;
+    }
+
+    .derivation-step .step-label {
+      font-weight: 600;
+      color: #2980b9;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+    }
+
+    /* Key insight boxes */
+    .key-insight {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .key-insight h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .key-insight p {
+      color: #856404;
+      margin-bottom: 0;
+    }
+
+    /* Comparison panel */
+    .comparison-panel {
+      background: #e8f4fd;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .comparison-panel h4 {
+      color: #2980b9;
+      margin-bottom: 15px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    /* Success panel */
+    .success-panel {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 25px;
+    }
+
+    .success-panel h3 {
+      color: #155724;
+      margin-bottom: 12px;
+    }
+
+    .success-panel p {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .success-panel ul {
+      margin: 10px 0 0 20px;
+      color: #155724;
+    }
+
+    .success-panel li {
+      margin-bottom: 5px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #7d3c98;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 3: Advanced - The Mathematics of Poisson Regression</h1>
+      <p>Deriving the log-likelihood and understanding the optimization</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Implementation</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">6</span>
+        <span>Advanced</span>
+      </div>
+    </div>
+
+    <!-- Intro -->
+    <div class="intro-panel">
+      <h2>Under the Hood</h2>
+      <p>
+        This section derives the Poisson log-likelihood from first principles and shows why the IRLS
+        algorithm works. This is the mathematical foundation behind the <code>glm()</code> function.
+      </p>
+    </div>
+
+    <!-- Section 1: The Poisson Distribution -->
+    <div class="math-section">
+      <h2>1. The Poisson Distribution</h2>
+      <p>
+        The Poisson distribution models the probability of observing $y$ events when events occur
+        at a constant rate $\mu$:
+      </p>
+      <div class="math-block">
+        $$P(Y = y \mid \mu) = \frac{\mu^y e^{-\mu}}{y!} \quad \text{for } y = 0, 1, 2, \ldots$$
+      </div>
+      <p>
+        <strong>Key properties:</strong>
+      </p>
+      <ul>
+        <li>$E[Y] = \mu$ (the mean is $\mu$)</li>
+        <li>$\text{Var}(Y) = \mu$ (variance equals the mean - the defining Poisson property)</li>
+        <li>$y$ can only be non-negative integers</li>
+      </ul>
+    </div>
+
+    <!-- Section 2: Building the Likelihood -->
+    <div class="math-section">
+      <h2>2. Building the Likelihood</h2>
+
+      <h3>For a Single Observation</h3>
+      <p>
+        The likelihood of observing count $y_i$ given rate $\mu_i$ is:
+      </p>
+      <div class="math-block">
+        $$L(\mu_i \mid y_i) = \frac{\mu_i^{y_i} e^{-\mu_i}}{y_i!}$$
+      </div>
+
+      <h3>For All n Observations</h3>
+      <p>
+        Assuming independence, the total likelihood is the product:
+      </p>
+      <div class="math-block">
+        $$L(\boldsymbol{\mu} \mid \mathbf{y}) = \prod_{i=1}^{n} \frac{\mu_i^{y_i} e^{-\mu_i}}{y_i!}$$
+      </div>
+    </div>
+
+    <!-- Section 3: The Log-Likelihood -->
+    <div class="math-section">
+      <h2>3. The Log-Likelihood</h2>
+      <p>
+        Taking the logarithm converts products to sums (much easier to work with):
+      </p>
+
+      <div class="derivation-step">
+        <div class="step-label">Step 1: Apply log to the likelihood</div>
+        $$\ell(\boldsymbol{\mu}) = \ln L = \sum_{i=1}^{n} \ln\left(\frac{\mu_i^{y_i} e^{-\mu_i}}{y_i!}\right)$$
+      </div>
+
+      <div class="derivation-step">
+        <div class="step-label">Step 2: Expand using log rules</div>
+        $$\ell(\boldsymbol{\mu}) = \sum_{i=1}^{n} \left[ y_i \ln(\mu_i) - \mu_i - \ln(y_i!) \right]$$
+      </div>
+
+      <div class="derivation-step">
+        <div class="step-label">Step 3: Drop the constant term (doesn't affect optimization)</div>
+        $$\ell(\boldsymbol{\mu}) = \sum_{i=1}^{n} \left[ y_i \ln(\mu_i) - \mu_i \right] + \text{const}$$
+      </div>
+
+      <div class="key-insight">
+        <h4>The Poisson Log-Likelihood</h4>
+        <p>
+          $$\ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} \left[ y_i \ln(\mu_i) - \mu_i \right]$$
+          where $\mu_i = e^{\mathbf{x}_i^T \boldsymbol{\beta}}$ (via the log link)
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 4: Connecting to the Linear Predictor -->
+    <div class="math-section">
+      <h2>4. Connecting to the Linear Predictor</h2>
+      <p>
+        With the log link, we have:
+      </p>
+      <div class="math-block">
+        $$\ln(\mu_i) = \eta_i = \mathbf{x}_i^T \boldsymbol{\beta} = \beta_0 + \beta_1 x_{i1} + \ldots + \beta_p x_{ip}$$
+      </div>
+      <p>
+        Therefore:
+      </p>
+      <div class="math-block">
+        $$\mu_i = e^{\eta_i} = e^{\mathbf{x}_i^T \boldsymbol{\beta}}$$
+      </div>
+      <p>
+        Substituting into the log-likelihood:
+      </p>
+      <div class="math-block">
+        $$\ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} \left[ y_i \cdot \mathbf{x}_i^T \boldsymbol{\beta} - e^{\mathbf{x}_i^T \boldsymbol{\beta}} \right]$$
+      </div>
+    </div>
+
+    <!-- Section 5: The Score and Hessian -->
+    <div class="math-section">
+      <h2>5. Finding the Maximum: Score and Hessian</h2>
+
+      <h3>The Score (First Derivative)</h3>
+      <p>
+        To find the MLE, we take the derivative with respect to $\boldsymbol{\beta}$ and set to zero:
+      </p>
+      <div class="math-block">
+        $$\frac{\partial \ell}{\partial \boldsymbol{\beta}} = \sum_{i=1}^{n} \mathbf{x}_i \left( y_i - \mu_i \right) = \mathbf{X}^T (\mathbf{y} - \boldsymbol{\mu})$$
+      </div>
+      <p>
+        This is the <strong>score equation</strong>. Setting it to zero gives us the maximum likelihood equations.
+      </p>
+
+      <h3>The Hessian (Second Derivative)</h3>
+      <p>
+        The second derivative (curvature) is:
+      </p>
+      <div class="math-block">
+        $$\frac{\partial^2 \ell}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^T} = -\sum_{i=1}^{n} \mu_i \mathbf{x}_i \mathbf{x}_i^T = -\mathbf{X}^T \mathbf{W} \mathbf{X}$$
+      </div>
+      <p>
+        where $\mathbf{W} = \text{diag}(\mu_1, \mu_2, \ldots, \mu_n)$ is the weight matrix.
+      </p>
+
+      <div class="key-insight">
+        <h4>The IRLS Weights for Poisson</h4>
+        <p>
+          For Poisson regression, the weights are simply the fitted values: $W_{ii} = \mu_i$.
+          Compare this to logistic regression where $W_{ii} = p_i(1-p_i)$.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 6: The IRLS Algorithm -->
+    <div class="math-section">
+      <h2>6. The IRLS Algorithm</h2>
+      <p>
+        Newton-Raphson optimization gives the update:
+      </p>
+      <div class="math-block">
+        $$\boldsymbol{\beta}^{(t+1)} = \boldsymbol{\beta}^{(t)} + (\mathbf{X}^T \mathbf{W} \mathbf{X})^{-1} \mathbf{X}^T (\mathbf{y} - \boldsymbol{\mu})$$
+      </div>
+      <p>
+        This can be rewritten as a weighted least squares problem:
+      </p>
+      <div class="math-block">
+        $$\boldsymbol{\beta}^{(t+1)} = (\mathbf{X}^T \mathbf{W} \mathbf{X})^{-1} \mathbf{X}^T \mathbf{W} \mathbf{z}$$
+      </div>
+      <p>
+        where $\mathbf{z}$ is the "working response":
+      </p>
+      <div class="math-block">
+        $$z_i = \eta_i + \frac{y_i - \mu_i}{\mu_i}$$
+      </div>
+
+      <h3>The Algorithm</h3>
+      <ol style="margin: 15px 0 15px 20px;">
+        <li>Initialize $\boldsymbol{\beta}^{(0)}$ (often zeros, giving $\mu_i = 1$ for all $i$)</li>
+        <li>Compute $\boldsymbol{\mu}^{(t)} = e^{\mathbf{X}\boldsymbol{\beta}^{(t)}}$</li>
+        <li>Compute weights: $\mathbf{W}^{(t)} = \text{diag}(\boldsymbol{\mu}^{(t)})$</li>
+        <li>Compute working response: $z_i^{(t)} = \eta_i^{(t)} + (y_i - \mu_i^{(t)})/\mu_i^{(t)}$</li>
+        <li>Update: $\boldsymbol{\beta}^{(t+1)} = (\mathbf{X}^T \mathbf{W}^{(t)} \mathbf{X})^{-1} \mathbf{X}^T \mathbf{W}^{(t)} \mathbf{z}^{(t)}$</li>
+        <li>Repeat until $\|\boldsymbol{\beta}^{(t+1)} - \boldsymbol{\beta}^{(t)}\| < \epsilon$</li>
+      </ol>
+    </div>
+
+    <!-- Section 7: Comparison Across GLMs -->
+    <div class="math-section">
+      <h2>7. Comparison Across GLM Families</h2>
+
+      <div class="comparison-panel">
+        <h4>IRLS Components by GLM Family</h4>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Family</th>
+              <th>Link</th>
+              <th>$\mu_i$</th>
+              <th>Weights $W_{ii}$</th>
+              <th>Variance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Gaussian</strong></td>
+              <td>Identity</td>
+              <td>$\eta_i$</td>
+              <td>$1$ (constant)</td>
+              <td>$\sigma^2$ (constant)</td>
+            </tr>
+            <tr>
+              <td><strong>Binomial</strong></td>
+              <td>Logit</td>
+              <td>$\frac{1}{1+e^{-\eta_i}}$</td>
+              <td>$p_i(1-p_i)$</td>
+              <td>$p_i(1-p_i)$</td>
+            </tr>
+            <tr>
+              <td><strong>Poisson</strong></td>
+              <td>Log</td>
+              <td>$e^{\eta_i}$</td>
+              <td>$\mu_i$</td>
+              <td>$\mu_i$</td>
+            </tr>
+            <tr>
+              <td><strong>Gamma</strong></td>
+              <td>Log</td>
+              <td>$e^{\eta_i}$</td>
+              <td>$\mu_i^2$</td>
+              <td>$\mu_i^2 / \phi$</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Notice: The algorithm structure is <strong>identical</strong> across all GLMs! Only the link function
+        (how $\mu$ relates to $\eta$) and the weights change.
+      </p>
+    </div>
+
+    <!-- Section 8: Deviance and Model Fit -->
+    <div class="math-section">
+      <h2>8. Deviance: Measuring Model Fit</h2>
+      <p>
+        The <strong>deviance</strong> compares the fitted model to a "saturated" model (one parameter per observation):
+      </p>
+      <div class="math-block">
+        $$D = 2 \sum_{i=1}^{n} \left[ y_i \ln\left(\frac{y_i}{\hat{\mu}_i}\right) - (y_i - \hat{\mu}_i) \right]$$
+      </div>
+      <p>
+        For Poisson data without overdispersion, the residual deviance should approximately equal the
+        degrees of freedom. Our bike rental model:
+      </p>
+      <div class="math-block">
+        $$\frac{D}{df} = \frac{380,005}{725} = 524.1 \gg 1$$
+      </div>
+      <p>
+        This extreme ratio indicates <strong>overdispersion</strong> - the variance in our data exceeds
+        what the Poisson model expects.
+      </p>
+    </div>
+
+    <!-- Success panel -->
+    <div class="success-panel">
+      <h3>Tutorial 3 Complete!</h3>
+      <p>
+        You've learned Poisson regression for count data. Key takeaways:
+      </p>
+      <ul>
+        <li><strong>Log link</strong> ensures positive predictions and gives rate ratio interpretation</li>
+        <li><strong>Poisson distribution</strong> assumes Mean = Variance</li>
+        <li><strong>exp(coefficient)</strong> = multiplicative effect on expected count</li>
+        <li><strong>Check for overdispersion:</strong> residual deviance / df should be ~1</li>
+        <li>Our bike data is severely overdispersed - real-world data often is!</li>
+      </ul>
+      <p style="margin-top: 15px;">
+        <strong>What's Next?</strong> Tutorial 4 shows how to handle overdispersion using the
+        <strong>Negative Binomial</strong> distribution, which adds a parameter to allow variance > mean.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Implementation</a>
+      <a href="../../index.html" class="btn btn-primary">Back to Tutorials &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

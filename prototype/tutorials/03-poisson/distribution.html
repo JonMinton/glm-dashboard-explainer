@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Choose the Distribution for Count Data</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #8e44ad;
+    }
+
+    /* Context panel */
+    .context-panel {
+      background: #f9f3fc;
+      border-left: 4px solid #9b59b6;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #8e44ad;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .equation-display {
+      font-size: 1.1em;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .equation-display .unknown {
+      background: #fff3cd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    .equation-display .confirmed {
+      background: #d4edda;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #155724;
+    }
+
+    /* Key insight panel */
+    .insight-panel {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .insight-panel h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .insight-panel p {
+      color: #856404;
+      font-size: 0.95em;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #f3e8f9;
+      border-left: 4px solid #9b59b6;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #8e44ad;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Distribution cards */
+    .distribution-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .dist-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .dist-card:hover:not(.dimmed):not(.selected) {
+      border-color: #9b59b6;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .dist-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .dist-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .dist-card.selected-semi {
+      border-color: #f39c12;
+      background: #fffbf0;
+    }
+
+    .dist-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .dist-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .dist-card .formula {
+      font-size: 1.0em;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .dist-card .description {
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .dist-card .use-case {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+
+    .dist-card .variance-note {
+      font-size: 0.75em;
+      color: #999;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 600px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin-bottom: 5px;
+    }
+
+    .dialog .preview-box {
+      background: #e8f4fd;
+      border-left: 3px solid #3498db;
+      padding: 12px 15px;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .dialog .preview-box h4 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 0.95em;
+    }
+
+    /* Result display */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 15px;
+    }
+
+    .final-model {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .final-model .equation {
+      font-size: 1.1em;
+      margin: 10px 0;
+    }
+
+    .model-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary-item {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 0.8em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-item .value {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    .overdispersion-warning {
+      background: #fff3cd;
+      border-left: 4px solid #f39c12;
+      padding: 15px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 20px;
+    }
+
+    .overdispersion-warning h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .overdispersion-warning p {
+      color: #856404;
+      font-size: 0.9em;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #7d3c98;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 3: The Stochastic Component</h1>
+      <p>Choose the distribution for count data</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">3</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">4</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="equation-display">
+        RentalCount ~ <span class="unknown">f(?)</span> with $\ln(\mu) = \beta_0 + \beta_1 \cdot \text{Temp} + \ldots$
+      </div>
+      <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+        The distribution <strong>f()</strong> describes how the observed counts vary around the expected count.
+        This is the <em>stochastic</em> (random) component of the model.
+      </p>
+    </div>
+
+    <!-- Key insight -->
+    <div class="insight-panel">
+      <h4>Count Data Has Special Properties</h4>
+      <p>
+        Our response is a count: 0, 1, 2, 3, ... (non-negative integers). Unlike continuous data, counts are discrete and can't be negative. The distribution we choose should respect these constraints.
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>Choose the Distribution Family</h2>
+      <p>For modelling <strong>bike rental counts</strong> - non-negative integers (0, 1, 2, ..., thousands) - which distribution family describes this type of data?</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Distribution options -->
+    <div class="distribution-options">
+      <!-- Poisson (correct) -->
+      <div class="dist-card" data-dist="poisson">
+        <h3>Poisson</h3>
+        <div class="formula">$y \sim \text{Poisson}(\mu)$</div>
+        <p class="description">
+          For count data (0, 1, 2, ...). The classic distribution for modelling event counts.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Counting events, non-negative integers
+        </p>
+        <p class="variance-note">Variance = Mean ($\mu$)</p>
+      </div>
+
+      <!-- Negative Binomial (semi-valid - preview for Tutorial 4) -->
+      <div class="dist-card" data-dist="negbin">
+        <h3>Negative Binomial</h3>
+        <div class="formula">$y \sim \text{NegBin}(\mu, \theta)$</div>
+        <p class="description">
+          For overdispersed counts. Allows variance to exceed the mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Counts with extra variability
+        </p>
+        <p class="variance-note">Variance = $\mu + \mu^2/\theta$</p>
+      </div>
+
+      <!-- Gaussian/Normal (wrong) -->
+      <div class="dist-card" data-dist="gaussian">
+        <h3>Gaussian (Normal)</h3>
+        <div class="formula">$y \sim N(\mu, \sigma^2)$</div>
+        <p class="description">
+          The classic bell curve. Observations scatter symmetrically around the mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Continuous data, symmetric residuals
+        </p>
+        <p class="variance-note">Variance: constant ($\sigma^2$)</p>
+      </div>
+
+      <!-- Binomial (wrong) -->
+      <div class="dist-card" data-dist="binomial">
+        <h3>Binomial</h3>
+        <div class="formula">$y \sim \text{Binomial}(n, p)$</div>
+        <p class="description">
+          For counting successes in n trials. Has an upper bound.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Binary outcomes, bounded counts
+        </p>
+        <p class="variance-note">Variance: $np(1-p)$</p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>Model Complete: Poisson Regression!</h3>
+      <p>You've specified all three components of your GLM:</p>
+
+      <div class="final-model">
+        <p class="equation">
+          $\text{RentalCount} \sim \text{Poisson}(\mu)$
+        </p>
+        <p class="equation">
+          where $\ln(\mu) = \beta_0 + \beta_1 \cdot \text{Temp} + \beta_2 \cdot \text{Hum} + \beta_3 \cdot \text{Wind} + \beta_4 \cdot \text{Work} + \beta_5 \cdot \text{Weather}$
+        </p>
+      </div>
+
+      <div class="model-summary">
+        <div class="summary-item">
+          <div class="label">Systematic Component</div>
+          <div class="value">6 terms (incl. intercept)</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Link Function</div>
+          <div class="value">Log</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Distribution</div>
+          <div class="value">Poisson</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 20px; color: #666;">
+        This combination - <strong>Poisson distribution + Log link</strong> - is <strong>Poisson regression</strong>,
+        the standard approach for count data. The log is the "canonical" link for the Poisson family.
+      </p>
+
+      <div class="overdispersion-warning">
+        <h4>Heads up: Overdispersion</h4>
+        <p>
+          A key Poisson assumption is <strong>Mean = Variance</strong>. In practice, many real datasets show
+          <em>overdispersion</em> - variance greater than the mean. We'll check for this after fitting,
+          and if present, <strong>Tutorial 4</strong> shows how to handle it with the Negative Binomial distribution.
+        </p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="link.html" class="btn btn-secondary">&larr; Back to Link Function</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for Poisson (correct) -->
+  <div class="dialog-overlay" id="poissonDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct!</h3>
+      <p>
+        The <strong>Poisson distribution</strong> is the natural choice for count data.
+      </p>
+      <div class="highlight green">
+        $P(Y = k) = \frac{\mu^k e^{-\mu}}{k!}$ for $k = 0, 1, 2, \ldots$
+        <br><br>
+        Where $\mu$ is the expected count (rate)
+      </div>
+      <p>
+        <strong>Key properties:</strong>
+      </p>
+      <ul>
+        <li><strong>Non-negative integers:</strong> Only 0, 1, 2, ... are possible</li>
+        <li><strong>Mean = Variance = $\mu$:</strong> This is the defining Poisson property</li>
+        <li><strong>Canonical link:</strong> The log link is the natural pairing in GLM theory</li>
+        <li><strong>Rate interpretation:</strong> $e^\beta$ gives multiplicative effects on the rate</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        Poisson + Log = <strong>Poisson Regression</strong> - the classic method for count data.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmPoisson()">Complete the Model</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Negative Binomial (semi-valid - preview) -->
+  <div class="dialog-overlay" id="negbinDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Excellent Thinking! (But Save It For Tutorial 4)</h3>
+      <p>
+        The <strong>Negative Binomial</strong> is actually a very good choice for real-world count data, because it handles <em>overdispersion</em> - when variance exceeds the mean.
+      </p>
+      <div class="highlight">
+        <strong>Negative Binomial variance:</strong> $\text{Var}(Y) = \mu + \frac{\mu^2}{\theta}$
+        <br><br>
+        The extra parameter $\theta$ allows variance to be larger than the mean.
+      </div>
+
+      <div class="preview-box">
+        <h4>Preview: Tutorial 4</h4>
+        <p>
+          We'll fit the Poisson model first to <em>learn the method</em>, then check for overdispersion.
+          Spoiler: the bike sharing data is overdispersed! Tutorial 4 will show how to upgrade to Negative Binomial.
+        </p>
+        <p style="margin-top: 8px;">
+          <strong>The diagnostic:</strong> If residual deviance >> degrees of freedom, overdispersion is present.
+        </p>
+      </div>
+
+      <p>
+        For now, let's use the Poisson to understand the foundational approach.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('negbinDialog')">Try Poisson First</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (wrong) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate for Count Data</h3>
+      <p>
+        The <strong>Gaussian distribution</strong> is designed for continuous data that can take any real value, including negative numbers.
+      </p>
+      <p>
+        Our outcome is a count (0, 1, 2, ...). The Gaussian has several problems:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 15px;">
+          <li><strong>Allows negative values:</strong> Can't have -50 bike rentals</li>
+          <li><strong>Continuous:</strong> Counts are discrete integers, not 4.7 rentals</li>
+          <li><strong>Constant variance:</strong> For counts, variance often increases with the mean</li>
+        </ul>
+      </div>
+      <p>
+        Interestingly, for very large counts, the Poisson approximates the Gaussian. But for proper count modelling, use a discrete distribution.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Binomial (wrong) -->
+  <div class="dialog-overlay" id="binomialDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>Binomial distribution</strong> is for counting successes in a fixed number of trials - it has an <em>upper bound</em>.
+      </p>
+      <p>
+        Our rental counts can be any non-negative integer with no fixed maximum:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 15px;">
+          <li>Binomial: Count out of n (like 8 heads in 10 coin flips)</li>
+          <li>Our data: Open-ended counts (22 to 8714 rentals per day)</li>
+          <li>There's no "maximum possible rentals" - it's unbounded</li>
+        </ul>
+      </div>
+      <p>
+        Binomial was the right choice for heart disease (yes/no) in Tutorial 2, where each patient is one "trial". But bike rental counts have no fixed upper limit.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('binomialDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedDist = null;
+
+    // Distribution card click handlers
+    document.querySelectorAll('.dist-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const dist = card.dataset.dist;
+        handleDistSelection(dist, card);
+      });
+    });
+
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'poisson') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.dist-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+      });
+
+      switch(dist) {
+        case 'poisson':
+          // Correct choice
+          card.classList.add('selected-correct');
+          showDialog('poissonDialog');
+          break;
+
+        case 'negbin':
+          // Semi-valid - preview for Tutorial 4
+          card.classList.add('selected-semi');
+          showDialog('negbinDialog');
+          break;
+
+        case 'gaussian':
+          // Wrong - for continuous data
+          card.classList.add('selected-wrong');
+          showDialog('gaussianDialog');
+          break;
+
+        case 'binomial':
+          // Wrong - for bounded counts/binary
+          card.classList.add('selected-wrong');
+          showDialog('binomialDialog');
+          break;
+      }
+    }
+
+    function confirmPoisson() {
+      // User confirmed Poisson selection
+      selectedDist = 'poisson';
+      closeDialog('poissonDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Re-render KaTeX in result panel
+      renderMathInElement(document.getElementById('resultPanel'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+
+      // Dim other cards
+      document.querySelectorAll('.dist-card:not([data-dist="poisson"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+      // Render KaTeX in dialog
+      renderMathInElement(dialog, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'poisson') {
+        document.querySelectorAll('.dist-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      window.location.href = 'fitting.html';
+    });
+
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

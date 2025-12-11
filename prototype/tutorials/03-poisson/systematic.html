@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Bike Rental Counts</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #8e44ad;
+      transform: translateY(-50%);
+      z-index: 2;
+      transition: width 0.3s ease;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+      transition: all 0.3s ease;
+    }
+
+    .step-dot.completed {
+      background: #8e44ad;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #9b59b6;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(155, 89, 182, 0.3);
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #f3e8f9;
+      border-left: 4px solid #9b59b6;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #8e44ad;
+      margin-bottom: 8px;
+      font-size: 1.1em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    .instruction-panel .hint {
+      font-size: 0.9em;
+      color: #666;
+      font-style: italic;
+    }
+
+    .instruction-panel .why {
+      font-size: 0.85em;
+      color: #555;
+      background: rgba(255,255,255,0.5);
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    /* Context panel - key info about count outcomes */
+    .context-panel {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .context-panel p {
+      color: #856404;
+      font-size: 0.9em;
+    }
+
+    /* Main layout */
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .main-content {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    /* Variable pool */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h3 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+      font-size: 1em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .variable-pool {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 100px;
+    }
+
+    .variable-card {
+      background: #f8f9fa;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 12px;
+      width: 160px;
+      cursor: grab;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .variable-card:hover:not(.dimmed) {
+      border-color: #9b59b6;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .variable-card.dragging {
+      opacity: 0.5;
+      cursor: grabbing;
+    }
+
+    .variable-card.target {
+      border-color: #8e44ad;
+      animation: pulse 1.5s infinite;
+    }
+
+    .variable-card.dimmed {
+      opacity: 0.3;
+      pointer-events: none;
+      filter: grayscale(50%);
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(142, 68, 173, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(142, 68, 173, 0); }
+    }
+
+    .var-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .var-type {
+      font-size: 0.75em;
+      color: #666;
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .var-type.count {
+      background: #e8daef;
+      color: #6c3483;
+    }
+
+    .var-type.normalized {
+      background: #d5f5e3;
+      color: #1e8449;
+    }
+
+    .var-desc {
+      font-size: 0.8em;
+      color: #666;
+    }
+
+    .target-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #8e44ad;
+      color: white;
+      font-size: 0.7em;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* Drop zones */
+    .model-canvas {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 15px;
+    }
+
+    .drop-zone {
+      border: 3px dashed #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      min-height: 150px;
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone.predictor-zone {
+      border-color: #9b59b6;
+    }
+
+    .drop-zone.response-zone {
+      border-color: #8e44ad;
+    }
+
+    .drop-zone.drag-over {
+      background: rgba(155, 89, 182, 0.1);
+      border-style: solid;
+    }
+
+    .drop-zone.target-zone {
+      animation: zone-pulse 1.5s infinite;
+    }
+
+    @keyframes zone-pulse {
+      0%, 100% { background: rgba(142, 68, 173, 0.05); }
+      50% { background: rgba(142, 68, 173, 0.15); }
+    }
+
+    .drop-zone.wrong {
+      animation: shake 0.3s;
+      border-color: #e74c3c !important;
+      background: rgba(231, 76, 60, 0.1) !important;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .drop-zone h4 {
+      margin-bottom: 5px;
+      font-size: 0.95em;
+    }
+
+    .drop-zone.predictor-zone h4 { color: #9b59b6; }
+    .drop-zone.response-zone h4 { color: #8e44ad; }
+
+    .zone-hint {
+      font-size: 0.8em;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .assigned-vars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .assigned-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: white;
+      border-radius: 6px;
+      padding: 8px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      font-size: 0.9em;
+    }
+
+    .chip-label {
+      font-weight: 600;
+      color: #666;
+    }
+
+    .intercept-chip {
+      background: #f3e8f9;
+      border: 2px dashed #9b59b6;
+    }
+
+    .intercept-value {
+      font-weight: bold;
+      font-size: 1.1em;
+      color: #8e44ad;
+    }
+
+    .chip-hint {
+      font-size: 0.75em;
+      color: #7f8c8d;
+      font-style: italic;
+    }
+
+    .empty-hint {
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+
+    /* Model equation */
+    .model-equation {
+      background: #f9f3fc;
+      border-left: 4px solid #9b59b6;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 20px;
+    }
+
+    .model-equation.complete {
+      border-left-color: #8e44ad;
+      background: #f3e8f9;
+    }
+
+    .equation {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.2em;
+      background: white;
+      padding: 10px 15px;
+      border-radius: 4px;
+      display: inline-block;
+      margin: 10px 0;
+    }
+
+    .intercept-term {
+      background: #f3e8f9;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+      color: #8e44ad;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #8e44ad;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #7d3c98;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    /* Success message */
+    .success-message {
+      display: none;
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      text-align: center;
+    }
+
+    .success-message.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 3: Bike Rental Counts</h1>
+      <p>Build a model to predict daily bike rental counts</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="step-dot" data-step="1">1</div>
+        <div class="step-dot" data-step="2">2</div>
+        <div class="step-dot" data-step="3">3</div>
+        <div class="step-dot" data-step="4">4</div>
+        <div class="step-dot" data-step="5">5</div>
+        <div class="step-dot" data-step="6">6</div>
+      </div>
+    </div>
+
+    <!-- Context about count outcomes -->
+    <div class="context-panel">
+      <h4>A New Type of Outcome: Counts</h4>
+      <p>
+        Unlike Tutorial 1 (continuous heart rate) or Tutorial 2 (binary disease status),
+        here we're predicting a <strong>count</strong>: how many bikes are rented each day (0, 1, 2, ..., thousands).
+        Counts are always non-negative integers&mdash;this requires a different type of GLM.
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel" id="instructionPanel">
+      <h3>Step <span id="stepNumber">1</span>: <span id="stepTitle">Select the Response Variable</span></h3>
+      <p id="stepInstruction">Drag <strong>Rental Count</strong> to the Response zone on the right.</p>
+      <p class="hint" id="stepHint">The response variable (y) is what we're trying to predict.</p>
+      <div class="why" id="stepWhy">
+        <strong>Why this variable?</strong> We want to predict how many bikes will be rented based on weather conditions.
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+      <!-- Left: Variable pool -->
+      <div class="panel">
+        <h3>Available Variables</h3>
+        <div class="variable-pool" id="variablePool">
+          <!-- Variables will be populated by JS -->
+        </div>
+      </div>
+
+      <!-- Right: Model canvas -->
+      <div class="panel">
+        <h3>Your Model</h3>
+        <div class="model-canvas">
+          <div class="drop-zone predictor-zone" id="predictorZone">
+            <h4>Predictors (X)</h4>
+            <p class="zone-hint">Variables that help predict the count</p>
+            <div class="assigned-vars" id="predictorList">
+              <p class="empty-hint">Drop predictors here</p>
+            </div>
+          </div>
+          <div class="drop-zone response-zone" id="responseZone">
+            <h4>Response (y)</h4>
+            <p class="zone-hint">What we predict</p>
+            <div class="assigned-vars" id="responseSlot">
+              <p class="empty-hint">Drop response here</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model equation -->
+        <div class="model-equation" id="modelEquation" style="display: none;">
+          <p><strong>Systematic component:</strong></p>
+          <p class="equation" id="equationText">y = g(1, ...)</p>
+          <p id="modelNote" style="font-size: 0.9em; color: #666; margin-top: 10px;"></p>
+        </div>
+
+        <div class="success-message" id="successMessage">
+          Great job! You've specified the <strong>systematic component</strong> for a count model.<br>
+          <small>Next step: Choose the link function g() that ensures positive predictions.</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="../../index.html" class="btn btn-secondary">&larr; Back to Tutorials</a>
+      <div>
+        <button class="btn btn-secondary" id="restartBtn" style="margin-right: 10px;">&circlearrowright; Restart</button>
+        <button class="btn btn-primary" id="continueBtn" disabled>Continue to Link Function &rarr;</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dataset variables - UCI Bike Sharing (daily)
+    const variables = [
+      { name: 'cnt', label: 'Rental Count', type: 'count', desc: 'Total bike rentals per day (22-8714)' },
+      { name: 'temp', label: 'Temperature', type: 'normalized', desc: 'Normalized temperature (0-1 scale)' },
+      { name: 'hum', label: 'Humidity', type: 'normalized', desc: 'Normalized humidity (0-1 scale)' },
+      { name: 'windspeed', label: 'Wind Speed', type: 'normalized', desc: 'Normalized wind speed (0-1 scale)' },
+      { name: 'workingday', label: 'Working Day', type: 'binary', desc: 'Weekday & not holiday (0/1)' },
+      { name: 'weathersit', label: 'Weather', type: 'categorical', desc: 'Weather situation (1-4)' }
+    ];
+
+    // Tutorial steps - building a Poisson regression model
+    const steps = [
+      {
+        title: 'Select the Response Variable',
+        instruction: 'Drag <strong>Rental Count</strong> to the Response zone.',
+        hint: 'The response variable (y) is what we\'re trying to predict.',
+        why: 'We want to model how many bikes are rented each day based on weather and calendar factors.',
+        target: { variable: 'cnt', zone: 'response' }
+      },
+      {
+        title: 'Add Temperature as a Predictor',
+        instruction: 'Drag <strong>Temperature</strong> to the Predictors zone.',
+        hint: 'Predictors (X) are variables we think might influence the count.',
+        why: 'Warmer weather likely increases bike rentals - people prefer cycling in pleasant temperatures.',
+        target: { variable: 'temp', zone: 'predictor' }
+      },
+      {
+        title: 'Add Humidity',
+        instruction: 'Drag <strong>Humidity</strong> to the Predictors zone.',
+        hint: 'Weather conditions affect outdoor activities.',
+        why: 'High humidity may discourage cycling - it feels uncomfortable.',
+        target: { variable: 'hum', zone: 'predictor' }
+      },
+      {
+        title: 'Add Wind Speed',
+        instruction: 'Drag <strong>Wind Speed</strong> to the Predictors zone.',
+        hint: 'Multiple weather factors can influence bike usage.',
+        why: 'Strong winds make cycling harder and less pleasant.',
+        target: { variable: 'windspeed', zone: 'predictor' }
+      },
+      {
+        title: 'Add Working Day',
+        instruction: 'Drag <strong>Working Day</strong> to the Predictors zone.',
+        hint: 'Calendar factors matter for transportation patterns.',
+        why: 'Commuter vs. recreational cycling patterns differ between workdays and weekends.',
+        target: { variable: 'workingday', zone: 'predictor' }
+      },
+      {
+        title: 'Add Weather Situation',
+        instruction: 'Drag <strong>Weather</strong> to the Predictors zone.',
+        hint: 'Overall weather conditions beyond just temperature.',
+        why: 'Clear skies vs. rain/snow makes a big difference for outdoor activities.',
+        target: { variable: 'weathersit', zone: 'predictor' }
+      },
+      {
+        title: 'Systematic Component Complete!',
+        instruction: 'Review your systematic component below.',
+        hint: 'You\'ve specified the response and predictors for your count model.',
+        why: 'The systematic component shows what goes into the link function g(). For count outcomes, we need a link function that ensures positive predictions - you can\'t have -50 bike rentals!',
+        target: null
+      }
+    ];
+
+    // State
+    let currentStep = 0;
+    let selectedResponse = null;
+    let selectedPredictors = [];
+    let draggedVariable = null;
+
+    // DOM elements
+    const variablePool = document.getElementById('variablePool');
+    const predictorZone = document.getElementById('predictorZone');
+    const responseZone = document.getElementById('responseZone');
+    const predictorList = document.getElementById('predictorList');
+    const responseSlot = document.getElementById('responseSlot');
+    const modelEquation = document.getElementById('modelEquation');
+    const equationText = document.getElementById('equationText');
+    const modelNote = document.getElementById('modelNote');
+    const continueBtn = document.getElementById('continueBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const successMessage = document.getElementById('successMessage');
+
+    // Initialize
+    function init() {
+      renderVariables();
+      updateStep();
+      setupDropZones();
+
+      restartBtn.addEventListener('click', restart);
+      continueBtn.addEventListener('click', () => {
+        window.location.href = 'link.html';
+      });
+    }
+
+    function restart() {
+      currentStep = 0;
+      selectedResponse = null;
+      selectedPredictors = [];
+      modelEquation.style.display = 'none';
+      modelEquation.classList.remove('complete');
+      successMessage.classList.remove('show');
+      continueBtn.disabled = true;
+      renderVariables();
+      renderAssigned();
+      updateStep();
+    }
+
+    function renderVariables() {
+      variablePool.innerHTML = '';
+
+      const assignedNames = new Set([
+        selectedResponse,
+        ...selectedPredictors
+      ].filter(Boolean));
+
+      const available = variables.filter(v => !assignedNames.has(v.name));
+
+      if (available.length === 0) {
+        variablePool.innerHTML = '<p class="empty-hint">All variables assigned</p>';
+        return;
+      }
+
+      const step = steps[currentStep];
+      const targetVar = step?.target?.variable;
+
+      available.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'variable-card';
+        card.draggable = true;
+        card.dataset.var = v.name;
+
+        const isTarget = v.name === targetVar;
+        const isDimmed = targetVar && !isTarget;
+
+        if (isTarget) {
+          card.classList.add('target');
+        }
+        if (isDimmed) {
+          card.classList.add('dimmed');
+          card.draggable = false;
+        }
+
+        let typeClass = '';
+        if (v.type === 'count') typeClass = 'count';
+        else if (v.type === 'normalized') typeClass = 'normalized';
+
+        card.innerHTML = `
+          <div class="var-name">${v.label}</div>
+          <span class="var-type ${typeClass}">${v.type}</span>
+          <div class="var-desc">${v.desc}</div>
+          ${isTarget ? '<span class="target-badge">Drag me!</span>' : ''}
+        `;
+
+        if (!isDimmed) {
+          card.addEventListener('dragstart', handleDragStart);
+          card.addEventListener('dragend', handleDragEnd);
+        }
+
+        variablePool.appendChild(card);
+      });
+    }
+
+    function renderAssigned() {
+      // Render predictors - always show intercept first
+      predictorList.innerHTML = '';
+
+      // Always show the intercept term (1)
+      const interceptChip = document.createElement('div');
+      interceptChip.className = 'assigned-chip intercept-chip';
+      interceptChip.innerHTML = `
+        <span class="chip-label">&beta;<sub>0</sub></span>
+        <span class="intercept-value">1</span>
+        <span class="chip-hint">(intercept)</span>
+      `;
+      predictorList.appendChild(interceptChip);
+
+      if (selectedPredictors.length === 0) {
+        const hint = document.createElement('p');
+        hint.className = 'empty-hint';
+        hint.textContent = 'Drop predictors here';
+        predictorList.appendChild(hint);
+      } else {
+        selectedPredictors.forEach((name, i) => {
+          const v = variables.find(x => x.name === name);
+          const chip = document.createElement('div');
+          chip.className = 'assigned-chip';
+          chip.innerHTML = `
+            <span class="chip-label">X<sub>${i + 1}</sub></span>
+            <span>${v.label}</span>
+          `;
+          predictorList.appendChild(chip);
+        });
+      }
+
+      // Render response
+      if (!selectedResponse) {
+        responseSlot.innerHTML = '<p class="empty-hint">Drop response here</p>';
+      } else {
+        const v = variables.find(x => x.name === selectedResponse);
+        responseSlot.innerHTML = `
+          <div class="assigned-chip">
+            <span class="chip-label">y</span>
+            <span>${v.label}</span>
+          </div>
+        `;
+      }
+
+      // Update equation
+      updateEquation();
+    }
+
+    function updateEquation() {
+      if (!selectedResponse) {
+        modelEquation.style.display = 'none';
+        return;
+      }
+
+      modelEquation.style.display = 'block';
+      const resp = variables.find(x => x.name === selectedResponse);
+
+      if (selectedPredictors.length === 0) {
+        equationText.innerHTML = `E[${resp.label}] = g(<span class="intercept-term">1</span>, ...)`;
+        modelNote.textContent = 'Add predictors to complete the systematic component.';
+      } else {
+        const terms = selectedPredictors.map((name) => {
+          const v = variables.find(x => x.name === name);
+          return v.label.replace(/ /g, '');
+        }).join(', ');
+
+        equationText.innerHTML = `E[${resp.label}] = g(<span class="intercept-term">1</span>, ${terms})`;
+        modelNote.innerHTML = `The systematic component: <strong>1</strong> is the intercept, and <strong>${selectedPredictors.length} predictor(s)</strong> help predict ${resp.label}.<br><em>Next: choose the link function g() that maps to positive counts</em>`;
+      }
+    }
+
+    function updateStep() {
+      const step = steps[currentStep];
+
+      // Update instruction panel
+      document.getElementById('stepNumber').textContent = currentStep + 1;
+      document.getElementById('stepTitle').textContent = step.title;
+      document.getElementById('stepInstruction').innerHTML = step.instruction;
+      document.getElementById('stepHint').textContent = step.hint;
+      document.getElementById('stepWhy').innerHTML = `<strong>Why?</strong> ${step.why}`;
+
+      // Update progress bar
+      const dots = document.querySelectorAll('.step-dot');
+      dots.forEach((dot, i) => {
+        dot.classList.remove('completed', 'current');
+        if (i < currentStep) {
+          dot.classList.add('completed');
+          dot.textContent = '\u2713';
+        } else if (i === currentStep) {
+          dot.classList.add('current');
+          dot.textContent = i + 1;
+        } else {
+          dot.textContent = i + 1;
+        }
+      });
+
+      // Update progress fill
+      const progress = (currentStep / (steps.length - 1)) * 100;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+
+      // Update zone highlighting
+      predictorZone.classList.remove('target-zone');
+      responseZone.classList.remove('target-zone');
+
+      if (step.target) {
+        if (step.target.zone === 'predictor') {
+          predictorZone.classList.add('target-zone');
+        } else if (step.target.zone === 'response') {
+          responseZone.classList.add('target-zone');
+        }
+      }
+
+      // Final step
+      if (currentStep === steps.length - 1) {
+        modelEquation.classList.add('complete');
+        successMessage.classList.add('show');
+        continueBtn.disabled = false;
+      }
+
+      renderVariables();
+    }
+
+    function handleDragStart(e) {
+      draggedVariable = e.target.dataset.var;
+      e.target.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedVariable = null;
+    }
+
+    function setupDropZones() {
+      [predictorZone, responseZone].forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('drag-over');
+        });
+
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+
+          const step = steps[currentStep];
+          const isPredictor = zone === predictorZone;
+          const expectedZone = step.target?.zone;
+          const expectedVar = step.target?.variable;
+
+          // Check if this is the correct action
+          if (draggedVariable !== expectedVar ||
+              (isPredictor && expectedZone !== 'predictor') ||
+              (!isPredictor && expectedZone !== 'response')) {
+            zone.classList.add('wrong');
+            setTimeout(() => zone.classList.remove('wrong'), 300);
+            return;
+          }
+
+          // Correct action!
+          if (isPredictor) {
+            selectedPredictors.push(draggedVariable);
+          } else {
+            selectedResponse = draggedVariable;
+          }
+
+          renderAssigned();
+
+          // Advance step after short delay
+          setTimeout(() => {
+            currentStep++;
+            updateStep();
+          }, 400);
+        });
+      });
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>

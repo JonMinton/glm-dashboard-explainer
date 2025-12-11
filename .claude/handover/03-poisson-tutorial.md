@@ -108,28 +108,29 @@ fit = smf.glm('cnt ~ temp + hum + windspeed + workingday + weathersit',
 print(fit.summary())
 ```
 
-## Canonical Coefficients (TO BE VALIDATED)
+## Canonical Coefficients (VALIDATED 2025-12-11)
 ```
 Model: cnt ~ temp + hum + windspeed + workingday + weathersit
 Family: poisson(link = "log")
 n = 731 observations (2 years of daily data)
 
-COEFFICIENTS (validate before building pages):
-  β₀ (Intercept):    TBD
-  β₁ (temp):         TBD (expect positive - warmer = more rentals)
-  β₂ (hum):          TBD (expect negative - humid = fewer rentals)
-  β₃ (windspeed):    TBD (expect negative - windy = fewer rentals)
-  β₄ (workingday):   TBD (could go either way)
-  β₅ (weathersit):   TBD (expect negative - bad weather = fewer)
-
-Standard Errors:
-  [TO BE FILLED]
+COEFFICIENTS (R and Python validated - identical):
+  β₀ (Intercept):    8.2391   (SE: 0.0038)
+  β₁ (temp):         1.3971   (SE: 0.0032) - positive: warmer = more rentals
+  β₂ (hum):         -0.3568   (SE: 0.0053) - negative: humid = fewer rentals
+  β₃ (windspeed):   -0.9673   (SE: 0.0080) - negative: windy = fewer rentals
+  β₄ (workingday):   0.0389   (SE: 0.0012) - positive: working days = more rentals
+  β₅ (weathersit):  -0.1298   (SE: 0.0014) - negative: bad weather = fewer
 
 Model Fit:
-  Null deviance:     TBD
-  Residual deviance: TBD (likely >> df, indicating overdispersion)
-  AIC: TBD
-  Log-Likelihood: TBD
+  Null deviance:     668,801 on 730 df
+  Residual deviance: 380,005 on 725 df
+  AIC: 387,415
+  Log-Likelihood: -193,700
+
+OVERDISPERSION CHECK (critical for pedagogy):
+  Ratio (resid.deviance / df): 524.1 (should be ~1 for Poisson)
+  SEVERE OVERDISPERSION - perfect setup for Tutorial 4 (Negative Binomial)
 ```
 
 ## IMPORTANT: Overdispersion Warning
@@ -183,20 +184,20 @@ Back to index: `../../index.html`
 ---
 
 ## Checklist
-- [ ] Download and explore bike sharing dataset
-- [ ] Validate coefficients in R
-- [ ] Validate coefficients in Python
-- [ ] Record canonical values above
-- [ ] Create systematic.html
-- [ ] Create link.html (with sqrt historical context)
-- [ ] Create distribution.html (with NegBin preview)
-- [ ] Create fitting.html
-- [ ] Create code.html (include overdispersion diagnostic)
-- [ ] Create advanced.html
-- [ ] Test all navigation links
-- [ ] Update index.html
-- [ ] Update claude.md status table
-- [ ] Commit
+- [x] Download and explore bike sharing dataset
+- [x] Validate coefficients in R
+- [x] Validate coefficients in Python
+- [x] Record canonical values above
+- [x] Create systematic.html
+- [x] Create link.html (with sqrt historical context)
+- [x] Create distribution.html (with NegBin preview)
+- [x] Create fitting.html
+- [x] Create code.html (include overdispersion diagnostic)
+- [x] Create advanced.html
+- [x] Test all navigation links
+- [x] Update index.html
+- [x] Update claude.md status table
+- [x] Commit (pending)
 
 ## Dataset Caching (Future Improvement)
 
