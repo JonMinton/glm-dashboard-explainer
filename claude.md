@@ -70,15 +70,16 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 | 4 | Overdispersed Counts | Negative Binomial + Log | PLANNED |
 | 5 | Insurance Claim Amounts | Gamma + Log | OPTIONAL |
 
-### Tutorial 1 Files (Complete)
+### Tutorial Files
 ```
 prototype/
-├── tutorial.html           # Systematic component (drag & drop)
-├── tutorial-link.html      # Link function selection
-├── tutorial-distribution.html  # Distribution selection
-├── tutorial-fitting.html   # Fitting method explanation
-├── tutorial-code.html      # R/Python implementation
-└── tutorial-advanced.html  # Log-likelihood derivation (KaTeX)
+├── index.html              # Tutorial/datasets index page
+├── tutorial.html           # Tutorial 1: Systematic component (drag & drop)
+├── tutorial-link.html      # Tutorial 1: Link function selection
+├── tutorial-distribution.html  # Tutorial 1: Distribution selection
+├── tutorial-fitting.html   # Tutorial 1: Fitting method explanation
+├── tutorial-code.html      # Tutorial 1: R/Python implementation
+└── tutorial-advanced.html  # Tutorial 1: Log-likelihood derivation (KaTeX)
 ```
 
 ### Design Pattern

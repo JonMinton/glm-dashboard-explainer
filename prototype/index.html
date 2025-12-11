@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorials: Matching Models to Data</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    header .subtitle {
+      font-size: 1.1em;
+      opacity: 0.9;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Philosophy section */
+    .philosophy {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-left: 4px solid #3498db;
+    }
+
+    .philosophy h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .philosophy p {
+      margin-bottom: 15px;
+      color: #555;
+    }
+
+    .philosophy .highlight {
+      background: #e8f4fd;
+      padding: 15px 20px;
+      border-radius: 8px;
+      font-style: italic;
+      color: #2c3e50;
+    }
+
+    /* Tutorial cards grid */
+    .tutorials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin: 30px 0;
+    }
+
+    .tutorial-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .tutorial-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .tutorial-card.coming-soon {
+      opacity: 0.7;
+    }
+
+    .tutorial-card.coming-soon:hover {
+      transform: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .card-header {
+      padding: 20px;
+      color: white;
+    }
+
+    .card-header.gaussian { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); }
+    .card-header.binomial { background: linear-gradient(135deg, #2980b9 0%, #3498db 100%); }
+    .card-header.poisson { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); }
+    .card-header.negbin { background: linear-gradient(135deg, #d35400 0%, #e67e22 100%); }
+    .card-header.gamma { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); }
+
+    .card-header h3 {
+      font-size: 1.2em;
+      margin-bottom: 5px;
+    }
+
+    .card-header .family {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .card-body h4 {
+      color: #2c3e50;
+      font-size: 1em;
+      margin-bottom: 10px;
+    }
+
+    .card-body p {
+      color: #666;
+      font-size: 0.95em;
+      margin-bottom: 15px;
+    }
+
+    .dataset-info {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+
+    .dataset-info .label {
+      font-size: 0.8em;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dataset-info .value {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .outcome-type {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .outcome-type.continuous { background: #d5f5e3; color: #1e8449; }
+    .outcome-type.binary { background: #d6eaf8; color: #1a5276; }
+    .outcome-type.count { background: #e8daef; color: #6c3483; }
+    .outcome-type.positive { background: #fadbd8; color: #922b21; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75em;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge.complete { background: #27ae60; color: white; }
+    .status-badge.coming-soon { background: #bdc3c7; color: #7f8c8d; }
+
+    .card-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .start-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #2c3e50;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      transition: background 0.2s;
+    }
+
+    .start-btn:hover {
+      background: #34495e;
+    }
+
+    .start-btn.disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    /* Why GLMs section */
+    .why-glm {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 30px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .why-glm h2 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .comparison-table .wrong {
+      color: #c0392b;
+    }
+
+    .comparison-table .right {
+      color: #27ae60;
+    }
+
+    /* Flow diagram */
+    .flow-preview {
+      text-align: center;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.9em;
+      color: #555;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    footer a {
+      color: #3498db;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Generalised Linear Models</h1>
+    <p class="subtitle">Interactive tutorials that teach you to match statistical models to your data's characteristics</p>
+  </header>
+
+  <div class="container">
+
+    <section class="philosophy">
+      <h2>Why Does the Model Choice Matter?</h2>
+      <p>
+        Many introductory statistics courses teach only one model: ordinary least squares regression
+        (R's <code>lm()</code>, Python's <code>LinearRegression()</code>). This works fine for continuous,
+        normally-distributed outcomes. But what about...
+      </p>
+      <ul style="margin: 15px 0 15px 30px; color: #555;">
+        <li><strong>Binary outcomes</strong> (yes/no, survived/died, clicked/didn't click)?</li>
+        <li><strong>Count data</strong> (number of accidents, website visits, species observed)?</li>
+        <li><strong>Positive continuous data</strong> (insurance claims, waiting times, costs)?</li>
+      </ul>
+      <p>
+        Using the wrong model isn't just statistically incorrect&mdash;it can give you
+        <strong>impossible predictions</strong> (negative probabilities, fractional counts) and
+        <strong>misleading inferences</strong> (wrong standard errors, invalid confidence intervals).
+      </p>
+      <div class="highlight">
+        GLMs are about making your model compatible with your data's generating process&mdash;not
+        forcing everything into an inappropriate framework because it's the only one you know.
+      </div>
+    </section>
+
+    <section class="why-glm">
+      <h2>What Goes Wrong Without GLMs?</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Data Type</th>
+            <th>Example Outcome</th>
+            <th class="wrong">OLS Prediction Problem</th>
+            <th class="right">GLM Solution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Binary (0/1)</td>
+            <td>Heart disease (yes/no)</td>
+            <td class="wrong">Can predict P = 1.3 or P = -0.2</td>
+            <td class="right">Logistic: bounds to (0,1)</td>
+          </tr>
+          <tr>
+            <td>Count</td>
+            <td>Bike rentals per day</td>
+            <td class="wrong">Can predict -50 rentals</td>
+            <td class="right">Poisson/NegBin: non-negative integers</td>
+          </tr>
+          <tr>
+            <td>Positive continuous</td>
+            <td>Insurance claim amount</td>
+            <td class="wrong">Can predict negative costs</td>
+            <td class="right">Gamma: strictly positive</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="flow-preview">
+        The GLM Framework: &nbsp; X &rarr; &eta; = X&beta; &rarr; &mu; = g<sup>-1</sup>(&eta;) &rarr; Y ~ f(&mu;, &alpha;)
+      </div>
+    </section>
+
+    <h2 style="margin: 40px 0 20px; color: #2c3e50;">Tutorial Series</h2>
+    <p style="color: #666; margin-bottom: 20px;">
+      Each tutorial uses a real dataset to demonstrate when and why a particular GLM family is appropriate.
+    </p>
+
+    <div class="tutorials-grid">
+
+      <!-- Tutorial 1: Gaussian -->
+      <div class="tutorial-card">
+        <div class="card-header gaussian">
+          <h3>1. Heart Rate Prediction</h3>
+          <div class="family">Gaussian + Identity Link</div>
+        </div>
+        <div class="card-body">
+          <span class="outcome-type continuous">Continuous Outcome</span>
+          <h4>The Decision Problem</h4>
+          <p>Predict a patient's maximum heart rate during exercise from their characteristics.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">UCI Heart Disease (Cleveland)</div>
+          </div>
+          <p><strong>Why Gaussian?</strong> Heart rate is continuous and approximately symmetric&mdash;OLS and Gaussian GLM give identical results.</p>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge complete">Complete</span>
+          <a href="tutorial.html" class="start-btn">Start Tutorial</a>
+        </div>
+      </div>
+
+      <!-- Tutorial 2: Logistic -->
+      <div class="tutorial-card">
+        <div class="card-header binomial">
+          <h3>2. Heart Disease Classification</h3>
+          <div class="family">Binomial + Logit Link</div>
+        </div>
+        <div class="card-body">
+          <span class="outcome-type binary">Binary Outcome</span>
+          <h4>The Decision Problem</h4>
+          <p>Classify whether a patient has heart disease based on diagnostic measurements.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">UCI Heart Disease (Cleveland)</div>
+          </div>
+          <p><strong>Why Logistic?</strong> The outcome is binary (disease/no disease)&mdash;we need predictions bounded between 0 and 1.</p>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge coming-soon">Coming Soon</span>
+          <span class="start-btn disabled">Start Tutorial</span>
+        </div>
+      </div>
+
+      <!-- Tutorial 3: Poisson -->
+      <div class="tutorial-card coming-soon">
+        <div class="card-header poisson">
+          <h3>3. Bike Rental Counts</h3>
+          <div class="family">Poisson + Log Link</div>
+        </div>
+        <div class="card-body">
+          <span class="outcome-type count">Count Outcome</span>
+          <h4>The Decision Problem</h4>
+          <p>Predict daily bike rental demand from weather and calendar variables.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">UCI Bike Sharing Dataset</div>
+          </div>
+          <p><strong>Why Poisson?</strong> Rental counts are non-negative integers. The log link ensures predictions stay positive.</p>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge coming-soon">Coming Soon</span>
+          <span class="start-btn disabled">Start Tutorial</span>
+        </div>
+      </div>
+
+      <!-- Tutorial 4: Negative Binomial -->
+      <div class="tutorial-card coming-soon">
+        <div class="card-header negbin">
+          <h3>4. Overdispersed Counts</h3>
+          <div class="family">Negative Binomial + Log Link</div>
+        </div>
+        <div class="card-body">
+          <span class="outcome-type count">Count Outcome</span>
+          <h4>The Decision Problem</h4>
+          <p>Handle count data where variance exceeds the mean (overdispersion).</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">UCI Bike Sharing (revisited)</div>
+          </div>
+          <p><strong>Why Negative Binomial?</strong> When Poisson's mean=variance assumption fails, NegBin adds a dispersion parameter.</p>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge coming-soon">Coming Soon</span>
+          <span class="start-btn disabled">Start Tutorial</span>
+        </div>
+      </div>
+
+      <!-- Tutorial 5: Gamma (Optional) -->
+      <div class="tutorial-card coming-soon">
+        <div class="card-header gamma">
+          <h3>5. Insurance Claim Amounts</h3>
+          <div class="family">Gamma + Log Link</div>
+        </div>
+        <div class="card-body">
+          <span class="outcome-type positive">Positive Continuous</span>
+          <h4>The Decision Problem</h4>
+          <p>Predict insurance claim amounts given a claim has occurred.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">Insurance Claims (TBD)</div>
+          </div>
+          <p><strong>Why Gamma?</strong> Claim amounts are positive and right-skewed. Gamma handles this naturally.</p>
+        </div>
+        <div class="card-footer">
+          <span class="status-badge coming-soon">Optional</span>
+          <span class="start-btn disabled">Start Tutorial</span>
+        </div>
+      </div>
+
+    </div>
+
+    <section class="philosophy" style="border-left-color: #27ae60;">
+      <h2>What You'll Learn</h2>
+      <p>Each tutorial walks through the same 6-step process:</p>
+      <ol style="margin: 15px 0 0 30px; color: #555;">
+        <li><strong>Systematic Component</strong> &mdash; Choose your response and predictors</li>
+        <li><strong>Link Function</strong> &mdash; Connect the linear predictor to the mean</li>
+        <li><strong>Distribution</strong> &mdash; Choose the appropriate probability distribution</li>
+        <li><strong>Fitting Method</strong> &mdash; Understand how parameters are estimated</li>
+        <li><strong>Implementation</strong> &mdash; Code it in R and Python</li>
+        <li><strong>Advanced</strong> &mdash; Derive the log-likelihood and fit from scratch</li>
+      </ol>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>
+      Part of the <a href="https://jonminton.github.io/JonStats/">JonStats</a> teaching materials.
+      <br>
+      Built with real datasets and validated model outputs.
+    </p>
+  </footer>
+</body>
+</html>
