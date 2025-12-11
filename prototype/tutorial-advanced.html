@@ -102,6 +102,26 @@
       font-style: italic;
     }
 
+    /* Fraction styling */
+    .frac {
+      display: inline-block;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .frac > span {
+      display: block;
+      padding: 0 0.3em;
+    }
+
+    .frac .num {
+      border-bottom: 1px solid currentColor;
+    }
+
+    .frac .den {
+      border-top: none;
+    }
+
     /* Derivation steps */
     .derivation {
       background: #fafafa;
@@ -420,7 +440,7 @@
       </p>
 
       <div class="math-block">
-        f(y<sub>i</sub> | &mu;<sub>i</sub>, &sigma;&sup2;) = (2&pi;&sigma;&sup2;)<sup>-1/2</sup> exp(-&frac12; (y<sub>i</sub> - &mu;<sub>i</sub>)&sup2; / &sigma;&sup2;)
+        f(y<sub>i</sub> | &mu;<sub>i</sub>, &sigma;&sup2;) = (2&pi;&sigma;&sup2;)<sup>-&frac12;</sup> exp(<span class="frac"><span class="num">-(y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;</span><span class="den">2&sigma;&sup2;</span></span>)
       </div>
 
       <p>
@@ -456,7 +476,7 @@
           <div class="step-num">2</div>
           <div class="step-content">
             <div class="math">
-              &ell; = &sum;<sub>i=1</sub><sup>n</sup> [ -&frac12; log(2&pi;&sigma;&sup2;) - &frac12;(y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;/&sigma;&sup2; ]
+              &ell; = &sum;<sub>i=1</sub><sup>n</sup> [ -&frac12; log(2&pi;&sigma;&sup2;) - <span class="frac"><span class="num">(y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;</span><span class="den">2&sigma;&sup2;</span></span> ]
             </div>
             <div class="explanation">Substitute the normal density and apply log rules.</div>
           </div>
@@ -466,7 +486,7 @@
           <div class="step-num">3</div>
           <div class="step-content">
             <div class="math">
-              &ell; = -&frac{n}{2} log(2&pi;) - &frac{n}{2} log(&sigma;&sup2;) - &frac{1}{2&sigma;&sup2;} &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;
+              &ell; = -<span class="frac"><span class="num">n</span><span class="den">2</span></span> log(2&pi;) - <span class="frac"><span class="num">n</span><span class="den">2</span></span> log(&sigma;&sup2;) - <span class="frac"><span class="num">1</span><span class="den">2&sigma;&sup2;</span></span> &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - &mu;<sub>i</sub>)&sup2;
             </div>
             <div class="explanation">Separate terms. The sum of squared residuals appears!</div>
           </div>
@@ -476,7 +496,7 @@
           <div class="step-num">4</div>
           <div class="step-content">
             <div class="math">
-              &ell;(<b>&beta;</b>, &sigma;&sup2;) = -&frac{n}{2} log(2&pi;&sigma;&sup2;) - &frac{1}{2&sigma;&sup2;} (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
+              &ell;(<b>&beta;</b>, &sigma;&sup2;) = -<span class="frac"><span class="num">n</span><span class="den">2</span></span> log(2&pi;&sigma;&sup2;) - <span class="frac"><span class="num">1</span><span class="den">2&sigma;&sup2;</span></span> (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
             </div>
             <div class="explanation">
               <strong>Final form in matrix notation.</strong> The sum of squared residuals is
@@ -512,7 +532,7 @@
           <div class="step-num">1</div>
           <div class="step-content">
             <div class="math">
-              &part;&ell;/&part;<b>&beta;</b> = &part;/&part;<b>&beta;</b> [ -&frac{1}{2&sigma;&sup2;} (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>) ]
+              <span class="frac"><span class="num">&part;&ell;</span><span class="den">&part;<b>&beta;</b></span></span> = <span class="frac"><span class="num">&part;</span><span class="den">&part;<b>&beta;</b></span></span> [ -<span class="frac"><span class="num">1</span><span class="den">2&sigma;&sup2;</span></span> (<b>y</b> - <b>X&beta;</b>)<sup>T</sup>(<b>y</b> - <b>X&beta;</b>) ]
             </div>
             <div class="explanation">Only the residual term depends on <b>&beta;</b>.</div>
           </div>
@@ -522,7 +542,7 @@
           <div class="step-num">2</div>
           <div class="step-content">
             <div class="math">
-              = -&frac{1}{2&sigma;&sup2;} &times; (-2<b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>))
+              = -<span class="frac"><span class="num">1</span><span class="den">2&sigma;&sup2;</span></span> &times; (-2<b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>))
             </div>
             <div class="explanation">
               Apply matrix calculus: &part;(<b>y</b>-<b>X&beta;</b>)<sup>T</sup>(<b>y</b>-<b>X&beta;</b>)/&part;<b>&beta;</b> = -2<b>X</b><sup>T</sup>(<b>y</b>-<b>X&beta;</b>)
@@ -534,7 +554,7 @@
           <div class="step-num">3</div>
           <div class="step-content">
             <div class="math">
-              = &frac{1}{&sigma;&sup2;} <b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
+              = <span class="frac"><span class="num">1</span><span class="den">&sigma;&sup2;</span></span> <b>X</b><sup>T</sup>(<b>y</b> - <b>X&beta;</b>)
             </div>
             <div class="explanation">Simplify.</div>
           </div>
@@ -582,7 +602,7 @@
       <p>Similarly, differentiating with respect to &sigma;&sup2; and solving:</p>
 
       <div class="math-block highlight">
-        &sigma;&sup2;<sub>MLE</sub> = &frac{1}{n} &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - <b>x</b><sub>i</sub><sup>T</sup><b>&beta;</b><sub>MLE</sub>)&sup2; = &frac{RSS}{n}
+        &sigma;&sup2;<sub>MLE</sub> = <span class="frac"><span class="num">1</span><span class="den">n</span></span> &sum;<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - <b>x</b><sub>i</sub><sup>T</sup><b>&beta;</b><sub>MLE</sub>)&sup2; = <span class="frac"><span class="num">RSS</span><span class="den">n</span></span>
       </div>
 
       <div class="note">
