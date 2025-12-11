@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Code (Negative Binomial)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #d35400;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 80%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #d35400;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e67e22;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.3);
+    }
+
+    /* Panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #d35400;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-bottom: none;
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      background: #e9ecef;
+    }
+
+    .tab.active {
+      background: #2c3e50;
+      color: white;
+      border-color: #2c3e50;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    pre {
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #f8f8f2;
+      line-height: 1.5;
+    }
+
+    .comment { color: #6272a4; }
+    .string { color: #f1fa8c; }
+    .keyword { color: #ff79c6; }
+    .function { color: #50fa7b; }
+    .number { color: #bd93f9; }
+
+    /* Output panel */
+    .output-panel {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85em;
+      color: #d4d4d4;
+      overflow-x: auto;
+    }
+
+    .output-panel .header {
+      color: #569cd6;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table .highlight-row {
+      background: #fef5e7;
+    }
+
+    .comparison-table .good {
+      color: #27ae60;
+      font-weight: 600;
+    }
+
+    .comparison-table .bad {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    /* SE comparison highlight */
+    .se-comparison {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .se-comparison h4 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .se-comparison p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+
+    /* Interpretation section */
+    .interpretation {
+      background: #fef5e7;
+      border-left: 4px solid #e67e22;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .interpretation h4 {
+      color: #d35400;
+      margin-bottom: 10px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #d35400;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #ba4a00;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 4: Handling Overdispersion</h1>
+      <p>Step 5: R and Python Implementation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel">
+      <h2>Fitting Negative Binomial in R and Python</h2>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="r">R</div>
+        <div class="tab" data-tab="python">Python</div>
+      </div>
+
+      <!-- R Code -->
+      <div class="tab-content active" id="r-content">
+        <pre><code><span class="comment"># Load required library</span>
+<span class="keyword">library</span>(<span class="function">MASS</span>)
+
+<span class="comment"># Load the bike sharing dataset</span>
+bike <- <span class="function">read.csv</span>(<span class="string">"day.csv"</span>)
+
+<span class="comment"># Fit Negative Binomial model</span>
+<span class="comment"># Note: glm.nb() is from MASS package, not base glm()</span>
+fit_nb <- <span class="function">glm.nb</span>(cnt ~ temp + hum + windspeed + workingday + weathersit,
+                 data = bike)
+
+<span class="comment"># View model summary</span>
+<span class="function">summary</span>(fit_nb)
+
+<span class="comment"># Extract theta (dispersion parameter)</span>
+fit_nb$theta        <span class="comment"># 6.773</span>
+fit_nb$SE.theta     <span class="comment"># 0.347</span>
+
+<span class="comment"># Compare to Poisson for SE differences</span>
+fit_pois <- <span class="function">glm</span>(cnt ~ temp + hum + windspeed + workingday + weathersit,
+                family = <span class="function">poisson</span>(link = <span class="string">"log"</span>), data = bike)
+
+<span class="comment"># Standard error comparison</span>
+<span class="function">cbind</span>(
+  Poisson_SE = <span class="function">summary</span>(fit_pois)$coefficients[,<span class="number">2</span>],
+  NegBin_SE = <span class="function">summary</span>(fit_nb)$coefficients[,<span class="number">2</span>],
+  Ratio = <span class="function">summary</span>(fit_nb)$coefficients[,<span class="number">2</span>] / <span class="function">summary</span>(fit_pois)$coefficients[,<span class="number">2</span>]
+)</code></pre>
+      </div>
+
+      <!-- Python Code -->
+      <div class="tab-content" id="python-content">
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+<span class="keyword">import</span> statsmodels.formula.api <span class="keyword">as</span> smf
+
+<span class="comment"># Load the bike sharing dataset</span>
+bike = pd.<span class="function">read_csv</span>(<span class="string">"day.csv"</span>)
+
+<span class="comment"># Fit Negative Binomial model</span>
+<span class="comment"># Note: Need to specify alpha = 1/theta for statsmodels</span>
+<span class="comment"># Or use NegativeBinomial() which estimates it</span>
+fit_nb = smf.<span class="function">glm</span>(
+    <span class="string">'cnt ~ temp + hum + windspeed + workingday + weathersit'</span>,
+    data=bike,
+    family=sm.families.<span class="function">NegativeBinomial</span>(alpha=<span class="number">1</span>/<span class="number">6.773</span>)
+).<span class="function">fit</span>()
+
+<span class="comment"># View model summary</span>
+<span class="function">print</span>(fit_nb.<span class="function">summary</span>())
+
+<span class="comment"># Compare to Poisson for SE differences</span>
+fit_pois = smf.<span class="function">glm</span>(
+    <span class="string">'cnt ~ temp + hum + windspeed + workingday + weathersit'</span>,
+    data=bike,
+    family=sm.families.<span class="function">Poisson</span>()
+).<span class="function">fit</span>()
+
+<span class="comment"># Standard error comparison</span>
+se_comparison = pd.<span class="function">DataFrame</span>({
+    <span class="string">'Poisson_SE'</span>: fit_pois.bse,
+    <span class="string">'NegBin_SE'</span>: fit_nb.bse,
+    <span class="string">'Ratio'</span>: fit_nb.bse / fit_pois.bse
+})
+<span class="function">print</span>(se_comparison.<span class="function">round</span>(<span class="number">4</span>))</code></pre>
+      </div>
+
+      <!-- Output -->
+      <div class="output-panel">
+        <div class="header">Model Output (R)</div>
+<pre>Call:
+glm.nb(formula = cnt ~ temp + hum + windspeed + workingday + weathersit,
+       data = bike)
+
+Coefficients:
+            Estimate Std. Error z value Pr(>|z|)
+(Intercept)  8.19690    0.09323  87.923  < 2e-16 ***
+temp         1.70049    0.08126  20.926  < 2e-16 ***
+hum         -0.48251    0.13470  -3.582 0.000341 ***
+windspeed   -1.12389    0.19591  -5.737 9.65e-09 ***
+workingday   0.05192    0.03073   1.690 0.091116 .
+weathersit  -0.14206    0.03430  -4.142 3.44e-05 ***
+
+(Dispersion parameter for Negative Binomial(6.773) family taken to be 1)
+
+    Null deviance: 1277.24  on 730  degrees of freedom
+Residual deviance:  750.63  on 725  degrees of freedom
+AIC: 12840
+
+Theta:  6.773 (SE: 0.347)</pre>
+      </div>
+    </div>
+
+    <!-- SE Comparison - THE KEY POINT -->
+    <div class="se-comparison">
+      <h4>The Key Result: Standard Errors are ~25x Larger</h4>
+      <p>
+        This is the main lesson of Tutorial 4. By using Negative Binomial instead of Poisson,
+        our standard errors increase by a factor of ~25. This reflects the <strong>true uncertainty</strong>
+        in our estimates - Poisson was giving us false confidence!
+      </p>
+    </div>
+
+    <!-- SE comparison table -->
+    <div class="panel">
+      <h2>Standard Error Comparison: Poisson vs Negative Binomial</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Variable</th>
+          <th>Coefficient</th>
+          <th>Poisson SE</th>
+          <th>NegBin SE</th>
+          <th>Ratio</th>
+        </tr>
+        <tr>
+          <td>(Intercept)</td>
+          <td>8.197</td>
+          <td class="bad">0.0038</td>
+          <td class="good">0.0932</td>
+          <td><strong>24.2x</strong></td>
+        </tr>
+        <tr class="highlight-row">
+          <td>temp</td>
+          <td>1.700</td>
+          <td class="bad">0.0032</td>
+          <td class="good">0.0813</td>
+          <td><strong>25.6x</strong></td>
+        </tr>
+        <tr>
+          <td>hum</td>
+          <td>-0.483</td>
+          <td class="bad">0.0053</td>
+          <td class="good">0.1347</td>
+          <td><strong>25.6x</strong></td>
+        </tr>
+        <tr>
+          <td>windspeed</td>
+          <td>-1.124</td>
+          <td class="bad">0.0080</td>
+          <td class="good">0.1959</td>
+          <td><strong>24.5x</strong></td>
+        </tr>
+        <tr>
+          <td>workingday</td>
+          <td>0.052</td>
+          <td class="bad">0.0012</td>
+          <td class="good">0.0307</td>
+          <td><strong>25.6x</strong></td>
+        </tr>
+        <tr>
+          <td>weathersit</td>
+          <td>-0.142</td>
+          <td class="bad">0.0014</td>
+          <td class="good">0.0343</td>
+          <td><strong>24.8x</strong></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Model fit comparison -->
+    <div class="panel">
+      <h2>Model Fit Comparison</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Metric</th>
+          <th>Poisson</th>
+          <th>Negative Binomial</th>
+          <th>Interpretation</th>
+        </tr>
+        <tr>
+          <td>AIC</td>
+          <td class="bad">387,415</td>
+          <td class="good">12,840</td>
+          <td>Lower is better - NegBin wins by a massive margin</td>
+        </tr>
+        <tr>
+          <td>Deviance</td>
+          <td class="bad">380,005</td>
+          <td class="good">751</td>
+          <td>Lower deviance = better fit</td>
+        </tr>
+        <tr>
+          <td>Deviance/df</td>
+          <td class="bad">524.1</td>
+          <td class="good">1.04</td>
+          <td>Should be ~1 for good fit</td>
+        </tr>
+        <tr>
+          <td>Theta ($\theta$)</td>
+          <td>N/A</td>
+          <td>6.773</td>
+          <td>Dispersion parameter (smaller = more overdispersion)</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Interpretation -->
+    <div class="interpretation">
+      <h4>Interpreting the Coefficients</h4>
+      <p>
+        The coefficients have the same interpretation as Poisson (log link):
+      </p>
+      <ul style="margin: 10px 0 0 20px;">
+        <li><strong>exp(1.700) = 5.47:</strong> Each 0.1 increase in normalised temperature multiplies expected rentals by 1.19</li>
+        <li><strong>exp(-0.483) = 0.62:</strong> Higher humidity reduces expected rentals by 38%</li>
+        <li><strong>exp(-1.124) = 0.33:</strong> Higher wind speed dramatically reduces rentals</li>
+        <li><strong>exp(-0.142) = 0.87:</strong> Worse weather reduces expected rentals by 13%</li>
+      </ul>
+      <p style="margin-top: 10px;">
+        <strong>The key difference:</strong> Our confidence intervals are now ~25x wider, giving honest uncertainty estimates.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+      });
+    });
+
+    // KaTeX
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

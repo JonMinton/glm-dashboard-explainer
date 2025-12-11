@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Fitting (Negative Binomial)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #d35400;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 60%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #d35400;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e67e22;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #d35400;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #fef5e7;
+      border-left: 4px solid #e67e22;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #d35400;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      font-size: 1.1em;
+      overflow-x: auto;
+    }
+
+    /* Algorithm steps */
+    .algorithm-steps {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .algorithm-steps ol {
+      margin-left: 20px;
+    }
+
+    .algorithm-steps li {
+      margin: 12px 0;
+      padding-left: 10px;
+    }
+
+    .algorithm-steps .step-note {
+      font-size: 0.85em;
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Highlight */
+    .highlight {
+      background: #fef5e7;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #d35400;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #ba4a00;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 4: Handling Overdispersion</h1>
+      <p>Step 4: Understanding Negative Binomial Fitting</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="panel">
+      <h2>How Negative Binomial Fitting Works</h2>
+
+      <p>
+        Negative Binomial regression is more complex than Poisson because we need to estimate
+        <strong>two sets of parameters</strong>: the regression coefficients $\beta$ and the
+        dispersion parameter $\theta$.
+      </p>
+
+      <div class="insight-box">
+        <h4>The Extra Parameter: $\theta$</h4>
+        <p>
+          Unlike Poisson (which has only $\beta$), Negative Binomial adds a <strong>dispersion
+          parameter $\theta$</strong> that controls how much extra variance exists beyond the mean.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Variance formula:</strong> $\text{Var}(Y) = \mu + \frac{\mu^2}{\theta}$
+        </p>
+      </div>
+
+      <h3>The Fitting Algorithm</h3>
+
+      <p>
+        Most software uses an <strong>alternating algorithm</strong> that iterates between:
+      </p>
+
+      <div class="algorithm-steps">
+        <ol>
+          <li>
+            <strong>Fix $\theta$, update $\beta$:</strong> Given current $\theta$, use IRLS to find optimal $\beta$
+            <p class="step-note">This is essentially weighted Poisson regression with adjusted weights</p>
+          </li>
+          <li>
+            <strong>Fix $\beta$, update $\theta$:</strong> Given current $\beta$, find $\theta$ that maximizes likelihood
+            <p class="step-note">Often done via Newton-Raphson on the profile likelihood</p>
+          </li>
+          <li>
+            <strong>Repeat</strong> until both $\beta$ and $\theta$ converge
+            <p class="step-note">Usually converges in 5-15 iterations</p>
+          </li>
+        </ol>
+      </div>
+
+      <h3>The IRLS Step (for $\beta$)</h3>
+
+      <p>
+        When fitting $\beta$ with $\theta$ fixed, IRLS uses these Negative Binomial-specific weights:
+      </p>
+
+      <div class="math-display">
+        $W = \text{diag}\left(\frac{\mu_i}{1 + \mu_i/\theta}\right)$
+      </div>
+
+      <p>
+        Compare to Poisson weights: $W = \text{diag}(\mu_i)$. The NegBin weights are
+        <strong>smaller</strong> (less than $\mu$), reflecting the extra uncertainty.
+      </p>
+
+      <div class="insight-box key">
+        <h4>Why Smaller Weights = Larger Standard Errors</h4>
+        <p>
+          In weighted least squares, <strong>smaller weights mean less precision</strong>.
+          The Negative Binomial's variance formula $\mu + \mu^2/\theta$ is always larger than
+          Poisson's $\mu$, so the weights are smaller, and the standard errors are larger.
+        </p>
+        <p style="margin-bottom: 0;">
+          This is exactly what we want! The larger SEs reflect the true uncertainty in the data.
+        </p>
+      </div>
+
+      <h3>Estimating $\theta$</h3>
+
+      <p>
+        The dispersion parameter $\theta$ is estimated by maximizing the <strong>profile likelihood</strong>.
+        For our bike rental data:
+      </p>
+
+      <div class="math-display">
+        $\hat{\theta} = 6.773 \quad (\text{SE} = 0.347)$
+      </div>
+
+      <p>
+        This relatively small $\theta$ indicates <strong>substantial overdispersion</strong>.
+        As $\theta \to \infty$, the Negative Binomial approaches Poisson.
+      </p>
+
+      <h3>Comparison: Poisson vs Negative Binomial Fitting</h3>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Aspect</th>
+          <th>Poisson (Tutorial 3)</th>
+          <th>Negative Binomial</th>
+        </tr>
+        <tr>
+          <td>Parameters estimated</td>
+          <td>$\beta$ only</td>
+          <td>$\beta$ and $\theta$</td>
+        </tr>
+        <tr>
+          <td>Algorithm</td>
+          <td>IRLS only</td>
+          <td>Alternating IRLS + profile likelihood</td>
+        </tr>
+        <tr>
+          <td>IRLS weights</td>
+          <td>$W = \text{diag}(\mu)$</td>
+          <td>$W = \text{diag}\left(\frac{\mu}{1 + \mu/\theta}\right)$</td>
+        </tr>
+        <tr>
+          <td>Variance assumed</td>
+          <td>$\text{Var} = \mu$</td>
+          <td>$\text{Var} = \mu + \mu^2/\theta$</td>
+        </tr>
+        <tr>
+          <td>Convergence</td>
+          <td>Fast (5-10 iterations)</td>
+          <td>Slightly slower (outer loop for $\theta$)</td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>When to Use Which?</h4>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Poisson:</strong> When deviance/df $\approx$ 1 (variance equals mean)</li>
+          <li><strong>Negative Binomial:</strong> When deviance/df >> 1 (overdispersion present)</li>
+          <li><strong>Rule of thumb:</strong> If Poisson deviance/df > 2, try Negative Binomial</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="distribution.html" class="btn btn-secondary">&larr; Back to Distribution</a>
+      <a href="code.html" class="btn btn-primary">Continue to R/Python Code &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

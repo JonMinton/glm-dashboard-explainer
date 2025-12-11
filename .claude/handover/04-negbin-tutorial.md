@@ -122,29 +122,38 @@ print("Poisson SE:", fit_pois.bse)
 print("NegBin SE:", fit_nb.bse)
 ```
 
-## Canonical Coefficients (TO BE VALIDATED)
+## Canonical Coefficients (VALIDATED)
 ```
 Model: cnt ~ temp + hum + windspeed + workingday + weathersit
 Family: Negative Binomial (log link)
 n = 731 observations
 
-COEFFICIENTS (validate before building pages):
-  β₀ (Intercept):    TBD (expect similar to Poisson: ~8.24)
-  β₁ (temp):         TBD (expect similar to Poisson: ~1.40)
-  β₂ (hum):          TBD (expect similar to Poisson: ~-0.36)
-  β₃ (windspeed):    TBD (expect similar to Poisson: ~-0.97)
-  β₄ (workingday):   TBD (expect similar to Poisson: ~0.04)
-  β₅ (weathersit):   TBD (expect similar to Poisson: ~-0.13)
+COEFFICIENTS (VALIDATED - R and Python match exactly):
+  β₀ (Intercept):    8.1969  (SE: 0.0932)
+  β₁ (temp):         1.7005  (SE: 0.0813)
+  β₂ (hum):         -0.4825  (SE: 0.1347)
+  β₃ (windspeed):   -1.1239  (SE: 0.1959)
+  β₄ (workingday):   0.0519  (SE: 0.0307)
+  β₅ (weathersit):  -0.1421  (SE: 0.0343)
 
-Standard Errors (KEY COMPARISON):
-  Compare to Poisson SEs - should be MUCH larger
+Standard Errors Comparison (KEY PEDAGOGICAL POINT):
+  Variable      | Poisson SE | NegBin SE | Ratio (NegBin/Poisson)
+  --------------|------------|-----------|------------------------
+  Intercept     | 0.0038     | 0.0932    | 24.2x larger
+  temp          | 0.0032     | 0.0813    | 25.6x larger
+  hum           | 0.0053     | 0.1347    | 25.6x larger
+  windspeed     | 0.0080     | 0.1959    | 24.5x larger
+  workingday    | 0.0012     | 0.0307    | 25.6x larger
+  weathersit    | 0.0014     | 0.0343    | 24.8x larger
 
 Dispersion Parameter:
-  θ (theta): TBD (smaller θ = more overdispersion)
+  θ (theta): 6.773 (SE: 0.347)
 
 Model Fit:
-  Log-Likelihood: TBD (should be better than Poisson)
-  AIC: TBD (should be lower than Poisson: 387,415)
+  Log-Likelihood: -6412.9
+  AIC: 12,840 (vs Poisson 387,415 - massive improvement!)
+  Deviance: 750.63
+  Deviance/df: 1.035 (vs Poisson 524.1 - now proper fit!)
 ```
 
 ## IMPORTANT: The Key Comparison
@@ -154,10 +163,11 @@ The main pedagogical point is showing how inference changes:
 | Metric | Poisson (T3) | Negative Binomial (T4) |
 |--------|--------------|------------------------|
 | Coefficients | ~same | ~same |
-| Standard Errors | Small (wrong) | Large (honest) |
+| Standard Errors | Small (wrong) | Large (~25x, honest) |
 | p-values | Over-optimistic | Realistic |
 | Confidence Intervals | Too narrow | Appropriate width |
-| AIC | 387,415 | TBD (should be lower) |
+| AIC | 387,415 | 12,840 (much lower!) |
+| Deviance/df | 524.1 | 1.035 (proper fit) |
 
 ## Styling Reference
 - Copy CSS patterns from `03-poisson/*.html`
@@ -200,21 +210,21 @@ Back to index: `../../index.html`
 ---
 
 ## Checklist
-- [ ] Download bike sharing dataset (or use cached from T3)
-- [ ] Validate NegBin coefficients in R (MASS::glm.nb)
-- [ ] Validate NegBin coefficients in Python
-- [ ] Record canonical values above
-- [ ] Record SE comparison (Poisson vs NegBin)
-- [ ] Create systematic.html
-- [ ] Create link.html
-- [ ] Create distribution.html (emphasize WHY NegBin over Poisson)
-- [ ] Create fitting.html (explain theta estimation)
-- [ ] Create code.html (include SE comparison table)
-- [ ] Create advanced.html (NegBin likelihood derivation)
-- [ ] Test all navigation links
-- [ ] Update index.html
-- [ ] Update claude.md status table
-- [ ] Commit
+- [x] Download bike sharing dataset (or use cached from T3)
+- [x] Validate NegBin coefficients in R (MASS::glm.nb)
+- [x] Validate NegBin coefficients in Python
+- [x] Record canonical values above
+- [x] Record SE comparison (Poisson vs NegBin)
+- [x] Create systematic.html
+- [x] Create link.html
+- [x] Create distribution.html (emphasize WHY NegBin over Poisson)
+- [x] Create fitting.html (explain theta estimation)
+- [x] Create code.html (include SE comparison table)
+- [x] Create advanced.html (NegBin likelihood derivation)
+- [x] Test all navigation links
+- [x] Update index.html
+- [x] Update claude.md status table
+- [x] Commit
 
 ---
 

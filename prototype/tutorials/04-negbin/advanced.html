@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced - Negative Binomial Likelihood</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #d35400;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 100%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #d35400;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e67e22;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #d35400;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 25px 0 15px 0;
+      font-size: 1.15em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .math-display.highlight {
+      background: #fef5e7;
+      border-left: 4px solid #e67e22;
+    }
+
+    .math-display.key {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .derivation-step {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border-left: 3px solid #e67e22;
+    }
+
+    .derivation-step .step-label {
+      font-weight: 600;
+      color: #d35400;
+      margin-bottom: 8px;
+    }
+
+    /* Insight boxes */
+    .insight-box {
+      background: #fef5e7;
+      border-left: 4px solid #e67e22;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box.warning {
+      background: #fdedec;
+      border-left-color: #e74c3c;
+    }
+
+    .insight-box h4 {
+      color: #d35400;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    .insight-box.warning h4 {
+      color: #922b21;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #d35400;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #ba4a00;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    /* Success panel */
+    .success-panel {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .success-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .success-panel p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 4: Handling Overdispersion</h1>
+      <p>Step 6: The Negative Binomial Log-Likelihood</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">6</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="panel">
+      <h2>The Negative Binomial Distribution</h2>
+
+      <p>
+        The Negative Binomial distribution can be derived as a <strong>Poisson-Gamma mixture</strong>:
+        if we let the Poisson rate $\lambda$ itself be random and follow a Gamma distribution,
+        the marginal distribution of counts is Negative Binomial.
+      </p>
+
+      <h3>Probability Mass Function</h3>
+
+      <p>For a count $y \in \{0, 1, 2, ...\}$ with mean $\mu$ and dispersion $\theta$:</p>
+
+      <div class="math-display">
+        $$P(Y = y) = \frac{\Gamma(y + \theta)}{\Gamma(\theta) \cdot y!} \left(\frac{\theta}{\theta + \mu}\right)^\theta \left(\frac{\mu}{\theta + \mu}\right)^y$$
+      </div>
+
+      <div class="insight-box">
+        <h4>Key Properties</h4>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Mean:</strong> $E[Y] = \mu$</li>
+          <li><strong>Variance:</strong> $\text{Var}(Y) = \mu + \frac{\mu^2}{\theta}$</li>
+          <li><strong>As $\theta \to \infty$:</strong> NegBin $\to$ Poisson (variance $\to$ mean)</li>
+          <li><strong>Smaller $\theta$:</strong> More overdispersion</li>
+        </ul>
+      </div>
+
+      <h3>The Log-Likelihood Function</h3>
+
+      <p>For observations $y_1, ..., y_n$ with means $\mu_i = \exp(X_i\beta)$:</p>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-label">Step 1: Single Observation Log-Likelihood</div>
+          <div class="math-display">
+            $$\ell_i = \log\Gamma(y_i + \theta) - \log\Gamma(\theta) - \log(y_i!) + \theta\log\left(\frac{\theta}{\theta + \mu_i}\right) + y_i\log\left(\frac{\mu_i}{\theta + \mu_i}\right)$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 2: Simplify Using Log Properties</div>
+          <div class="math-display">
+            $$\ell_i = \log\Gamma(y_i + \theta) - \log\Gamma(\theta) - \log(y_i!) + \theta\log\theta + y_i\log\mu_i - (y_i + \theta)\log(\theta + \mu_i)$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 3: Sum Over All Observations</div>
+          <div class="math-display">
+            $$\ell(\beta, \theta) = \sum_{i=1}^{n} \left[\log\Gamma(y_i + \theta) - \log\Gamma(\theta) - \log(y_i!) + \theta\log\theta + y_i\log\mu_i - (y_i + \theta)\log(\theta + \mu_i)\right]$$
+          </div>
+        </div>
+      </div>
+
+      <div class="math-display key">
+        <strong>The Full Log-Likelihood:</strong><br><br>
+        $$\ell(\beta, \theta) = \sum_{i=1}^{n} \left[\log\Gamma(y_i + \theta) - \log\Gamma(\theta) + y_i X_i\beta - (y_i + \theta)\log(\theta + e^{X_i\beta}) + \theta\log\theta - \log(y_i!)\right]$$
+      </div>
+
+      <h3>Score Function for $\beta$</h3>
+
+      <p>Taking the derivative with respect to $\beta_j$:</p>
+
+      <div class="math-display">
+        $$\frac{\partial \ell}{\partial \beta_j} = \sum_{i=1}^{n} \left[y_i - (y_i + \theta)\frac{\mu_i}{\theta + \mu_i}\right] X_{ij} = \sum_{i=1}^{n} \frac{(y_i - \mu_i)\theta}{\theta + \mu_i} X_{ij}$$
+      </div>
+
+      <div class="insight-box key">
+        <h4>Compare to Poisson Score</h4>
+        <p>
+          <strong>Poisson:</strong> $\frac{\partial \ell}{\partial \beta_j} = \sum_i (y_i - \mu_i) X_{ij}$
+        </p>
+        <p>
+          <strong>Negative Binomial:</strong> $\frac{\partial \ell}{\partial \beta_j} = \sum_i \frac{(y_i - \mu_i)\theta}{\theta + \mu_i} X_{ij}$
+        </p>
+        <p style="margin-bottom: 0;">
+          The NegBin score has an extra factor $\frac{\theta}{\theta + \mu_i} < 1$, which downweights
+          observations with large $\mu_i$. This reflects the increased variance for larger means.
+        </p>
+      </div>
+
+      <h3>Information and Variance</h3>
+
+      <p>The Fisher information for $\beta$ in Negative Binomial is:</p>
+
+      <div class="math-display">
+        $$I(\beta) = X^T W X \quad \text{where} \quad W = \text{diag}\left(\frac{\mu_i}{1 + \mu_i/\theta}\right)$$
+      </div>
+
+      <p>
+        The asymptotic variance of $\hat{\beta}$ is $(X^T W X)^{-1}$. Since the NegBin weights are
+        <strong>smaller</strong> than Poisson weights ($W_{\text{Poisson}} = \text{diag}(\mu_i)$),
+        the variance is <strong>larger</strong> - hence the larger standard errors.
+      </p>
+    </div>
+
+    <!-- Comparison across tutorials -->
+    <div class="panel">
+      <h2>Log-Likelihood Comparison Across GLM Families</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Tutorial</th>
+          <th>Distribution</th>
+          <th>Log-Likelihood (simplified)</th>
+          <th>Variance</th>
+        </tr>
+        <tr>
+          <td>1 (Gaussian)</td>
+          <td>Normal</td>
+          <td>$-\frac{1}{2\sigma^2}\sum(y_i - \mu_i)^2$</td>
+          <td>$\sigma^2$ (constant)</td>
+        </tr>
+        <tr>
+          <td>2 (Logistic)</td>
+          <td>Binomial</td>
+          <td>$\sum[y_i\log\mu_i + (1-y_i)\log(1-\mu_i)]$</td>
+          <td>$\mu(1-\mu)$</td>
+        </tr>
+        <tr>
+          <td>3 (Poisson)</td>
+          <td>Poisson</td>
+          <td>$\sum[y_i\log\mu_i - \mu_i]$</td>
+          <td>$\mu$</td>
+        </tr>
+        <tr style="background: #fef5e7;">
+          <td><strong>4 (NegBin)</strong></td>
+          <td><strong>Negative Binomial</strong></td>
+          <td>$\sum[\log\Gamma(y_i+\theta) + y_i\log\mu_i - (y_i+\theta)\log(\theta+\mu_i)]$</td>
+          <td>$\mu + \mu^2/\theta$</td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>The Pattern</h4>
+        <p>
+          Each GLM family has a variance function that determines how uncertainty scales with the mean.
+          Negative Binomial has the most flexible variance: it includes both a linear term ($\mu$)
+          and a quadratic term ($\mu^2/\theta$), allowing variance to exceed the mean.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tutorial complete -->
+    <div class="success-panel">
+      <h3>Tutorial 4 Complete!</h3>
+      <p>
+        You've learned how Negative Binomial regression handles overdispersed count data.
+        The key insight: larger standard errors give us <strong>honest uncertainty estimates</strong>.
+      </p>
+      <p style="margin-top: 15px;">
+        <strong>Next:</strong> Tutorial 5 will cover Gamma regression for strictly positive continuous outcomes.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Code</a>
+      <a href="../../index.html" class="btn btn-primary">Back to Tutorial Index &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

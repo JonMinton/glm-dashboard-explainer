@@ -440,26 +440,27 @@
         </div>
       </div>
 
-      <!-- Tutorial 4: Negative Binomial (NOT STARTED - hide answer) -->
-      <div class="tutorial-card coming-soon">
-        <div class="card-header unknown">
-          <h3>4. When Counts Misbehave</h3>
-          <div class="family">Which GLM family?</div>
+      <!-- Tutorial 4: Negative Binomial (COMPLETE - reveal answer) -->
+      <div class="tutorial-card">
+        <div class="card-header negbin">
+          <h3>4. Handling Overdispersion</h3>
+          <div class="family">Negative Binomial + Log Link</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
-          <p>What happens when our count model's assumptions don't hold?</p>
+          <p>Fix the overdispersion problem discovered in Tutorial 3.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing (revisited)</div>
           </div>
-          <div class="challenge-text">
-            Sometimes count data has more variation than expected. How do we handle "overdispersion"?
+          <div class="revealed-answer">
+            <strong>You discovered:</strong>
+            When Var > Mean (overdispersion), Poisson standard errors are too small. Negative Binomial adds a dispersion parameter &theta;, giving ~25x larger (honest) standard errors and proper inference.
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge coming-soon">Coming Soon</span>
-          <span class="start-btn disabled">Start Tutorial</span>
+          <span class="status-badge complete">Complete</span>
+          <a href="tutorials/04-negbin/systematic.html" class="start-btn">Review Tutorial</a>
         </div>
       </div>
 
