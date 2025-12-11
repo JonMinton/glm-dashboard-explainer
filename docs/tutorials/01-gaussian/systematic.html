@@ -452,11 +452,24 @@
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+  
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
       <h1>Tutorial: The Systematic Component</h1>
       <p>Learn to specify what goes into a GLM: the response variable and predictors</p>
     </div>

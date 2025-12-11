@@ -384,11 +384,24 @@
         grid-template-columns: 1fr;
       }
     }
+  
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
       <h1>Tutorial: Choose Fitting Method</h1>
       <p>How should we estimate the model parameters?</p>
     </div>
