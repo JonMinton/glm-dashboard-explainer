@@ -428,7 +428,7 @@
     <div class="model-recap">
       <h3>Your Complete Model</h3>
       <div class="model-equation">
-        MaxHeartRate ~ Normal(μ, σ²) where μ = β₀ + β₁·Age + β₂·RestBP
+        MaxHeartRate ~ Normal(μ, σ²) where μ = β₀ + β₁·Age + β₂·ExAng + β₃·STDep
       </div>
       <div class="model-specs">
         <div class="spec-item">
@@ -471,7 +471,7 @@
         <h4><span class="step-num">2</span> Fit the GLM</h4>
         <pre><code><span class="comment"># Fit the model using glm()</span>
 <span class="variable">model</span> <span class="operator">&lt;-</span> <span class="function">glm</span>(
-  <span class="variable">thalach</span> <span class="operator">~</span> <span class="variable">age</span> <span class="operator">+</span> <span class="variable">trestbps</span>,
+  <span class="variable">thalach</span> <span class="operator">~</span> <span class="variable">age</span> <span class="operator">+</span> <span class="variable">exang</span> <span class="operator">+</span> <span class="variable">oldpeak</span>,
   <span class="keyword">data</span> <span class="operator">=</span> <span class="variable">heart</span>,
   <span class="keyword">family</span> <span class="operator">=</span> <span class="function">gaussian</span>(<span class="keyword">link</span> <span class="operator">=</span> <span class="string">"identity"</span>)
 )</code></pre>
@@ -509,22 +509,23 @@
       <div class="output-section">
         <h4>Expected Output</h4>
         <div class="output-example">Call:
-glm(formula = thalach ~ age + trestbps, family = gaussian(link = "identity"),
+glm(formula = thalach ~ age + exang + oldpeak, family = gaussian(link = "identity"),
     data = heart)
 
 Coefficients:
              Estimate Std. Error t value Pr(>|t|)
-(Intercept) 198.45632    8.24156  24.080  < 2e-16 ***
-age          -0.94186    0.08012 -11.756  < 2e-16 ***
-trestbps     -0.09543    0.04892  -1.951   0.0519 .
+(Intercept) 203.3660     6.7458  30.147  < 2e-16 ***
+age          -0.8298     0.1247  -6.657 1.34e-10 ***
+exang       -14.2542     2.4519  -5.813 1.57e-08 ***
+oldpeak      -3.7805     1.0091  -3.746 0.000215 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-(Dispersion parameter for gaussian family taken to be 520.7234)
+(Dispersion parameter for gaussian family taken to be 366.9819)
 
-    Null deviance: 227457  on 302  degrees of freedom
-Residual deviance: 156217  on 300  degrees of freedom
-AIC: 2815.4</div>
+    Null deviance: 169344  on 302  degrees of freedom
+Residual deviance: 109727  on 299  degrees of freedom
+AIC: 2655.2</div>
       </div>
     </div>
 
@@ -547,7 +548,7 @@ AIC: 2815.4</div>
         <h4><span class="step-num">2</span> Fit the GLM</h4>
         <pre><code><span class="comment"># Fit the model using formula interface</span>
 <span class="variable">model</span> <span class="operator">=</span> smf.<span class="function">glm</span>(
-    <span class="keyword">formula</span><span class="operator">=</span><span class="string">"thalach ~ age + trestbps"</span>,
+    <span class="keyword">formula</span><span class="operator">=</span><span class="string">"thalach ~ age + exang + oldpeak"</span>,
     <span class="keyword">data</span><span class="operator">=</span><span class="variable">heart</span>,
     <span class="keyword">family</span><span class="operator">=</span>sm.families.<span class="function">Gaussian</span>(
         <span class="keyword">link</span><span class="operator">=</span>sm.families.links.<span class="function">Identity</span>()
@@ -603,20 +604,21 @@ plt.<span class="function">show</span>()</code></pre>
         <div class="output-example">                 Generalized Linear Model Regression Results
 ==============================================================================
 Dep. Variable:                thalach   No. Observations:                  303
-Model:                            GLM   Df Residuals:                      300
-Model Family:                Gaussian   Df Model:                            2
-Link Function:               Identity   Scale:                          520.72
-Method:                          IRLS   Log-Likelihood:                -1403.7
-Date:                Wed, 11 Dec 2024   Deviance:                   1.5622e+05
-Time:                        10:30:00   Pearson chi2:                 1.56e+05
-No. Iterations:                     3   Pseudo R-squ. (CS):             0.2780
+Model:                            GLM   Df Residuals:                      299
+Model Family:                Gaussian   Df Model:                            3
+Link Function:               Identity   Scale:                          366.98
+Method:                          IRLS   Log-Likelihood:                -1322.6
+Date:                Thu, 11 Dec 2025   Deviance:                   1.0973e+05
+Time:                        15:31:43   Pearson chi2:                 1.10e+05
+No. Iterations:                     3   Pseudo R-squ. (CS):             0.3524
 Covariance Type:            nonrobust
 ==============================================================================
                  coef    std err          z      P>|z|      [0.025      0.975]
 ------------------------------------------------------------------------------
-Intercept    198.4563      8.242     24.080      0.000     182.303     214.610
-age           -0.9419      0.080    -11.756      0.000      -1.099      -0.785
-trestbps      -0.0954      0.049     -1.951      0.051      -0.191       0.001
+Intercept    203.3660      6.746     30.147      0.000     190.144     216.588
+age           -0.8298      0.125     -6.657      0.000      -1.074      -0.585
+exang        -14.2542      2.452     -5.813      0.000     -19.060      -9.448
+oldpeak       -3.7805      1.009     -3.746      0.000      -5.758      -1.803
 ==============================================================================</div>
       </div>
     </div>
@@ -625,7 +627,7 @@ trestbps      -0.0954      0.049     -1.951      0.051      -0.191       0.001
     <div class="next-steps">
       <h3>What's Next?</h3>
       <ul>
-        <li><strong>Interpret the coefficients</strong> — Age has a negative effect (~1 bpm decrease per year)</li>
+        <li><strong>Interpret the coefficients</strong> — Age has a negative effect (~0.8 bpm decrease per year); exercise angina reduces max HR by ~14 bpm</li>
         <li><strong>Check model diagnostics</strong> — Examine residual plots for assumption violations</li>
         <li><strong>Consider other predictors</strong> — Would adding more variables improve the model?</li>
         <li><strong>Try other GLM families</strong> — What if the response was binary (disease present/absent)?</li>
