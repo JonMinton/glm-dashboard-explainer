@@ -16,8 +16,48 @@
   "context": {
     "keyFiles": [
       "claude.md",
-      "support/claude-concept-chat.md"
+      "support/claude-concept-chat.md",
+      ".claude/specs/tutorial-series.md"
     ],
     "domain": "statistics education, GLMs, interactive visualization"
+  },
+  "selfInstructions": {
+    "outputValidation": {
+      "rule": "ALWAYS validate regression model outputs against actual R and Python sessions before including in tutorials",
+      "process": [
+        "1. Write R code and run in actual R session to get real outputs",
+        "2. Write Python code and run in actual Python session to get real outputs",
+        "3. Compare coefficients, standard errors, and fit statistics between implementations",
+        "4. Only include validated outputs in tutorial HTML files",
+        "5. Document any discrepancies (e.g., MLE vs unbiased variance estimator)"
+      ],
+      "rationale": "Illustrative/placeholder outputs can contain errors. Real outputs ensure tutorial accuracy and build trust with learners."
+    },
+    "coefficientConsistency": {
+      "rule": "ALWAYS ensure coefficient values are IDENTICAL across all pages of a single tutorial",
+      "process": [
+        "1. Define the canonical coefficient values in tutorial-series.md BEFORE building pages",
+        "2. When any page mentions a coefficient (context panel, equations, interpretations), use the EXACT validated value",
+        "3. Cross-check all pages before committing to ensure no coefficient drift",
+        "4. If coefficients appear in multiple formats (e.g., β₁ = -0.83 and '0.8 bpm decrease'), ensure they match"
+      ],
+      "commonErrors": [
+        "Using rounded values on some pages but precise values on others",
+        "Copy-pasting placeholder coefficients that don't match final validated outputs",
+        "Interpreting coefficients with wrong sign or magnitude"
+      ],
+      "rationale": "Inconsistent coefficients across pages confuse learners and undermine trust in the tutorial."
+    },
+    "tutorialDevelopment": {
+      "rule": "Follow the 6-page template structure for all tutorials",
+      "checklistPerTutorial": [
+        "Systematic component page",
+        "Link function page (with correct/semi-valid/wrong feedback)",
+        "Distribution page",
+        "Fitting method page",
+        "Code implementation page (R + Python tabs)",
+        "Advanced page (log-likelihood derivation with KaTeX)"
+      ]
+    }
   }
 }

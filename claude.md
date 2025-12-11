@@ -55,17 +55,46 @@ Where:
 - **Hosting**: GitHub Pages (static site)
 - **GLM fitting**: Pre-computed in R during build, or WebR for in-browser computation where needed
 
-## Scenarios to Implement
+## Tutorial Series (Current Focus)
 
-Priority order (MVP first):
-1. **Hospital Readmissions** (Binary/Logistic) - PRIMARY MVP
-2. **Insurance Claims** (Count/Poisson)
-3. **Equipment Lifespan** (Positive continuous/Gamma)
-4. **Crop Yields** (Continuous/Gaussian)
+A series of guided tutorials, each demonstrating a complete GLM workflow for different data types.
+See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 
-Later expansion:
-- Species Abundance (Zero-inflated)
-- Market Survey (Ordinal)
+### Current Status
+
+| # | Tutorial | GLM Family | Status |
+|---|----------|------------|--------|
+| 1 | Heart Rate Prediction | Gaussian + Identity | **COMPLETE** |
+| 2 | Heart Disease Classification | Binomial + Logit | PLANNED |
+| 3 | Bike Rental Counts | Poisson + Log | PLANNED |
+| 4 | Overdispersed Counts | Negative Binomial + Log | PLANNED |
+| 5 | Insurance Claim Amounts | Gamma + Log | OPTIONAL |
+
+### Tutorial 1 Files (Complete)
+```
+prototype/
+├── tutorial.html           # Systematic component (drag & drop)
+├── tutorial-link.html      # Link function selection
+├── tutorial-distribution.html  # Distribution selection
+├── tutorial-fitting.html   # Fitting method explanation
+├── tutorial-code.html      # R/Python implementation
+└── tutorial-advanced.html  # Log-likelihood derivation (KaTeX)
+```
+
+### Design Pattern
+Each tutorial follows a 6-page flow:
+1. **Systematic** → Select response & predictors
+2. **Link** → Choose link function (with wrong-choice feedback)
+3. **Distribution** → Choose distribution family
+4. **Fitting** → Understand MLE/IRLS
+5. **Code** → R and Python implementation
+6. **Advanced** → Log-likelihood derivation, custom MLE
+
+### Key Technical Decisions
+- **KaTeX** for LaTeX math rendering (CDN-based)
+- **Standalone HTML** prototypes (no Quarto yet)
+- **Tabbed R/Python** code panels
+- **Validated outputs** against actual R/Python sessions
 
 ## Development Principles
 
