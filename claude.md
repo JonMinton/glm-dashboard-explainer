@@ -67,8 +67,8 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 | 1 | Heart Rate Prediction | Gaussian + Identity | **COMPLETE** |
 | 2 | Heart Disease Classification | Binomial + Logit | **COMPLETE** |
 | 3 | Bike Rental Counts | Poisson + Log | **COMPLETE** |
-| 4 | Overdispersed Counts | Negative Binomial + Log | PLANNED |
-| 5 | Insurance Claim Amounts | Gamma + Log | OPTIONAL |
+| 4 | Overdispersed Counts | Negative Binomial + Log | **COMPLETE** |
+| 5 | Blood Pressure Prediction | Gamma + Log | **COMPLETE** |
 
 ### Tutorial Files
 ```

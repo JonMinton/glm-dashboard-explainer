@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nValidate R/Python outputs against actual sessions\n\nUpdate tutorial-code.html with real outputs from R and Python sessions\nusing the UCI heart disease dataset:\n\n- R output: Intercept=203.37, age=-0.83, exang=-14.25, oldpeak=-3.78\n- Python output: Matching coefficients with statsmodels GLM\n- Corrected dispersion parameter (366.98), AIC (2655.2), deviance values\n- Updated coefficient interpretation in \"What 's Next?\" section\n\nThese outputs are now validated against actual R/Python sessions rather\nthan illustrative placeholders, ensuring tutorial accuracy.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(Rscript:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nSwitch to KaTeX for proper LaTeX math rendering\n\nReplace verbose HTML fraction markup with clean LaTeX syntax using\nKaTeX library (loaded from CDN). This makes the mathematical notation\nmuch more readable and maintainable.\n\nChanges:\n- Added KaTeX CSS and JS from jsDelivr CDN\n- Converted all math expressions to LaTeX ($...$ for inline, $$..$$for display)\n- Removed custom .frac CSS classes (no longer needed)\n- Proper fractions, subscripts, superscripts, and Greek letters\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)",
+      "Bash(unzip:*)"
     ]
   }
 }
