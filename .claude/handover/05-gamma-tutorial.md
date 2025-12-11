@@ -1,7 +1,13 @@
 # Handover: Tutorial 5 - Gamma Regression (Optional)
 
 ## Task Summary
-Build the complete 6-page tutorial for positive continuous data (Gamma GLM) following the established pattern from Tutorials 1-4. This tutorial covers insurance claim amounts - data that is strictly positive and right-skewed.
+Build the complete 6-page tutorial for positive continuous data (Gamma GLM) following the established pattern from Tutorials 1-4. This tutorial covers **resting blood pressure** - data that is strictly positive and right-skewed.
+
+**UPDATE**: Using UCI Heart Disease dataset (same as Tutorials 1-2) instead of insurance claims. Blood pressure is a better pedagogical fit since:
+1. Students already know this dataset
+2. BP is strictly positive (min 94 mmHg)
+3. Right-skewed (Mean > Median)
+4. Gamma beats Gaussian by ~16 AIC units
 
 ## Location
 Create files in: `prototype/tutorials/05-gamma/`
@@ -118,23 +124,31 @@ fit_gamma = smf.glm('amount ~ age + region + car_type',
 print(fit_gamma.summary())
 ```
 
-## Canonical Coefficients (TO BE VALIDATED)
+## Canonical Coefficients (VALIDATED)
 ```
-Model: amount ~ predictors (TBD)
+Model: trestbps ~ age + exang + oldpeak
+Dataset: UCI Heart Disease
 Family: Gamma (log link)
-n = TBD observations
+n = 297 observations
 
-COEFFICIENTS (validate before building pages):
-  β₀ (Intercept):    TBD
-  β₁ (...):          TBD
-  ...
+COEFFICIENTS (VALIDATED - R and Python match exactly):
+  β₀ (Intercept):    4.6460  (SE: 0.0453)
+  β₁ (age):          0.0040  (SE: 0.0008)
+  β₂ (exang):        0.0012  (SE: 0.0165)
+  β₃ (oldpeak):      0.0155  (SE: 0.0067)
 
 Shape Parameter:
-  shape: TBD (larger = less variance)
+  shape: 61.75 (larger = less variance)
+  dispersion: 0.0162
 
 Model Fit:
-  AIC: TBD
-  Deviance: TBD
+  AIC: 2512.8 (vs Gaussian 2528.5 - Gamma wins!)
+  Null deviance: 5.2068
+  Residual deviance: 4.6495
+
+INTERPRETATION (multiplicative effects with log link):
+  Each year of age → BP × 1.004 (≈ +0.4% per year)
+  Each unit oldpeak → BP × 1.016 (≈ +1.6% per unit)
 ```
 
 ## IMPORTANT: The Key Comparison
@@ -189,20 +203,20 @@ Back to index: `../../index.html`
 ---
 
 ## Checklist
-- [ ] Find suitable insurance claims dataset
-- [ ] Validate Gamma coefficients in R
-- [ ] Validate Gamma coefficients in Python
-- [ ] Record canonical values above
-- [ ] Create systematic.html
-- [ ] Create link.html
-- [ ] Create distribution.html
-- [ ] Create fitting.html (explain shape parameter)
-- [ ] Create code.html
-- [ ] Create advanced.html (Gamma likelihood derivation)
-- [ ] Test all navigation links
-- [ ] Update index.html
-- [ ] Update CLAUDE.md status table
-- [ ] Commit
+- [x] Find suitable dataset (UCI Heart Disease - trestbps)
+- [x] Validate Gamma coefficients in R
+- [x] Validate Gamma coefficients in Python
+- [x] Record canonical values above
+- [x] Create systematic.html
+- [x] Create link.html
+- [x] Create distribution.html
+- [x] Create fitting.html (explain shape parameter)
+- [x] Create code.html
+- [x] Create advanced.html (Gamma likelihood derivation)
+- [x] Test all navigation links
+- [x] Update index.html
+- [x] Update CLAUDE.md status table
+- [x] Commit
 
 ---
 

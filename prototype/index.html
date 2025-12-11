@@ -464,26 +464,27 @@
         </div>
       </div>
 
-      <!-- Tutorial 5: Gamma (OPTIONAL - hide answer) -->
-      <div class="tutorial-card coming-soon">
-        <div class="card-header unknown">
-          <h3>5. Insurance Claim Amounts</h3>
-          <div class="family">Which GLM family?</div>
+      <!-- Tutorial 5: Gamma (COMPLETE - reveal answer) -->
+      <div class="tutorial-card">
+        <div class="card-header gamma">
+          <h3>5. Blood Pressure Prediction</h3>
+          <div class="family">Gamma + Log Link</div>
         </div>
         <div class="card-body">
           <h4>The Decision Problem</h4>
-          <p>Predict insurance claim amounts given a claim has occurred.</p>
+          <p>Predict resting blood pressure - a strictly positive outcome.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
-            <div class="value">Insurance Claims (TBD)</div>
+            <div class="value">UCI Heart Disease (revisited)</div>
           </div>
-          <div class="challenge-text">
-            Claim amounts are always positive and often right-skewed. What model handles positive continuous data?
+          <div class="revealed-answer">
+            <strong>You discovered:</strong>
+            Blood pressure is always positive (min 94 mmHg). Gamma with log link ensures positive predictions and gives multiplicative effects: each year of age multiplies BP by ~1.004 (+0.4%).
           </div>
         </div>
         <div class="card-footer">
-          <span class="status-badge coming-soon">Optional</span>
-          <span class="start-btn disabled">Start Tutorial</span>
+          <span class="status-badge complete">Complete</span>
+          <a href="tutorials/05-gamma/systematic.html" class="start-btn">Review Tutorial</a>
         </div>
       </div>
 

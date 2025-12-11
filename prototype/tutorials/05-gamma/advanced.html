@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced (Gamma)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #c0392b;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 100%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #c0392b;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e74c3c;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #c0392b;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #fdedec;
+      border-left: 4px solid #e74c3c;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #c0392b;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .derivation-step {
+      margin: 15px 0;
+      padding-left: 15px;
+      border-left: 3px solid #c0392b;
+    }
+
+    .derivation-step .step-label {
+      font-weight: 600;
+      color: #c0392b;
+      margin-bottom: 5px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #c0392b;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #a93226;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    /* Completion badge */
+    .completion-badge {
+      background: #d4edda;
+      border: 2px solid #27ae60;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .completion-badge h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .completion-badge p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 5: Positive Continuous Data</h1>
+      <p>Step 6: Advanced - Gamma Log-Likelihood Derivation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">6</div>
+      </div>
+    </div>
+
+    <!-- Gamma PDF -->
+    <div class="panel">
+      <h2>The Gamma Distribution</h2>
+
+      <p>
+        The Gamma distribution is parameterized by a <strong>shape parameter</strong> $\alpha$ (also called $k$ or $\nu$)
+        and a <strong>rate parameter</strong> $\beta$ (or equivalently, scale $\theta = 1/\beta$).
+      </p>
+
+      <h3>Probability Density Function</h3>
+
+      <div class="math-display">
+        $$f(y; \alpha, \beta) = \frac{\beta^\alpha}{\Gamma(\alpha)} y^{\alpha-1} e^{-\beta y}, \quad y > 0$$
+      </div>
+
+      <p>
+        Where $\Gamma(\alpha) = \int_0^\infty t^{\alpha-1} e^{-t} dt$ is the gamma function.
+      </p>
+
+      <div class="insight-box">
+        <h4>GLM Parameterization</h4>
+        <p>
+          For GLMs, we reparameterize in terms of the <strong>mean</strong> $\mu$ and <strong>shape</strong> $\alpha$:
+        </p>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>Mean: $\mu = \frac{\alpha}{\beta}$, so $\beta = \frac{\alpha}{\mu}$</li>
+          <li>Variance: $\text{Var}(Y) = \frac{\alpha}{\beta^2} = \frac{\mu^2}{\alpha}$</li>
+        </ul>
+      </div>
+
+      <h3>GLM Form of the PDF</h3>
+
+      <p>Substituting $\beta = \alpha/\mu$:</p>
+
+      <div class="math-display">
+        $$f(y; \mu, \alpha) = \frac{1}{\Gamma(\alpha)} \left(\frac{\alpha}{\mu}\right)^\alpha y^{\alpha-1} \exp\left(-\frac{\alpha y}{\mu}\right)$$
+      </div>
+    </div>
+
+    <!-- Log-likelihood derivation -->
+    <div class="panel">
+      <h2>Deriving the Log-Likelihood</h2>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-label">Step 1: Write the log-likelihood for one observation</div>
+          <div class="math-display">
+            $$\ell_i = \log f(y_i; \mu_i, \alpha) = \alpha \log\left(\frac{\alpha}{\mu_i}\right) + (\alpha-1) \log(y_i) - \frac{\alpha y_i}{\mu_i} - \log \Gamma(\alpha)$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 2: Simplify</div>
+          <div class="math-display">
+            $$\ell_i = \alpha \log \alpha - \alpha \log \mu_i + (\alpha-1) \log y_i - \frac{\alpha y_i}{\mu_i} - \log \Gamma(\alpha)$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 3: Sum over all observations</div>
+          <div class="math-display">
+            $$\ell(\beta, \alpha) = \sum_{i=1}^{n} \left[ \alpha \log \alpha - \alpha \log \mu_i + (\alpha-1) \log y_i - \frac{\alpha y_i}{\mu_i} - \log \Gamma(\alpha) \right]$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 4: With log link, $\log \mu_i = \eta_i = X_i' \beta$</div>
+          <div class="math-display">
+            $$\ell(\beta, \alpha) = \sum_{i=1}^{n} \left[ \alpha \log \alpha - \alpha X_i' \beta + (\alpha-1) \log y_i - \alpha y_i e^{-X_i' \beta} - \log \Gamma(\alpha) \right]$$
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-box key">
+        <h4>Key Observation</h4>
+        <p>
+          The terms involving $\beta$ are:
+        </p>
+        <div class="math-display">
+          $$- \alpha X_i' \beta - \alpha y_i e^{-X_i' \beta}$$
+        </div>
+        <p style="margin-bottom: 0;">
+          This is similar to Poisson, but with the shape parameter $\alpha$ as a multiplier.
+          Since $\alpha$ is constant across observations (in standard Gamma GLM), it acts as a precision parameter.
+        </p>
+      </div>
+    </div>
+
+    <!-- Score function -->
+    <div class="panel">
+      <h2>The Score Function</h2>
+
+      <p>
+        Taking the derivative with respect to $\beta$:
+      </p>
+
+      <div class="math-display">
+        $$\frac{\partial \ell}{\partial \beta} = \sum_{i=1}^{n} \alpha \left( y_i e^{-X_i' \beta} - 1 \right) X_i$$
+      </div>
+
+      <p>
+        Substituting $\mu_i = e^{X_i' \beta}$:
+      </p>
+
+      <div class="math-display">
+        $$\frac{\partial \ell}{\partial \beta} = \alpha \sum_{i=1}^{n} \frac{y_i - \mu_i}{\mu_i} X_i = \alpha \cdot X' \text{diag}\left(\frac{1}{\mu}\right) (y - \mu)$$
+      </div>
+
+      <p>
+        Setting equal to zero gives the same estimating equations as Poisson with log link,
+        but scaled by the shape parameter $\alpha$.
+      </p>
+
+      <h3>Why Shape Doesn't Affect $\hat{\beta}$</h3>
+
+      <p>
+        Since $\alpha > 0$ is just a positive multiplier, setting the score to zero gives:
+      </p>
+
+      <div class="math-display">
+        $$\sum_{i=1}^{n} \frac{y_i - \mu_i}{\mu_i} X_i = 0$$
+      </div>
+
+      <p>
+        This is identical to Poisson! The shape parameter $\alpha$ <strong>doesn't affect the point estimates</strong>
+        of $\beta$, only the standard errors and likelihood-based inference.
+      </p>
+
+      <div class="insight-box">
+        <h4>Comparison: Score Functions</h4>
+        <table style="width: 100%; margin: 10px 0; border-collapse: collapse;">
+          <tr style="background: #f8f9fa;">
+            <th style="padding: 8px; border: 1px solid #dee2e6;">Family</th>
+            <th style="padding: 8px; border: 1px solid #dee2e6;">Score Function (log link)</th>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">Poisson</td>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">$\sum (y_i - \mu_i) X_i$</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">Gamma</td>
+            <td style="padding: 8px; border: 1px solid #dee2e6;">$\alpha \sum \frac{y_i - \mu_i}{\mu_i} X_i$</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Deviance -->
+    <div class="panel">
+      <h2>Gamma Deviance</h2>
+
+      <p>
+        The deviance measures how well the model fits compared to a saturated model:
+      </p>
+
+      <div class="math-display">
+        $$D = 2 \sum_{i=1}^{n} \left[ -\log\left(\frac{y_i}{\mu_i}\right) + \frac{y_i - \mu_i}{\mu_i} \right]$$
+      </div>
+
+      <p>
+        For a well-fitting model, the scaled deviance $D/\alpha$ should be approximately $\chi^2_{n-p}$.
+      </p>
+
+      <h3>Estimating Shape from Deviance</h3>
+
+      <p>
+        A common method to estimate the dispersion parameter:
+      </p>
+
+      <div class="math-display">
+        $$\hat{\phi} = \frac{1}{\hat{\alpha}} \approx \frac{\text{Pearson } \chi^2}{n - p}$$
+      </div>
+
+      <p>
+        Where Pearson $\chi^2 = \sum \frac{(y_i - \mu_i)^2}{\text{Var}(\mu_i)} = \sum \frac{(y_i - \mu_i)^2}{\mu_i^2 / \alpha}$
+      </p>
+
+      <div class="insight-box key">
+        <h4>For Our Blood Pressure Model</h4>
+        <p>
+          <strong>Dispersion:</strong> $\hat{\phi} = 0.0162$
+        </p>
+        <p>
+          <strong>Shape:</strong> $\hat{\alpha} = 1/\hat{\phi} = 61.75$
+        </p>
+        <p style="margin-bottom: 0;">
+          A large shape parameter means relatively low variability around the mean.
+          The coefficient of variation is $CV = 1/\sqrt{\alpha} \approx 12.7\%$.
+        </p>
+      </div>
+    </div>
+
+    <!-- Completion -->
+    <div class="completion-badge">
+      <h3>Tutorial 5 Complete!</h3>
+      <p>
+        You've learned how to model <strong>positive continuous data</strong> using Gamma regression.
+        <br>
+        Key takeaways: log link for multiplicative effects, variance proportional to mean squared,
+        and shape parameter controlling the dispersion.
+      </p>
+    </div>
+
+    <!-- Tutorial summary -->
+    <div class="panel">
+      <h2>Tutorial Series Summary</h2>
+
+      <p>
+        Congratulations! You've completed all five GLM tutorials:
+      </p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <tr style="background: #f8f9fa;">
+          <th style="padding: 10px; border: 1px solid #dee2e6;">Tutorial</th>
+          <th style="padding: 10px; border: 1px solid #dee2e6;">Data Type</th>
+          <th style="padding: 10px; border: 1px solid #dee2e6;">Family</th>
+          <th style="padding: 10px; border: 1px solid #dee2e6;">Link</th>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">1. Heart Rate</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Continuous</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Gaussian</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Identity</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">2. Heart Disease</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Binary</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Binomial</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Logit</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">3. Bike Rentals</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Counts</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Poisson</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Log</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">4. Overdispersion</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Overdispersed counts</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Negative Binomial</td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;">Log</td>
+        </tr>
+        <tr style="background: #fdedec;">
+          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>5. Blood Pressure</strong></td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Positive continuous</strong></td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Gamma</strong></td>
+          <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Log</strong></td>
+        </tr>
+      </table>
+
+      <p>
+        You now have a solid foundation in GLMs and can choose the appropriate model
+        for different types of data!
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Code</a>
+      <a href="../../index.html" class="btn btn-primary">Return to Tutorial Index &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

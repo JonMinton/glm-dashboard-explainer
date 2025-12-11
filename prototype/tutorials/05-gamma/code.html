@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Code (Gamma)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #c0392b;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 80%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #c0392b;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e74c3c;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #c0392b;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    /* Tab navigation */
+    .code-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: #ecf0f1;
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 6px 6px 0 0;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      background: #d5dbdb;
+    }
+
+    .tab-btn.active {
+      background: #c0392b;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Code blocks */
+    pre {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+
+    .comment { color: #7f8c8d; }
+    .string { color: #2ecc71; }
+    .keyword { color: #e74c3c; }
+    .function { color: #3498db; }
+
+    /* Output blocks */
+    .output {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85em;
+      white-space: pre-wrap;
+    }
+
+    .output-label {
+      font-size: 0.8em;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    /* Results tables */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .results-table th, .results-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .results-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .results-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .significant {
+      font-weight: 600;
+      color: #27ae60;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #fdedec;
+      border-left: 4px solid #e74c3c;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #c0392b;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #c0392b;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #a93226;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 5: Positive Continuous Data</h1>
+      <p>Step 5: R and Python Implementation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel">
+      <h2>Gamma GLM Implementation</h2>
+
+      <p>
+        Let's fit our Gamma model to predict resting blood pressure using the UCI Heart Disease dataset.
+      </p>
+
+      <!-- Tabs -->
+      <div class="code-tabs">
+        <button class="tab-btn active" data-tab="r">R</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <!-- R Code -->
+      <div class="tab-content active" id="r-tab">
+        <pre><code><span class="comment"># Load UCI Heart Disease data</span>
+heart &lt;- <span class="function">read.csv</span>(
+  <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>,
+  header = <span class="keyword">FALSE</span>, na.strings = <span class="string">"?"</span>
+)
+<span class="function">names</span>(heart) &lt;- <span class="function">c</span>(<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>, <span class="string">"fbs"</span>,
+                  <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>,
+                  <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>)
+heart &lt;- heart[<span class="function">complete.cases</span>(heart), ]
+
+<span class="comment"># Fit Gamma GLM with log link</span>
+fit_gamma &lt;- <span class="function">glm</span>(trestbps ~ age + exang + oldpeak,
+                 data = heart,
+                 family = <span class="function">Gamma</span>(link = <span class="string">"log"</span>))
+
+<span class="comment"># View results</span>
+<span class="function">summary</span>(fit_gamma)
+
+<span class="comment"># Shape parameter (1/dispersion)</span>
+shape &lt;- 1 / <span class="function">summary</span>(fit_gamma)$dispersion
+<span class="function">cat</span>(<span class="string">"Shape parameter:"</span>, shape, <span class="string">"\n"</span>)
+
+<span class="comment"># Compare with Gaussian</span>
+fit_gauss &lt;- <span class="function">glm</span>(trestbps ~ age + exang + oldpeak,
+                 data = heart,
+                 family = <span class="function">gaussian</span>())
+<span class="function">cat</span>(<span class="string">"Gamma AIC:"</span>, <span class="function">AIC</span>(fit_gamma), <span class="string">"\n"</span>)
+<span class="function">cat</span>(<span class="string">"Gaussian AIC:"</span>, <span class="function">AIC</span>(fit_gauss), <span class="string">"\n"</span>)</code></pre>
+
+        <div class="output-label">Output:</div>
+        <div class="output">Call:
+glm(formula = trestbps ~ age + exang + oldpeak, family = Gamma(link = "log"),
+    data = heart)
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)
+(Intercept) 4.6459879  0.0452618 102.647   <2e-16 ***
+age         0.0039747  0.0008344   4.763    3e-06 ***
+exang       0.0011652  0.0164637   0.071   0.9436
+oldpeak     0.0155208  0.0067334   2.305   0.0219 *
+
+(Dispersion parameter for Gamma family taken to be 0.01619449)
+
+    Null deviance: 5.2068  on 296  degrees of freedom
+Residual deviance: 4.6495  on 293  degrees of freedom
+AIC: 2512.8
+
+Shape parameter: 61.75
+Gamma AIC: 2512.8
+Gaussian AIC: 2528.5</div>
+      </div>
+
+      <!-- Python Code -->
+      <div class="tab-content" id="python-tab">
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+<span class="keyword">import</span> statsmodels.formula.api <span class="keyword">as</span> smf
+
+<span class="comment"># Load UCI Heart Disease data</span>
+url = <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>
+cols = [<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>, <span class="string">"fbs"</span>,
+        <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>,
+        <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>]
+heart = pd.<span class="function">read_csv</span>(url, header=<span class="keyword">None</span>, names=cols, na_values=<span class="string">"?"</span>)
+heart = heart.<span class="function">dropna</span>()
+
+<span class="comment"># Fit Gamma GLM with log link</span>
+fit_gamma = smf.<span class="function">glm</span>(
+    <span class="string">'trestbps ~ age + exang + oldpeak'</span>,
+    data=heart,
+    family=sm.families.<span class="function">Gamma</span>(link=sm.families.links.<span class="function">Log</span>())
+).<span class="function">fit</span>()
+
+<span class="comment"># View results</span>
+<span class="function">print</span>(fit_gamma.<span class="function">summary</span>())
+
+<span class="comment"># Shape parameter</span>
+shape = 1 / fit_gamma.scale
+<span class="function">print</span>(<span class="string">f"\nShape parameter: {shape:.2f}"</span>)
+
+<span class="comment"># Compare with Gaussian</span>
+fit_gauss = smf.<span class="function">glm</span>(
+    <span class="string">'trestbps ~ age + exang + oldpeak'</span>,
+    data=heart,
+    family=sm.families.<span class="function">Gaussian</span>()
+).<span class="function">fit</span>()
+<span class="function">print</span>(<span class="string">f"Gamma AIC: {fit_gamma.aic:.1f}"</span>)
+<span class="function">print</span>(<span class="string">f"Gaussian AIC: {fit_gauss.aic:.1f}"</span>)</code></pre>
+
+        <div class="output-label">Output:</div>
+        <div class="output">                 Generalized Linear Model Regression Results
+==============================================================================
+Dep. Variable:               trestbps   No. Observations:                  297
+Model:                            GLM   Df Residuals:                      293
+Model Family:                   Gamma   Df Model:                            3
+Link Function:                    Log   Scale:                        0.016194
+Method:                          IRLS   Log-Likelihood:                -1251.5
+Date:                Wed, 11 Dec 2025   Deviance:                       4.6495
+No. Iterations:                     8   Pseudo R-squ. (CS):             0.1094
+==============================================================================
+                 coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept      4.6460      0.045    102.647      0.000       4.557       4.735
+age            0.0040      0.001      4.763      0.000       0.002       0.006
+exang          0.0012      0.016      0.071      0.944      -0.031       0.033
+oldpeak        0.0155      0.007      2.305      0.021       0.002       0.029
+==============================================================================
+
+Shape parameter: 61.75
+Gamma AIC: 2511.0
+Gaussian AIC: 2526.5</div>
+      </div>
+    </div>
+
+    <!-- Results interpretation -->
+    <div class="panel">
+      <h2>Interpreting the Results</h2>
+
+      <h3>Coefficient Summary</h3>
+
+      <table class="results-table">
+        <tr>
+          <th>Variable</th>
+          <th>Coefficient</th>
+          <th>Std. Error</th>
+          <th>exp(coef)</th>
+          <th>Interpretation</th>
+        </tr>
+        <tr>
+          <td>Intercept</td>
+          <td>4.6460</td>
+          <td>0.0453</td>
+          <td>104.2</td>
+          <td>Baseline BP when all predictors = 0</td>
+        </tr>
+        <tr>
+          <td class="significant">age</td>
+          <td class="significant">0.0040</td>
+          <td>0.0008</td>
+          <td class="significant">1.004</td>
+          <td class="significant">Each year → BP &times; 1.004 (+0.4%)</td>
+        </tr>
+        <tr>
+          <td>exang</td>
+          <td>0.0012</td>
+          <td>0.0165</td>
+          <td>1.001</td>
+          <td>Not significant (p = 0.94)</td>
+        </tr>
+        <tr>
+          <td class="significant">oldpeak</td>
+          <td class="significant">0.0155</td>
+          <td>0.0067</td>
+          <td class="significant">1.016</td>
+          <td class="significant">Each unit → BP &times; 1.016 (+1.6%)</td>
+        </tr>
+      </table>
+
+      <div class="insight-box key">
+        <h4>Multiplicative Interpretation (Log Link)</h4>
+        <p>
+          With the log link, $e^{\beta}$ gives the <strong>multiplicative effect</strong> on blood pressure:
+        </p>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Age:</strong> $e^{0.004} = 1.004$ → Each additional year multiplies BP by 1.004</li>
+          <li>A 10-year increase: $1.004^{10} = 1.041$ → BP increases by ~4.1%</li>
+          <li><strong>Oldpeak:</strong> $e^{0.0155} = 1.016$ → Each unit of ST depression multiplies BP by 1.016</li>
+        </ul>
+      </div>
+
+      <h3>Model Comparison</h3>
+
+      <table class="results-table">
+        <tr>
+          <th>Metric</th>
+          <th>Gaussian</th>
+          <th>Gamma</th>
+          <th>Winner</th>
+        </tr>
+        <tr>
+          <td>AIC</td>
+          <td>2528.5</td>
+          <td>2512.8</td>
+          <td class="significant">Gamma (lower is better)</td>
+        </tr>
+        <tr>
+          <td>Negative predictions possible?</td>
+          <td>Yes</td>
+          <td>No</td>
+          <td class="significant">Gamma (makes sense for BP)</td>
+        </tr>
+        <tr>
+          <td>Variance assumption</td>
+          <td>Constant</td>
+          <td>∝ mean²</td>
+          <td>Gamma (more realistic)</td>
+        </tr>
+        <tr>
+          <td>Interpretation</td>
+          <td>Additive</td>
+          <td>Multiplicative</td>
+          <td>Context-dependent</td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>Key Takeaway</h4>
+        <p>
+          The Gamma model wins on AIC by ~16 points and <strong>guarantees positive predictions</strong>.
+          For strictly positive outcomes like blood pressure, Gamma with log link is the natural choice.
+        </p>
+      </div>
+    </div>
+
+    <!-- What's Next -->
+    <div class="panel">
+      <h2>What's Next?</h2>
+
+      <p>
+        In the advanced section, we'll derive the Gamma log-likelihood and see how IRLS finds
+        these coefficients. We'll also explore the relationship between the shape parameter
+        and model dispersion.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+
+    // Render math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

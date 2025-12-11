@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Distribution (Gamma)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #c0392b;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 40%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #c0392b;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e74c3c;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #fdedec;
+      border-left: 4px solid #e74c3c;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #c0392b;
+      margin-bottom: 8px;
+    }
+
+    /* Distribution options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .option-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card:hover:not(.disabled) {
+      border-color: #e74c3c;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .option-card.selected {
+      border-color: #27ae60;
+      background: #d4edda;
+    }
+
+    .option-card.wrong {
+      border-color: #e74c3c;
+      background: #f8d7da;
+      animation: shake 0.3s;
+    }
+
+    .option-card.semi-valid {
+      border-color: #f39c12;
+      background: #fff3cd;
+    }
+
+    .option-card.disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .option-card h4 {
+      margin-bottom: 8px;
+    }
+
+    .option-card .variance {
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Times New Roman', serif;
+      font-size: 1em;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .option-card .desc {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .option-card .support {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* Dialog box */
+    .dialog-box {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      margin-top: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .dialog-box.show {
+      display: block;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dialog-box.success {
+      border-left: 4px solid #27ae60;
+    }
+
+    .dialog-box.error {
+      border-left: 4px solid #e74c3c;
+    }
+
+    .dialog-box.warning {
+      border-left: 4px solid #f39c12;
+    }
+
+    .dialog-box h4 {
+      margin-bottom: 10px;
+    }
+
+    .dialog-box.success h4 { color: #155724; }
+    .dialog-box.error h4 { color: #721c24; }
+    .dialog-box.warning h4 { color: #856404; }
+
+    .dialog-box p {
+      margin-bottom: 10px;
+    }
+
+    .dialog-box .key-point {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .better { color: #27ae60; font-weight: 600; }
+    .worse { color: #e74c3c; }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #c0392b;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #a93226;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 5: Positive Continuous Data</h1>
+      <p>Step 3: Choose the Distribution Family</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">3</div>
+        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h3>Choose the Distribution Family</h3>
+      <p>
+        Blood pressure is <strong>strictly positive</strong> and tends to be <strong>right-skewed</strong>
+        (Mean = 131.7 > Median = 130). Which distribution is appropriate?
+      </p>
+    </div>
+
+    <!-- Options -->
+    <div class="options-grid">
+      <div class="option-card" data-dist="gamma">
+        <h4>Gamma</h4>
+        <div class="variance">$\text{Var}(Y) = \frac{\mu^2}{\text{shape}}$</div>
+        <p class="desc">Variance proportional to mean squared. Right-skewed, positive support.</p>
+        <p class="support">Support: $(0, \infty)$</p>
+      </div>
+
+      <div class="option-card" data-dist="gaussian">
+        <h4>Gaussian (Normal)</h4>
+        <div class="variance">$\text{Var}(Y) = \sigma^2$</div>
+        <p class="desc">Constant variance, symmetric. The "default" for continuous data.</p>
+        <p class="support">Support: $(-\infty, \infty)$</p>
+      </div>
+
+      <div class="option-card" data-dist="inverse-gaussian">
+        <h4>Inverse Gaussian</h4>
+        <div class="variance">$\text{Var}(Y) = \frac{\mu^3}{\lambda}$</div>
+        <p class="desc">Variance proportional to mean cubed. Heavier right tail than Gamma.</p>
+        <p class="support">Support: $(0, \infty)$</p>
+      </div>
+
+      <div class="option-card" data-dist="lognormal">
+        <h4>Log-Normal</h4>
+        <div class="variance">$\text{Var}(Y) = \mu^2(e^{\sigma^2}-1)$</div>
+        <p class="desc">Log-transform then Gaussian. Common alternative for positive data.</p>
+        <p class="support">Support: $(0, \infty)$</p>
+      </div>
+    </div>
+
+    <!-- Dialog -->
+    <div class="dialog-box" id="dialogBox">
+      <h4 id="dialogTitle"></h4>
+      <div id="dialogContent"></div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="link.html" class="btn btn-secondary">&larr; Back to Link</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+    const dialogs = {
+      gamma: {
+        type: 'success',
+        title: 'Correct! Gamma is ideal for positive continuous data.',
+        content: `
+          <p>
+            The <strong>Gamma distribution</strong> is perfect for blood pressure because:
+          </p>
+          <div class="key-point">
+            <ul style="margin: 0 0 0 20px;">
+              <li><strong>Positive support:</strong> Only produces values > 0</li>
+              <li><strong>Right-skewed:</strong> Matches the asymmetry in our data</li>
+              <li><strong>Variance ~ mean&sup2;:</strong> Higher BP → more variability</li>
+            </ul>
+          </div>
+          <p>
+            <strong>Model comparison for our blood pressure data:</strong>
+          </p>
+          <table class="comparison-table">
+            <tr>
+              <th>Metric</th>
+              <th>Gaussian</th>
+              <th>Gamma</th>
+            </tr>
+            <tr>
+              <td>AIC</td>
+              <td class="worse">2528.5</td>
+              <td class="better">2512.8 (lower is better!)</td>
+            </tr>
+            <tr>
+              <td>Can predict negative?</td>
+              <td class="worse">Yes (problematic)</td>
+              <td class="better">No (impossible)</td>
+            </tr>
+            <tr>
+              <td>Variance assumption</td>
+              <td>Constant</td>
+              <td>Increases with mean</td>
+            </tr>
+            <tr>
+              <td>Interpretation</td>
+              <td>Additive effects</td>
+              <td>Multiplicative (with log link)</td>
+            </tr>
+          </table>
+          <p>
+            <strong>Key insight:</strong> The Gamma + log link combination gives us both:
+            <br>(1) Positive predictions guaranteed
+            <br>(2) Intuitive multiplicative interpretation
+          </p>
+        `
+      },
+      gaussian: {
+        type: 'error',
+        title: 'Wrong! Gaussian allows negative predictions.',
+        content: `
+          <p>
+            The <strong>Gaussian (Normal) distribution</strong> has support on $(-\\infty, \\infty)$,
+            meaning it allows both positive and negative values.
+          </p>
+          <div class="key-point">
+            <p><strong>Problem:</strong> Blood pressure can never be negative!</p>
+            <p>With Gaussian, extreme predictions could give negative BP values.</p>
+          </div>
+          <p>
+            <strong>Other issues with Gaussian for blood pressure:</strong>
+          </p>
+          <ul style="margin: 10px 0 10px 20px;">
+            <li><strong>Constant variance:</strong> Assumes same variability at all BP levels</li>
+            <li><strong>Symmetric:</strong> BP data is often right-skewed</li>
+            <li><strong>Higher AIC:</strong> 2528.5 vs 2512.8 for Gamma (Gamma fits better!)</li>
+          </ul>
+          <p>
+            Gaussian is appropriate for truly continuous data that can be negative
+            (e.g., temperature in Celsius, profit/loss). For strictly positive data,
+            use Gamma or another positive-support distribution.
+          </p>
+        `
+      },
+      'inverse-gaussian': {
+        type: 'warning',
+        title: 'Valid alternative, but Gamma is simpler.',
+        content: `
+          <p>
+            The <strong>Inverse Gaussian</strong> is another member of the exponential family
+            that supports only positive values. It's a valid choice!
+          </p>
+          <div class="key-point">
+            <p><strong>Variance:</strong> $\\text{Var}(Y) = \\mu^3/\\lambda$</p>
+            <p>Variance increases even faster with the mean (cubic vs quadratic).</p>
+          </div>
+          <p>
+            <strong>When to use Inverse Gaussian:</strong>
+          </p>
+          <ul style="margin: 10px 0 10px 20px;">
+            <li>Data has an even heavier right tail than Gamma</li>
+            <li>Often used for waiting times and reliability data</li>
+            <li>More extreme variance-mean relationship needed</li>
+          </ul>
+          <p>
+            For blood pressure, the <strong>Gamma</strong> distribution typically provides
+            a better fit because the variance-mean relationship is closer to quadratic than cubic.
+            Try both and compare AIC if unsure!
+          </p>
+        `
+      },
+      lognormal: {
+        type: 'warning',
+        title: 'Common alternative, but not a GLM.',
+        content: `
+          <p>
+            The <strong>Log-Normal</strong> approach is very common for positive continuous data:
+            transform Y to log(Y) and fit a Gaussian model.
+          </p>
+          <div class="key-point">
+            <p><strong>Approach:</strong> $\\log(Y) \\sim N(\\mu, \\sigma^2)$</p>
+            <p>Coefficients still have multiplicative interpretation on the original scale.</p>
+          </div>
+          <p>
+            <strong>Why Gamma GLM is often preferred:</strong>
+          </p>
+          <ul style="margin: 10px 0 10px 20px;">
+            <li><strong>Models E[Y] directly:</strong> Gamma models the mean; log-transform models E[log(Y)]</li>
+            <li><strong>Proper GLM:</strong> Stays in the exponential family framework</li>
+            <li><strong>Inference:</strong> Standard errors and tests are for E[Y], not geometric mean</li>
+            <li><strong>Zeros:</strong> Gamma can't handle zeros, but neither can log-transform</li>
+          </ul>
+          <p>
+            Both are valid approaches! Log-Normal is simpler conceptually,
+            while Gamma GLM is more principled for modelling the arithmetic mean.
+          </p>
+        `
+      }
+    };
+
+    let selectedCorrect = false;
+
+    document.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (card.classList.contains('disabled')) return;
+
+        // Reset all cards
+        document.querySelectorAll('.option-card').forEach(c => {
+          c.classList.remove('selected', 'wrong', 'semi-valid');
+        });
+
+        const dist = card.dataset.dist;
+        const dialog = dialogs[dist];
+        const dialogBox = document.getElementById('dialogBox');
+
+        // Apply appropriate class
+        if (dialog.type === 'success') {
+          card.classList.add('selected');
+          selectedCorrect = true;
+          document.getElementById('continueBtn').disabled = false;
+        } else if (dialog.type === 'warning') {
+          card.classList.add('semi-valid');
+        } else {
+          card.classList.add('wrong');
+        }
+
+        // Show dialog
+        dialogBox.className = `dialog-box show ${dialog.type}`;
+        document.getElementById('dialogTitle').textContent = dialog.title;
+        document.getElementById('dialogContent').innerHTML = dialog.content;
+
+        // Re-render math
+        if (typeof renderMathInElement !== 'undefined') {
+          renderMathInElement(dialogBox, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ]
+          });
+        }
+      });
+    });
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      if (selectedCorrect) {
+        window.location.href = 'fitting.html';
+      }
+    });
+
+    // Render initial math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>

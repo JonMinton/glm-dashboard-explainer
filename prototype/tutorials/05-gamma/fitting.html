@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Fitting (Gamma)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #c0392b;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 60%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #c0392b;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #e74c3c;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #c0392b;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #fdedec;
+      border-left: 4px solid #e74c3c;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #c0392b;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      font-size: 1.1em;
+      overflow-x: auto;
+    }
+
+    /* Algorithm steps */
+    .algorithm-steps {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .algorithm-steps ol {
+      margin-left: 20px;
+    }
+
+    .algorithm-steps li {
+      margin: 12px 0;
+      padding-left: 10px;
+    }
+
+    .algorithm-steps .step-note {
+      font-size: 0.85em;
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Highlight */
+    .highlight {
+      background: #fdedec;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #c0392b;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #a93226;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 5: Positive Continuous Data</h1>
+      <p>Step 4: Understanding Gamma GLM Fitting</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="panel">
+      <h2>How Gamma GLM Fitting Works</h2>
+
+      <p>
+        Like other GLMs, Gamma regression uses <strong>Iteratively Reweighted Least Squares (IRLS)</strong>
+        to find the maximum likelihood estimates. The key difference is the variance function.
+      </p>
+
+      <div class="insight-box">
+        <h4>The Shape Parameter</h4>
+        <p>
+          The Gamma distribution has two parameters: the <strong>mean $\mu$</strong> (modelled by our GLM)
+          and the <strong>shape parameter</strong> (often denoted $\alpha$ or $\nu$).
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Variance formula:</strong> $\text{Var}(Y) = \frac{\mu^2}{\text{shape}}$
+        </p>
+      </div>
+
+      <h3>The IRLS Algorithm for Gamma</h3>
+
+      <p>
+        IRLS finds the coefficients $\beta$ by iteratively solving weighted least squares problems:
+      </p>
+
+      <div class="algorithm-steps">
+        <ol>
+          <li>
+            <strong>Initialize:</strong> Start with $\mu^{(0)} = \bar{y}$ (sample mean)
+            <p class="step-note">First guess: everyone has average blood pressure</p>
+          </li>
+          <li>
+            <strong>Compute weights:</strong> $W = \text{diag}\left(\frac{1}{\mu_i^2}\right)$ for log link
+            <p class="step-note">Smaller weights for larger predicted values (more uncertainty)</p>
+          </li>
+          <li>
+            <strong>Compute working response:</strong> $z_i = \eta_i + (y_i - \mu_i) \cdot \frac{d\eta}{d\mu}$
+            <p class="step-note">Linearized version of the response</p>
+          </li>
+          <li>
+            <strong>Weighted least squares:</strong> Solve $(X'WX)\beta = X'Wz$
+            <p class="step-note">Standard WLS with the computed weights and working response</p>
+          </li>
+          <li>
+            <strong>Update:</strong> $\eta^{(t+1)} = X\beta^{(t+1)}$, then $\mu^{(t+1)} = g^{-1}(\eta^{(t+1)})$
+            <p class="step-note">Transform linear predictor back to mean scale</p>
+          </li>
+          <li>
+            <strong>Repeat</strong> until convergence (usually 3-6 iterations)
+            <p class="step-note">Gamma GLMs typically converge quickly</p>
+          </li>
+        </ol>
+      </div>
+
+      <h3>The Gamma Weights</h3>
+
+      <p>
+        For Gamma with log link, the IRLS weights are:
+      </p>
+
+      <div class="math-display">
+        $W = \text{diag}\left(\frac{\mu_i^2}{\text{Var}(Y_i)}\right) = \text{diag}\left(\frac{\mu_i^2}{\mu_i^2/\text{shape}}\right) = \text{diag}(\text{shape})$
+      </div>
+
+      <p>
+        With the shape parameter constant across observations, the weights are <strong>actually equal</strong>
+        (shape is the same for all). This is a special property of the Gamma with log link!
+      </p>
+
+      <div class="insight-box key">
+        <h4>Key Insight: Shape Estimation</h4>
+        <p>
+          Unlike $\beta$ (estimated via IRLS), the shape parameter is estimated separately
+          from the <strong>deviance</strong> or via <strong>maximum likelihood</strong>.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Quick estimate:</strong> $\widehat{\text{shape}} \approx \frac{1}{\text{dispersion}}$
+          where dispersion = $\frac{\text{Pearson } \chi^2}{n - p}$
+        </p>
+      </div>
+
+      <h3>Comparison: GLM Families We've Seen</h3>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Aspect</th>
+          <th>Gaussian (T1)</th>
+          <th>Binomial (T2)</th>
+          <th>Poisson (T3)</th>
+          <th>Gamma (T5)</th>
+        </tr>
+        <tr>
+          <td>Data type</td>
+          <td>Any continuous</td>
+          <td>Binary/proportion</td>
+          <td>Counts</td>
+          <td>Positive continuous</td>
+        </tr>
+        <tr>
+          <td>Support</td>
+          <td>$(-\infty, \infty)$</td>
+          <td>[0, 1]</td>
+          <td>{0, 1, 2, ...}</td>
+          <td>$(0, \infty)$</td>
+        </tr>
+        <tr>
+          <td>Variance</td>
+          <td>$\sigma^2$ (constant)</td>
+          <td>$\mu(1-\mu)$</td>
+          <td>$\mu$</td>
+          <td>$\mu^2/\text{shape}$</td>
+        </tr>
+        <tr>
+          <td>Common link</td>
+          <td>Identity</td>
+          <td>Logit</td>
+          <td>Log</td>
+          <td>Log</td>
+        </tr>
+        <tr>
+          <td>Dispersion param</td>
+          <td>$\sigma^2$ (estimated)</td>
+          <td>1 (fixed)</td>
+          <td>1 (fixed)</td>
+          <td>1/shape (estimated)</td>
+        </tr>
+      </table>
+
+      <h3>For Our Blood Pressure Model</h3>
+
+      <p>
+        After fitting, we get:
+      </p>
+
+      <div class="math-display">
+        $\widehat{\text{shape}} = 61.75$
+      </div>
+
+      <p>
+        This means the coefficient of variation (CV) is approximately:
+      </p>
+
+      <div class="math-display">
+        $CV = \frac{\sqrt{\text{Var}}}{\mu} = \frac{1}{\sqrt{\text{shape}}} \approx \frac{1}{\sqrt{61.75}} \approx 0.127 = 12.7\%$
+      </div>
+
+      <div class="insight-box">
+        <h4>Interpretation</h4>
+        <p>
+          A shape of 61.75 means the standard deviation is about 12.7% of the mean.
+          For a predicted BP of 130 mm Hg, this implies SD ≈ 16.5 mm Hg.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Higher shape = less variability</strong> (more precise predictions)
+        </p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="distribution.html" class="btn btn-secondary">&larr; Back to Distribution</a>
+      <a href="code.html" class="btn btn-primary">Continue to R/Python Code &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+</body>
+</html>
