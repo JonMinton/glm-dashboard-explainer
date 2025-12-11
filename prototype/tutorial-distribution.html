@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Choose the Distribution</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.8;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #27ae60;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #27ae60;
+    }
+
+    /* Context panel */
+    .context-panel {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .equation-display {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.3em;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .equation-display .unknown {
+      background: #fff3cd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    .equation-display .confirmed {
+      background: #d4edda;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #155724;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Distribution cards */
+    .distribution-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .dist-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .dist-card:hover:not(.dimmed):not(.selected) {
+      border-color: #3498db;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .dist-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .dist-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .dist-card.selected-semi {
+      border-color: #f39c12;
+      background: #fffbf0;
+    }
+
+    .dist-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .dist-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .dist-card .formula {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.1em;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .dist-card .description {
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .dist-card .use-case {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+
+    .dist-card .variance-note {
+      font-size: 0.75em;
+      color: #999;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 520px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result display */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 15px;
+    }
+
+    .final-model {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .final-model .equation {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.3em;
+      margin: 10px 0;
+    }
+
+    .model-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary-item {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 0.8em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-item .value {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2980b9;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial: The Stochastic Component</h1>
+      <p>Choose how observations vary around their expected values</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">3</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">4</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="equation-display">
+        MaxHeartRate ~ <span class="unknown">f(?)</span> with E[y] = &beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;Age + &beta;<sub>2</sub>&middot;ExAng + &beta;<sub>3</sub>&middot;STDep
+      </div>
+      <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+        The distribution <strong>f()</strong> describes how individual observations scatter around the expected value.
+        This is the <em>stochastic</em> (random) component of the model.
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>Choose the Distribution Family</h2>
+      <p>For modelling <strong>maximum heart rate</strong> - a continuous measure typically ranging from 60-200 bpm - which distribution family best describes how observations vary?</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Distribution options -->
+    <div class="distribution-options">
+      <!-- Gaussian/Normal -->
+      <div class="dist-card" data-dist="gaussian">
+        <h3>Gaussian (Normal)</h3>
+        <div class="formula">y ~ N(&mu;, &sigma;&sup2;)</div>
+        <p class="description">
+          The classic bell curve. Observations scatter symmetrically around the mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Continuous data, symmetric residuals, constant variance
+        </p>
+        <p class="variance-note">Variance: constant (&sigma;&sup2;)</p>
+      </div>
+
+      <!-- Gamma -->
+      <div class="dist-card" data-dist="gamma">
+        <h3>Gamma</h3>
+        <div class="formula">y ~ Gamma(&alpha;, &beta;)</div>
+        <p class="description">
+          For positive continuous data that's often right-skewed. Variance increases with mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Strictly positive, right-skewed, variance grows with mean
+        </p>
+        <p class="variance-note">Variance: proportional to &mu;&sup2;</p>
+      </div>
+
+      <!-- Poisson -->
+      <div class="dist-card" data-dist="poisson">
+        <h3>Poisson</h3>
+        <div class="formula">y ~ Poisson(&lambda;)</div>
+        <p class="description">
+          For count data (0, 1, 2, ...). Mean equals variance.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Counting events, integers only, mean &asymp; variance
+        </p>
+        <p class="variance-note">Variance: equals &mu;</p>
+      </div>
+
+      <!-- Inverse Gaussian -->
+      <div class="dist-card" data-dist="inverse-gaussian">
+        <h3>Inverse Gaussian</h3>
+        <div class="formula">y ~ IG(&mu;, &lambda;)</div>
+        <p class="description">
+          For highly right-skewed positive continuous data. Variance increases rapidly with mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Positive, highly skewed, variance grows as &mu;&sup3;
+        </p>
+        <p class="variance-note">Variance: proportional to &mu;&sup3;</p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>Model Complete!</h3>
+      <p>You've specified all three components of your GLM:</p>
+
+      <div class="final-model">
+        <p class="equation">
+          MaxHeartRate ~ Normal(&mu;, &sigma;&sup2;)
+        </p>
+        <p class="equation">
+          where E[MaxHeartRate] = &mu; = &beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;Age + &beta;<sub>2</sub>&middot;ExerciseAngina + &beta;<sub>3</sub>&middot;STDepression
+        </p>
+      </div>
+
+      <div class="model-summary">
+        <div class="summary-item">
+          <div class="label">Systematic Component</div>
+          <div class="value">4 terms (incl. intercept)</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Link Function</div>
+          <div class="value">Identity</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Distribution</div>
+          <div class="value">Gaussian</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 20px; color: #666;">
+        This is equivalent to <strong>ordinary least squares (OLS) linear regression</strong> -
+        the foundation of statistical modelling. The GLM framework shows how this familiar model
+        is just one special case of a much broader family.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="tutorial-link.html" class="btn btn-secondary">&larr; Back to Link Function</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (correct) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog success">
+      <h3>&#10004; Good Choice!</h3>
+      <p>
+        The <strong>Gaussian (Normal) distribution</strong> is the natural choice for continuous
+        data like maximum heart rate.
+      </p>
+      <p>
+        With the identity link we've chosen, this gives us <strong>ordinary linear regression</strong> -
+        the most fundamental GLM and the starting point for understanding the framework.
+      </p>
+      <div class="highlight green">
+        <strong>Key assumptions:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Constant variance</strong> - spread of residuals doesn't change with predicted values</li>
+          <li><strong>Symmetric residuals</strong> - errors are equally likely above or below the line</li>
+          <li><strong>Independence</strong> - observations don't influence each other</li>
+        </ul>
+      </div>
+      <p style="font-size: 0.9em; color: #666;">
+        <strong>Caveat:</strong> After fitting the model, you should check these assumptions
+        using residual plots. If residuals show patterns (heteroscedasticity, skewness),
+        you might consider a different distribution family.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmGaussian()">Complete the Model</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gamma (semi-valid) -->
+  <div class="dialog-overlay" id="gammaDialog">
+    <div class="dialog warning">
+      <h3>&#9888; An Interesting Thought...</h3>
+      <p>
+        The <strong>Gamma distribution</strong> is designed for strictly positive continuous data,
+        and heart rate is indeed always positive.
+      </p>
+      <div class="highlight">
+        <strong>However, consider:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>Gamma assumes variance <em>increases</em> with the mean - is heart rate variability
+              really higher for people with higher max heart rates?</li>
+          <li>Gamma is typically used for right-skewed data (like insurance claims, rainfall amounts)</li>
+          <li>Heart rate tends to be more symmetrically distributed around its mean</li>
+          <li>We chose the identity link, but Gamma's canonical link is inverse (1/&mu;)</li>
+        </ul>
+      </div>
+      <p>
+        The Gamma distribution shines when you have data that's bounded at zero and
+        shows increasing spread at higher values. For heart rate data, the Gaussian
+        is usually more appropriate.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        <em>For this tutorial, try the Gaussian distribution. In practice, you could fit both
+        and compare using AIC or residual diagnostics!</em>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gammaDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Poisson (wrong) -->
+  <div class="dialog-overlay" id="poissonDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>Poisson distribution</strong> is specifically for <em>count data</em> -
+        non-negative integers like 0, 1, 2, 3, ...
+      </p>
+      <p>
+        Maximum heart rate is a <em>continuous</em> measurement (e.g., 142.5 bpm),
+        not a count. You can't have "2.7 heart beats" as an observation.
+      </p>
+      <div class="highlight">
+        <strong>Poisson is the right choice for:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>Number of hospital admissions per day</li>
+          <li>Count of defects in manufacturing</li>
+          <li>Number of customer complaints per week</li>
+          <li>Species counts in ecological surveys</li>
+        </ul>
+      </div>
+      <p>
+        A key property of Poisson is that <strong>mean = variance</strong>. This is rarely
+        true for continuous measurements like heart rate.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('poissonDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Inverse Gaussian (wrong) -->
+  <div class="dialog-overlay" id="inverseGaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>Inverse Gaussian distribution</strong> is a specialised choice for
+        positive continuous data with a very specific variance structure.
+      </p>
+      <p>
+        It's typically used when:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 20px;">
+          <li>Data is strictly positive and highly right-skewed</li>
+          <li>Variance increases <em>rapidly</em> with the mean (as &mu;&sup3;)</li>
+          <li>Often arises in reliability analysis and time-to-event modelling</li>
+        </ul>
+      </div>
+      <p>
+        Heart rate data doesn't typically show this extreme variance pattern.
+        The distribution of max heart rates across patients is usually much more
+        symmetric than the Inverse Gaussian would imply.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        The Inverse Gaussian is useful for specialised applications but isn't a
+        common first choice for biological measurements like heart rate.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('inverseGaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedDist = null;
+
+    // Distribution card click handlers
+    document.querySelectorAll('.dist-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const dist = card.dataset.dist;
+        handleDistSelection(dist, card);
+      });
+    });
+
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'gaussian') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.dist-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+      });
+
+      switch(dist) {
+        case 'gaussian':
+          // Correct choice
+          card.classList.add('selected-correct');
+          showDialog('gaussianDialog');
+          break;
+
+        case 'gamma':
+          // Semi-valid
+          card.classList.add('selected-semi');
+          showDialog('gammaDialog');
+          break;
+
+        case 'poisson':
+          // Wrong - for counts
+          card.classList.add('selected-wrong');
+          showDialog('poissonDialog');
+          break;
+
+        case 'inverse-gaussian':
+          // Wrong - too specialised
+          card.classList.add('selected-wrong');
+          showDialog('inverseGaussianDialog');
+          break;
+      }
+    }
+
+    function confirmGaussian() {
+      // User confirmed Gaussian selection
+      selectedDist = 'gaussian';
+      closeDialog('gaussianDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.dist-card:not([data-dist="gaussian"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      document.getElementById(dialogId).classList.add('show');
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'gaussian') {
+        document.querySelectorAll('.dist-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      window.location.href = 'tutorial-fitting.html';
+    });
+  </script>
+</body>
+</html>

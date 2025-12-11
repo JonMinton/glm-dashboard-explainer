@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Choose Fitting Method</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.8;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #27ae60;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #27ae60;
+    }
+
+    /* Context panel */
+    .context-panel {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .model-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    .summary-item {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 0.75em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-item .value {
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Fitting method cards */
+    .fitting-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .fitting-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .fitting-card:hover:not(.dimmed):not(.selected) {
+      border-color: #3498db;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .fitting-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .fitting-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .fitting-card.selected-bonus {
+      border-color: #f39c12;
+      background: #fffbf0;
+    }
+
+    .fitting-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .fitting-card .icon {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .fitting-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .fitting-card .description {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .fitting-card .details {
+      font-size: 0.8em;
+      color: #888;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 520px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .highlight.orange {
+      background: #fff3cd;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2980b9;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    @media (max-width: 768px) {
+      .model-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial: Choose Fitting Method</h1>
+      <p>How should we estimate the model parameters?</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">4</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="model-summary">
+        <div class="summary-item">
+          <div class="label">Systematic Component</div>
+          <div class="value">η = β₀ + β₁·Age + β₂·RestBP</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Link Function</div>
+          <div class="value">Identity: μ = η</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Distribution</div>
+          <div class="value">Gaussian (Normal)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>How should we find the β coefficients?</h2>
+      <p>We have our model structure defined. Now we need to estimate the parameters (β₀, β₁, β₂) that best fit the observed data.</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Fitting method options -->
+    <div class="fitting-options">
+      <!-- Maximum Likelihood (IRLS) -->
+      <div class="fitting-card" data-method="ml">
+        <div class="icon">🔄</div>
+        <h3>Maximum Likelihood (IRLS)</h3>
+        <p class="description">
+          Iteratively Reweighted Least Squares - the standard GLM fitting algorithm.
+        </p>
+        <p class="details">
+          Iterative optimization • General purpose • Fisher scoring
+        </p>
+      </div>
+
+      <!-- Closed-form (OLS) -->
+      <div class="fitting-card" data-method="ols">
+        <div class="icon">📐</div>
+        <h3>Closed-Form (OLS)</h3>
+        <p class="description">
+          Direct analytical solution using matrix algebra: β = (X'X)⁻¹X'y
+        </p>
+        <p class="details">
+          One-shot calculation • No iteration • Exact solution
+        </p>
+      </div>
+
+      <!-- Bayesian -->
+      <div class="fitting-card" data-method="bayesian">
+        <div class="icon">🎲</div>
+        <h3>Bayesian Estimation</h3>
+        <p class="description">
+          Combine prior beliefs with data to get posterior distributions for parameters.
+        </p>
+        <p class="details">
+          Prior specification • MCMC sampling • Full uncertainty
+        </p>
+      </div>
+
+      <!-- Penalised/Regularised -->
+      <div class="fitting-card" data-method="penalised">
+        <div class="icon">🎯</div>
+        <h3>Penalised/Regularised</h3>
+        <p class="description">
+          Add penalty terms to prevent overfitting (Ridge, Lasso, Elastic Net).
+        </p>
+        <p class="details">
+          Shrinkage • Variable selection • Bias-variance tradeoff
+        </p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10004; Fitting Method Selected</h3>
+      <p>
+        <strong>Maximum Likelihood via IRLS</strong> is the standard approach for GLMs.
+        This is what <code>glm()</code> in R and <code>statsmodels</code> in Python use by default.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        For your Gaussian + identity model, IRLS converges in one iteration to the OLS solution -
+        but using glm() makes it easy to try other distributions later!
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="tutorial-distribution.html" class="btn btn-secondary">&larr; Back to Distribution</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Implementation &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for ML (correct) -->
+  <div class="dialog-overlay" id="mlDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct!</h3>
+      <p>
+        <strong>Maximum Likelihood Estimation (MLE)</strong> via Iteratively Reweighted Least Squares (IRLS)
+        is the canonical fitting method for GLMs. This is what <code>glm()</code> in R and
+        <code>statsmodels</code> in Python use by default.
+      </p>
+      <div class="highlight green">
+        <strong>Why IRLS for GLMs?</strong><br>
+        GLMs can have non-Gaussian distributions and non-identity link functions. IRLS handles
+        these by iteratively approximating the problem as a weighted least squares problem,
+        converging to the maximum likelihood solution.
+      </div>
+      <p>
+        The algorithm works by:
+      </p>
+      <ul style="margin: 10px 0 10px 20px;">
+        <li>Starting with initial parameter estimates</li>
+        <li>Computing weights based on the variance function</li>
+        <li>Solving a weighted least squares problem</li>
+        <li>Repeating until convergence</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        For Gaussian + identity, IRLS converges in <em>one iteration</em> to the OLS solution -
+        but the framework generalizes to all GLM types!
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmML()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for OLS (bonus) -->
+  <div class="dialog-overlay" id="olsDialog">
+    <div class="dialog warning">
+      <h3>⭐ Bonus Points!</h3>
+      <p>
+        <strong>Excellent insight!</strong> For your specific model — Gaussian distribution with
+        identity link — the closed-form OLS solution is actually <em>optimal</em>.
+      </p>
+      <div class="highlight orange">
+        <strong>Why is OLS optimal here?</strong><br>
+        When the response is normally distributed and the link is identity, the maximum likelihood
+        solution <em>is</em> the OLS solution: β = (X'X)⁻¹X'y. No iteration needed!
+      </div>
+      <p>
+        However, in the broader context of GLMs, this approach doesn't generalize:
+      </p>
+      <ul style="margin: 10px 0 10px 20px;">
+        <li><strong>Logistic regression</strong> (binomial + logit) has no closed-form solution</li>
+        <li><strong>Poisson regression</strong> (Poisson + log) requires iteration</li>
+        <li><strong>Gamma regression</strong> and others also need iterative methods</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        The standard approach is to use Maximum Likelihood via IRLS, which works for <em>all</em>
+        GLM types. For Gaussian + identity, IRLS converges to OLS in one iteration anyway.
+      </p>
+      <p><em>Select Maximum Likelihood (IRLS) to continue, as it's the general GLM approach.</em></p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('olsDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Bayesian (educational) -->
+  <div class="dialog-overlay" id="bayesianDialog">
+    <div class="dialog error">
+      <h3>🎲 A Different Philosophy</h3>
+      <p>
+        <strong>Bayesian estimation</strong> is a valid and powerful approach, but it represents
+        a fundamentally different statistical philosophy than classical GLM fitting.
+      </p>
+      <div class="highlight">
+        <strong>Bayesian vs Frequentist</strong><br>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Frequentist (GLM)</strong>: Parameters are fixed unknowns; find point estimates</li>
+          <li><strong>Bayesian</strong>: Parameters have probability distributions; combine prior beliefs with data</li>
+        </ul>
+      </div>
+      <p>
+        Bayesian approaches require:
+      </p>
+      <ul style="margin: 10px 0 10px 20px;">
+        <li><strong>Prior distributions</strong> for each parameter</li>
+        <li><strong>MCMC sampling</strong> (e.g., Stan, JAGS) to estimate posteriors</li>
+        <li>More computational resources and expertise</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        While Bayesian GLMs exist, the standard GLM framework uses <strong>maximum likelihood estimation</strong>.
+      </p>
+      <p><em>For classical GLM fitting, select Maximum Likelihood (IRLS).</em></p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('bayesianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Penalised (educational) -->
+  <div class="dialog-overlay" id="penalisedDialog">
+    <div class="dialog error">
+      <h3>🎯 When You Need Regularization</h3>
+      <p>
+        <strong>Penalised (regularised) regression</strong> adds penalty terms to the likelihood
+        to prevent overfitting or perform variable selection.
+      </p>
+      <div class="highlight">
+        <strong>Common penalty types:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Ridge (L2)</strong>: Shrinks coefficients toward zero</li>
+          <li><strong>Lasso (L1)</strong>: Can set coefficients exactly to zero</li>
+          <li><strong>Elastic Net</strong>: Combines L1 and L2 penalties</li>
+        </ul>
+      </div>
+      <p>
+        These methods are valuable when you have:
+      </p>
+      <ul style="margin: 10px 0 10px 20px;">
+        <li><strong>Many predictors</strong> relative to observations</li>
+        <li><strong>Multicollinearity</strong> between predictors</li>
+        <li>Need for <strong>automatic variable selection</strong></li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        However, penalised regression introduces <strong>bias</strong> in exchange for reduced
+        variance. For standard GLM estimation, we use IRLS without penalties.
+      </p>
+      <p><em>For standard GLM fitting, select Maximum Likelihood (IRLS).</em></p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('penalisedDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedMethod = null;
+
+    // Card click handlers
+    document.querySelectorAll('.fitting-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const method = card.dataset.method;
+        handleMethodSelection(method, card);
+      });
+    });
+
+    function handleMethodSelection(method, card) {
+      // Don't process if already confirmed
+      if (selectedMethod === 'ml') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.fitting-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-bonus', 'selected-wrong');
+      });
+
+      switch(method) {
+        case 'ml':
+          // Correct choice
+          card.classList.add('selected-correct');
+          showDialog('mlDialog');
+          break;
+
+        case 'ols':
+          // Bonus - optimal for this specific case
+          card.classList.add('selected-bonus');
+          showDialog('olsDialog');
+          break;
+
+        case 'bayesian':
+          // Educational - different philosophy
+          card.classList.add('selected-wrong');
+          showDialog('bayesianDialog');
+          break;
+
+        case 'penalised':
+          // Educational - when regularization is needed
+          card.classList.add('selected-wrong');
+          showDialog('penalisedDialog');
+          break;
+      }
+    }
+
+    function confirmML() {
+      // User confirmed ML selection
+      selectedMethod = 'ml';
+      closeDialog('mlDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.fitting-card:not([data-method="ml"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      document.getElementById(dialogId).classList.add('show');
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedMethod !== 'ml') {
+        document.querySelectorAll('.fitting-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-bonus', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      window.location.href = 'tutorial-code.html';
+    });
+  </script>
+</body>
+</html>
