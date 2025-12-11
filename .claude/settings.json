@@ -1,0 +1,23 @@
+{
+  "project": {
+    "name": "GLM Dashboard Explainer",
+    "description": "Interactive pedagogical tool for teaching Generalised Linear Models"
+  },
+  "preferences": {
+    "codeStyle": {
+      "comments": "minimal - code should be self-documenting",
+      "formatting": "consistent with existing patterns"
+    },
+    "documentation": {
+      "inline": "only where logic is non-obvious",
+      "external": "maintain claude.md as source of truth"
+    }
+  },
+  "context": {
+    "keyFiles": [
+      "claude.md",
+      "support/claude-concept-chat.md"
+    ],
+    "domain": "statistics education, GLMs, interactive visualization"
+  }
+}

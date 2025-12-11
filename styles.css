@@ -1,0 +1,466 @@
+/* GLM Dashboard Explainer - Custom Styles */
+
+/* Variable Pool */
+.variable-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bs-gray-100);
+  border-radius: 8px;
+  min-height: 100px;
+}
+
+.variable-card {
+  background: white;
+  border: 2px solid var(--bs-gray-300);
+  border-radius: 8px;
+  padding: 12px;
+  width: 180px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.variable-card:hover {
+  border-color: var(--bs-primary);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.variable-card.dragging {
+  opacity: 0.5;
+  transform: rotate(3deg);
+}
+
+.var-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.var-icon {
+  font-size: 1.2em;
+}
+
+.var-name {
+  font-weight: 600;
+  color: var(--bs-dark);
+}
+
+.var-meta {
+  font-size: 0.8em;
+  color: var(--bs-gray-600);
+  margin-bottom: 4px;
+}
+
+.var-type {
+  background: var(--bs-gray-200);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.var-unit {
+  margin-left: 4px;
+}
+
+.var-desc {
+  font-size: 0.75em;
+  color: var(--bs-gray-600);
+  line-height: 1.3;
+}
+
+.empty-message {
+  color: var(--bs-gray-500);
+  font-style: italic;
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  width: 100%;
+}
+
+/* Model Canvas */
+.model-canvas {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  margin: 20px 0;
+}
+
+.canvas-left, .canvas-right {
+  min-height: 200px;
+}
+
+/* Drop Zones */
+.drop-zone {
+  border: 3px dashed var(--bs-gray-400);
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 180px;
+  transition: all 0.2s ease;
+  background: var(--bs-gray-50);
+}
+
+.drop-zone h4 {
+  margin: 0 0 4px 0;
+  color: var(--bs-gray-700);
+}
+
+.zone-hint {
+  font-size: 0.85em;
+  color: var(--bs-gray-500);
+  margin: 0 0 16px 0;
+}
+
+.drop-zone.drag-over {
+  border-color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), 0.05);
+  transform: scale(1.01);
+}
+
+.predictor-zone {
+  border-color: var(--bs-info);
+}
+
+.predictor-zone h4 {
+  color: var(--bs-info);
+}
+
+.response-zone {
+  border-color: var(--bs-success);
+}
+
+.response-zone h4 {
+  color: var(--bs-success);
+}
+
+.assigned-vars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.empty-hint {
+  color: var(--bs-gray-400);
+  font-style: italic;
+  margin: 0;
+  padding: 30px;
+  text-align: center;
+  width: 100%;
+}
+
+/* Assigned Variable Chips */
+.assigned-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border-radius: 8px;
+  padding: 10px 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.predictor-chip {
+  border-left: 4px solid var(--bs-info);
+}
+
+.response-chip {
+  border-left: 4px solid var(--bs-success);
+}
+
+.chip-label {
+  font-weight: 700;
+  font-size: 0.9em;
+  color: var(--bs-gray-600);
+  min-width: 24px;
+}
+
+.chip-icon {
+  font-size: 1.1em;
+}
+
+.chip-name {
+  font-weight: 500;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  color: var(--bs-gray-400);
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: 4px;
+  border-radius: 4px;
+  font-size: 1em;
+  line-height: 1;
+}
+
+.chip-remove:hover {
+  background: var(--bs-danger);
+  color: white;
+}
+
+/* Model Summary */
+.model-equation {
+  background: var(--bs-light);
+  border-radius: 8px;
+  padding: 20px;
+  border-left: 4px solid var(--bs-primary);
+}
+
+.model-equation .equation {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.3em;
+  padding: 10px 20px;
+  background: white;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.model-note {
+  font-size: 0.9em;
+  color: var(--bs-gray-600);
+  margin-top: 10px;
+  font-style: italic;
+}
+
+.model-incomplete {
+  color: var(--bs-warning);
+  background: rgba(var(--bs-warning-rgb), 0.1);
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--bs-warning);
+}
+
+/* Navigation */
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--bs-gray-200);
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: var(--bs-primary);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--bs-primary);
+  filter: brightness(1.1);
+}
+
+.btn-primary:disabled {
+  background: var(--bs-gray-400);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bs-gray-200);
+  color: var(--bs-gray-700);
+  border: none;
+}
+
+.btn-secondary:hover {
+  background: var(--bs-gray-300);
+}
+
+/* Tutorial Mode Styles */
+
+.tutorial-progress {
+  position: relative;
+  margin: 20px 0 30px;
+  padding: 20px 0;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 4px;
+  background: var(--bs-success);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.progress-step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9em;
+  transition: all 0.3s ease;
+}
+
+.progress-step.completed {
+  background: var(--bs-success);
+  color: white;
+}
+
+.progress-step.current {
+  background: var(--bs-primary);
+  color: white;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+.progress-step.pending {
+  background: var(--bs-gray-300);
+  color: var(--bs-gray-600);
+}
+
+/* Tutorial target highlighting */
+.variable-card.tutorial-target {
+  animation: pulse-glow 1.5s infinite;
+  border-color: var(--bs-success) !important;
+  position: relative;
+  z-index: 10;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px 2px rgba(var(--bs-success-rgb), 0.4); }
+  50% { box-shadow: 0 0 15px 5px rgba(var(--bs-success-rgb), 0.6); }
+}
+
+.target-indicator {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bs-success);
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Dimmed non-target variables */
+.variable-card.tutorial-dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+  filter: grayscale(60%);
+  transform: scale(0.95);
+}
+
+/* Target drop zone */
+.drop-zone.tutorial-target-zone {
+  animation: pulse-border 1.5s infinite;
+  border-style: solid;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: var(--bs-success);
+    background: rgba(var(--bs-success-rgb), 0.05);
+  }
+  50% {
+    border-color: var(--bs-success);
+    border-width: 4px;
+    background: rgba(var(--bs-success-rgb), 0.1);
+  }
+}
+
+/* Wrong drop feedback */
+.drop-zone.tutorial-wrong {
+  animation: shake 0.4s ease-in-out;
+  border-color: var(--bs-danger) !important;
+  background: rgba(var(--bs-danger-rgb), 0.1) !important;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+/* Tutorial step hint */
+.step-hint {
+  margin: 8px 0 0;
+  color: var(--bs-gray-600);
+}
+
+/* Model building state */
+.model-building {
+  color: var(--bs-gray-500);
+  font-style: italic;
+}
+
+.model-equation.partial {
+  border-left-color: var(--bs-warning);
+}
+
+.model-equation.complete {
+  border-left-color: var(--bs-success);
+}
+
+.model-complete {
+  color: var(--bs-success);
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+/* Navigation buttons */
+.nav-right {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--bs-gray-400);
+  color: var(--bs-gray-600);
+}
+
+.btn-outline:hover {
+  border-color: var(--bs-primary);
+  color: var(--bs-primary);
+}
+
+/* Dark mode adjustments */
+[data-bs-theme="dark"] .variable-card,
+[data-bs-theme="dark"] .assigned-chip {
+  background: var(--bs-gray-800);
+  border-color: var(--bs-gray-600);
+}
+
+[data-bs-theme="dark"] .variable-pool,
+[data-bs-theme="dark"] .drop-zone {
+  background: var(--bs-gray-900);
+}
+
+[data-bs-theme="dark"] .model-equation {
+  background: var(--bs-gray-800);
+}
+
+[data-bs-theme="dark"] .model-equation .equation {
+  background: var(--bs-gray-900);
+}

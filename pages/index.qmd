@@ -1,0 +1,90 @@
+---
+title: "Understanding GLMs"
+subtitle: "An Interactive Guide to Generalised Linear Models"
+format:
+  html:
+    page-layout: article
+---
+
+## What problem are you trying to solve?
+
+Different types of data require different statistical models. Select a scenario below to explore how Generalised Linear Models (GLMs) can help.
+
+::: {.grid}
+
+::: {.g-col-6 .g-col-md-4}
+::: {.card .scenario-card}
+### 📊 Continuous Outcomes
+**Example:** Predicting maximum heart rate from patient characteristics
+
+Response: Continuous numeric values (e.g., 100-200 bpm)
+
+**GLM family:** Gaussian with identity link
+
+[Start Tutorial →](tutorial/model-builder.qmd){.btn .btn-primary}
+[Free Explore →](model-builder.qmd){.btn .btn-outline}
+:::
+:::
+
+::: {.g-col-6 .g-col-md-4}
+::: {.card .scenario-card}
+### ⚫⚪ Binary Outcomes
+**Example:** Predicting heart disease presence/absence
+
+Response: Yes/No, 0/1
+
+**GLM family:** Binomial with logit link
+
+[Coming soon]{.btn .btn-secondary .disabled}
+:::
+:::
+
+::: {.g-col-6 .g-col-md-4}
+::: {.card .scenario-card}
+### 🔢 Count Data
+**Example:** Number of insurance claims per customer
+
+Response: 0, 1, 2, 3, ...
+
+**GLM family:** Poisson with log link
+
+[Coming soon]{.btn .btn-secondary .disabled}
+:::
+:::
+
+:::
+
+---
+
+## How this guide works
+
+This interactive guide will walk you through:
+
+1. **Selecting your variables** - Choose which variable to predict (response) and which variables to use as predictors
+2. **Building the model** - Understand the three components: predictor transformers h(X), link function g(), and distribution family f()
+3. **Fitting parameters** - See how maximum likelihood estimation finds the best β coefficients
+4. **Interpreting results** - Understand what your model tells you about the data
+
+Each step builds on the previous one, revealing the GLM framework piece by piece.
+
+---
+
+## The GLM Framework
+
+At its core, a GLM connects predictors to a response through this structure:
+
+```
+Predictors → Linear combination → Link function → Expected value → Distribution → Observed data
+    X            η = Xβ              g⁻¹(η)            μ              f(μ,α)           y
+```
+
+- **β** (beta): Coefficients that weight each predictor
+- **g()**: Link function that maps between linear predictor and expected value
+- **f()**: Distribution family that describes how observations scatter around their expected values
+- **Y**: The random variable (what the model predicts could happen)
+- **y**: The observed data (what actually happened)
+
+Ready to explore?
+
+- [Start the guided tutorial →](tutorial/model-builder.qmd) (recommended for beginners)
+- [Free explore mode →](model-builder.qmd) (if you already know the basics)

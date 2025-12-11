@@ -1,0 +1,360 @@
+---
+title: "Build Your Model"
+subtitle: "Select response and predictor variables"
+format:
+  html:
+    page-layout: full
+---
+
+```{ojs}
+//| echo: false
+
+// Load dataset metadata
+datasetMeta = FileAttachment("../data/heart.json").json()
+```
+
+```{ojs}
+//| echo: false
+
+// State management
+mutable selectedPredictors = []
+mutable selectedResponse = null
+```
+
+```{ojs}
+//| echo: false
+
+// Available variables (not yet assigned)
+availableVars = {
+  const assigned = new Set([
+    ...selectedPredictors.map(p => p.name),
+    selectedResponse?.name
+  ].filter(Boolean))
+  return datasetMeta.variables.filter(v => !assigned.has(v.name))
+}
+
+// Type icons
+typeIcon = (type) => {
+  switch(type) {
+    case "continuous": return "📊"
+    case "binary": return "⚫⚪"
+    case "categorical": return "📑"
+    case "count": return "🔢"
+    default: return "❓"
+  }
+}
+```
+
+## Dataset: Heart Disease
+
+Cardiovascular health indicators from patients at Cleveland Clinic
+
+::: {.callout-tip}
+## How to use this page
+1. **Drag variables** from the table below to assign them as predictors (left) or response (right)
+2. You need **at least one predictor** and **exactly one response** to continue
+3. Click the ✕ on any assigned variable to return it to the pool
+:::
+
+### Available Variables
+
+Drag variables from here to the model canvas below.
+
+```{ojs}
+//| echo: false
+
+// Variable cards - reactive to availableVars
+variablePool = {
+  const container = document.createElement('div')
+  container.className = 'variable-pool'
+
+  if (availableVars.length === 0) {
+    container.innerHTML = '<p class="empty-message">All variables assigned to model</p>'
+    return container
+  }
+
+  for (const v of availableVars) {
+    const card = document.createElement('div')
+    card.className = 'variable-card'
+    card.draggable = true
+    card.dataset.var = v.name
+
+    card.innerHTML = `
+      <div class="var-header">
+        <span class="var-icon">${typeIcon(v.type)}</span>
+        <span class="var-name">${v.label}</span>
+      </div>
+      <div class="var-meta">
+        <span class="var-type">${v.type}</span>
+        ${v.unit ? `<span class="var-unit">(${v.unit})</span>` : ''}
+      </div>
+      <div class="var-desc">${v.description}</div>
+    `
+
+    card.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', v.name)
+      e.dataTransfer.effectAllowed = 'move'
+      card.classList.add('dragging')
+    })
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging')
+    })
+
+    container.appendChild(card)
+  }
+
+  return container
+}
+```
+
+---
+
+### Model Canvas
+
+::: {.model-canvas}
+::: {.canvas-left}
+
+```{ojs}
+//| echo: false
+
+// Predictor drop zone - reactive
+predictorZone = {
+  const zone = document.createElement('div')
+  zone.className = 'drop-zone predictor-zone'
+
+  // Render content
+  let content = `
+    <h4>Predictors (X)</h4>
+    <p class="zone-hint">Variables that might explain or predict the response</p>
+    <div class="assigned-vars">
+  `
+
+  if (selectedPredictors.length === 0) {
+    content += '<p class="empty-hint">Drop variables here</p>'
+  } else {
+    selectedPredictors.forEach((v, i) => {
+      content += `
+        <div class="assigned-chip predictor-chip" data-var="${v.name}">
+          <span class="chip-label">X<sub>${i + 1}</sub></span>
+          <span class="chip-icon">${typeIcon(v.type)}</span>
+          <span class="chip-name">${v.label}</span>
+          <button class="chip-remove" data-var="${v.name}">✕</button>
+        </div>
+      `
+    })
+  }
+
+  content += '</div>'
+  zone.innerHTML = content
+
+  // Add remove handlers
+  zone.querySelectorAll('.chip-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const varName = e.target.dataset.var
+      mutable selectedPredictors = selectedPredictors.filter(p => p.name !== varName)
+    })
+  })
+
+  // Drop handlers
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    zone.classList.add('drag-over')
+  })
+
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('drag-over')
+  })
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    zone.classList.remove('drag-over')
+    const varName = e.dataTransfer.getData('text/plain')
+    const variable = datasetMeta.variables.find(v => v.name === varName)
+
+    if (variable && !selectedPredictors.find(p => p.name === varName)) {
+      // If it was the response, remove it from there
+      if (selectedResponse?.name === varName) {
+        mutable selectedResponse = null
+      }
+      mutable selectedPredictors = [...selectedPredictors, variable]
+    }
+  })
+
+  return zone
+}
+```
+
+:::
+
+::: {.canvas-right}
+
+```{ojs}
+//| echo: false
+
+// Response drop zone - reactive
+responseZone = {
+  const zone = document.createElement('div')
+  zone.className = 'drop-zone response-zone'
+
+  // Render content
+  let content = `
+    <h4>Response (y)</h4>
+    <p class="zone-hint">The outcome variable you want to model</p>
+    <div class="assigned-vars">
+  `
+
+  if (!selectedResponse) {
+    content += '<p class="empty-hint">Drop one variable here</p>'
+  } else {
+    content += `
+      <div class="assigned-chip response-chip">
+        <span class="chip-label">y</span>
+        <span class="chip-icon">${typeIcon(selectedResponse.type)}</span>
+        <span class="chip-name">${selectedResponse.label}</span>
+        <button class="chip-remove">✕</button>
+      </div>
+    `
+  }
+
+  content += '</div>'
+  zone.innerHTML = content
+
+  // Add remove handler
+  const removeBtn = zone.querySelector('.chip-remove')
+  if (removeBtn) {
+    removeBtn.addEventListener('click', () => {
+      mutable selectedResponse = null
+    })
+  }
+
+  // Drop handlers
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    zone.classList.add('drag-over')
+  })
+
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('drag-over')
+  })
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    zone.classList.remove('drag-over')
+    const varName = e.dataTransfer.getData('text/plain')
+    const variable = datasetMeta.variables.find(v => v.name === varName)
+
+    if (variable) {
+      // Remove from predictors if it was there
+      mutable selectedPredictors = selectedPredictors.filter(p => p.name !== varName)
+      mutable selectedResponse = variable
+    }
+  })
+
+  return zone
+}
+```
+
+:::
+:::
+
+---
+
+### Current Model Specification
+
+```{ojs}
+//| echo: false
+
+modelSummary = {
+  const div = document.createElement('div')
+
+  if (!selectedResponse) {
+    div.className = 'model-incomplete'
+    div.innerHTML = '⚠️ Select a response variable (y) to define your model'
+    return div
+  }
+
+  if (selectedPredictors.length === 0) {
+    div.className = 'model-incomplete'
+    div.innerHTML = '⚠️ Select at least one predictor variable (X)'
+    return div
+  }
+
+  const predictorTerms = selectedPredictors
+    .map((p, i) => `β<sub>${i+1}</sub>·${p.label}`)
+    .join(' + ')
+
+  const familyNote = selectedResponse.type === 'continuous'
+    ? '→ Gaussian family with identity link is a natural starting point'
+    : selectedResponse.type === 'binary'
+      ? '→ Binomial family with logit link is appropriate'
+      : selectedResponse.type === 'count'
+        ? '→ Poisson family with log link is a starting point'
+        : '→ Consider the response type when choosing distribution family'
+
+  div.className = 'model-equation'
+  div.innerHTML = `
+    <p><strong>Response:</strong> ${selectedResponse.label} (${selectedResponse.type})</p>
+    <p><strong>Linear predictor:</strong></p>
+    <p class="equation">η = β<sub>0</sub> + ${predictorTerms}</p>
+    <p class="model-note">${familyNote}</p>
+  `
+
+  return div
+}
+```
+
+```{ojs}
+//| echo: false
+
+// Navigation
+canProceed = selectedResponse !== null && selectedPredictors.length > 0
+```
+
+```{ojs}
+//| echo: false
+
+navButtons = {
+  const div = document.createElement('div')
+  div.className = 'nav-buttons'
+  div.innerHTML = `
+    <a href="index.html" class="btn btn-secondary">← Back to Scenarios</a>
+    <button class="btn btn-primary" ${canProceed ? '' : 'disabled'}>
+      Continue to Model Selection →
+    </button>
+  `
+  return div
+}
+```
+
+---
+
+### Sample Data Preview
+
+```{ojs}
+//| echo: false
+
+Inputs.table(datasetMeta.sampleData, {
+  columns: datasetMeta.variables.map(v => v.name),
+  header: Object.fromEntries(datasetMeta.variables.map(v => [v.name, v.label])),
+  width: {
+    age: 60,
+    sex: 50,
+    cp: 50,
+    trestbps: 80,
+    chol: 70,
+    fbs: 50,
+    restecg: 70,
+    thalach: 80,
+    exang: 60,
+    oldpeak: 70,
+    slope: 60,
+    ca: 50,
+    thal: 50,
+    num: 50
+  },
+  rows: 8
+})
+```

@@ -1,0 +1,474 @@
+---
+title: "Tutorial: Building Your First Model"
+subtitle: "A guided walkthrough of variable selection"
+format:
+  html:
+    page-layout: full
+    css: ../../styles.css
+---
+
+```{ojs}
+//| echo: false
+
+// Load dataset metadata
+datasetMeta = FileAttachment("../../data/heart.json").json()
+
+// Tutorial script definition
+tutorialScript = {
+  return {
+    title: "Predicting Maximum Heart Rate",
+    description: "Learn to build a GLM by predicting maximum heart rate from patient characteristics",
+    steps: [
+      {
+        id: 1,
+        instruction: "First, let's select what we want to predict. Drag **Max Heart Rate** to the Response zone on the right.",
+        target: { variable: "thalach", zone: "response" },
+        hint: "The response variable (y) is the outcome we're trying to explain or predict.",
+        why: "Maximum heart rate during exercise is a key indicator of cardiovascular fitness.",
+        highlightVariables: ["thalach"]
+      },
+      {
+        id: 2,
+        instruction: "Now add your first predictor. **Age** is likely to affect maximum heart rate. Drag it to the Predictors zone.",
+        target: { variable: "age", zone: "predictor" },
+        hint: "Predictors (X) are variables we think might explain variation in the response.",
+        why: "Older patients typically have lower maximum heart rates - this is well established in cardiology.",
+        highlightVariables: ["age"]
+      },
+      {
+        id: 3,
+        instruction: "Exercise-induced symptoms matter too. Add **Exercise Angina** as a predictor.",
+        target: { variable: "exang", zone: "predictor" },
+        hint: "This is a binary variable (yes/no) - GLMs handle these naturally.",
+        why: "Patients who experience chest pain during exercise may have lower achievable heart rates.",
+        highlightVariables: ["exang"]
+      },
+      {
+        id: 4,
+        instruction: "Finally, add **ST Depression** - a measure of heart stress visible on an ECG.",
+        target: { variable: "oldpeak", zone: "predictor" },
+        hint: "This is a continuous measure of cardiac stress during exercise.",
+        why: "Higher ST depression values indicate more cardiac stress, which may correlate with heart rate capacity.",
+        highlightVariables: ["oldpeak"]
+      },
+      {
+        id: 5,
+        instruction: "Excellent! You've specified your first model. Review the equation below, then click **Continue**.",
+        target: null,
+        hint: null,
+        why: null,
+        highlightVariables: []
+      }
+    ]
+  }
+}
+
+// Tutorial state
+mutable currentStep = 1
+mutable selectedPredictors = []
+mutable selectedResponse = null
+
+// Current step data
+currentStepData = tutorialScript.steps[currentStep - 1]
+
+// Check if current step is complete
+stepComplete = {
+  const step = currentStepData
+  if (!step.target) return true
+
+  if (step.target.zone === "response") {
+    return selectedResponse?.name === step.target.variable
+  } else {
+    return selectedPredictors.some(p => p.name === step.target.variable)
+  }
+}
+
+// Available variables (not yet assigned)
+availableVars = {
+  const assigned = new Set([
+    ...selectedPredictors.map(p => p.name),
+    selectedResponse?.name
+  ].filter(Boolean))
+  return datasetMeta.variables.filter(v => !assigned.has(v.name))
+}
+
+// Type icons
+typeIcon = (type) => {
+  switch(type) {
+    case "continuous": return "📊"
+    case "binary": return "⚫⚪"
+    case "categorical": return "📑"
+    case "count": return "🔢"
+    default: return "❓"
+  }
+}
+```
+
+## Learning Objectives
+
+By completing this tutorial, you will:
+
+- Understand the difference between **response** and **predictor** variables
+- Learn to build a model specification visually
+- See how variable choices form a **linear predictor** equation
+
+---
+
+## The Scenario
+
+::: {.callout-note}
+## Research Question
+We have cardiovascular data from 303 patients at Cleveland Clinic. We want to understand: **What factors affect a patient's maximum heart rate during exercise?**
+:::
+
+---
+
+## Step ${currentStep} of ${tutorialScript.steps.length}
+
+```{ojs}
+//| echo: false
+
+// Progress bar
+progressBar = {
+  const progress = ((currentStep - 1) / (tutorialScript.steps.length - 1)) * 100
+  return html`
+    <div class="tutorial-progress">
+      <div class="progress-bar" style="width: ${progress}%"></div>
+      <div class="progress-steps">
+        ${tutorialScript.steps.map((s, i) => html`
+          <div class="progress-step ${i < currentStep - 1 ? 'completed' : i === currentStep - 1 ? 'current' : 'pending'}">
+            ${i < currentStep - 1 ? '✓' : i + 1}
+          </div>
+        `)}
+      </div>
+    </div>
+  `
+}
+```
+
+${progressBar}
+
+::: {.callout-tip}
+## ${currentStepData.instruction}
+${currentStepData.hint ? html`<p class="step-hint"><em>${currentStepData.hint}</em></p>` : ''}
+${currentStepData.why ? html`<details><summary>Why this variable?</summary><p>${currentStepData.why}</p></details>` : ''}
+:::
+
+---
+
+### Available Variables
+
+```{ojs}
+//| echo: false
+
+// Variable cards with tutorial highlighting
+viewof tutorialVariableCards = {
+  const container = html`<div class="variable-pool"></div>`
+
+  function render() {
+    container.innerHTML = ''
+
+    if (availableVars.length === 0) {
+      container.innerHTML = '<p class="empty-message">All variables assigned</p>'
+      return
+    }
+
+    const highlightSet = new Set(currentStepData.highlightVariables || [])
+
+    for (const v of availableVars) {
+      const isHighlighted = highlightSet.has(v.name)
+      const isDimmed = highlightSet.size > 0 && !isHighlighted
+
+      const card = html`
+        <div class="variable-card ${isHighlighted ? 'tutorial-target' : ''} ${isDimmed ? 'tutorial-dimmed' : ''}"
+             draggable="${!isDimmed}"
+             data-var="${v.name}">
+          <div class="var-header">
+            <span class="var-icon">${typeIcon(v.type)}</span>
+            <span class="var-name">${v.label}</span>
+          </div>
+          <div class="var-meta">
+            <span class="var-type">${v.type}</span>
+            ${v.unit ? html`<span class="var-unit">(${v.unit})</span>` : ''}
+          </div>
+          <div class="var-desc">${v.description}</div>
+          ${isHighlighted ? html`<div class="target-indicator">👆 Drag me!</div>` : ''}
+        </div>
+      `
+
+      if (!isDimmed) {
+        card.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', v.name)
+          e.dataTransfer.effectAllowed = 'move'
+          card.classList.add('dragging')
+        })
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging')
+        })
+      }
+
+      container.appendChild(card)
+    }
+  }
+
+  render()
+  return container
+}
+```
+
+---
+
+### Model Canvas
+
+```{ojs}
+//| echo: false
+
+// Check if drop is valid for current tutorial step
+isValidDrop = (varName, zone) => {
+  const step = currentStepData
+  if (!step.target) return true
+  return step.target.variable === varName && step.target.zone === zone
+}
+
+// Predictor drop zone
+viewof tutorialPredictorZone = {
+  const isTarget = currentStepData.target?.zone === "predictor"
+
+  const zone = html`
+    <div class="drop-zone predictor-zone ${isTarget ? 'tutorial-target-zone' : ''}">
+      <h4>Predictors (X)</h4>
+      <p class="zone-hint">Variables that might explain the response</p>
+      <div class="assigned-vars" id="predictor-list"></div>
+    </div>
+  `
+
+  const list = zone.querySelector('#predictor-list')
+
+  function renderPredictors() {
+    list.innerHTML = ''
+
+    if (selectedPredictors.length === 0) {
+      list.innerHTML = '<p class="empty-hint">Drop predictor variables here</p>'
+      return
+    }
+
+    selectedPredictors.forEach((v, i) => {
+      const chip = html`
+        <div class="assigned-chip predictor-chip">
+          <span class="chip-label">X<sub>${i + 1}</sub></span>
+          <span class="chip-icon">${typeIcon(v.type)}</span>
+          <span class="chip-name">${v.label}</span>
+        </div>
+      `
+      list.appendChild(chip)
+    })
+  }
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    zone.classList.add('drag-over')
+  })
+
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('drag-over')
+  })
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    zone.classList.remove('drag-over')
+    const varName = e.dataTransfer.getData('text/plain')
+
+    if (!isValidDrop(varName, 'predictor')) {
+      zone.classList.add('tutorial-wrong')
+      setTimeout(() => zone.classList.remove('tutorial-wrong'), 500)
+      return
+    }
+
+    const variable = datasetMeta.variables.find(v => v.name === varName)
+    if (variable && !selectedPredictors.find(p => p.name === varName)) {
+      mutable selectedPredictors = [...selectedPredictors, variable]
+
+      // Advance tutorial step after short delay
+      setTimeout(() => {
+        if (currentStep < tutorialScript.steps.length) {
+          mutable currentStep = currentStep + 1
+        }
+      }, 600)
+
+      renderPredictors()
+    }
+  })
+
+  renderPredictors()
+  return zone
+}
+
+// Response drop zone
+viewof tutorialResponseZone = {
+  const isTarget = currentStepData.target?.zone === "response"
+
+  const zone = html`
+    <div class="drop-zone response-zone ${isTarget ? 'tutorial-target-zone' : ''}">
+      <h4>Response (y)</h4>
+      <p class="zone-hint">The outcome you want to predict</p>
+      <div class="assigned-vars" id="response-slot"></div>
+    </div>
+  `
+
+  const slot = zone.querySelector('#response-slot')
+
+  function renderResponse() {
+    slot.innerHTML = ''
+
+    if (!selectedResponse) {
+      slot.innerHTML = '<p class="empty-hint">Drop response variable here</p>'
+      return
+    }
+
+    const chip = html`
+      <div class="assigned-chip response-chip">
+        <span class="chip-label">y</span>
+        <span class="chip-icon">${typeIcon(selectedResponse.type)}</span>
+        <span class="chip-name">${selectedResponse.label}</span>
+      </div>
+    `
+    slot.appendChild(chip)
+  }
+
+  zone.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    zone.classList.add('drag-over')
+  })
+
+  zone.addEventListener('dragleave', () => {
+    zone.classList.remove('drag-over')
+  })
+
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault()
+    zone.classList.remove('drag-over')
+    const varName = e.dataTransfer.getData('text/plain')
+
+    if (!isValidDrop(varName, 'response')) {
+      zone.classList.add('tutorial-wrong')
+      setTimeout(() => zone.classList.remove('tutorial-wrong'), 500)
+      return
+    }
+
+    const variable = datasetMeta.variables.find(v => v.name === varName)
+    if (variable) {
+      mutable selectedResponse = variable
+
+      // Advance tutorial step after short delay
+      setTimeout(() => {
+        if (currentStep < tutorialScript.steps.length) {
+          mutable currentStep = currentStep + 1
+        }
+      }, 600)
+
+      renderResponse()
+    }
+  })
+
+  renderResponse()
+  return zone
+}
+```
+
+::: {.model-canvas}
+::: {.canvas-left}
+${viewof tutorialPredictorZone}
+:::
+
+::: {.canvas-right}
+${viewof tutorialResponseZone}
+:::
+:::
+
+---
+
+### Your Model So Far
+
+```{ojs}
+//| echo: false
+
+tutorialModelSummary = {
+  if (!selectedResponse) {
+    return html`<p class="model-building">Waiting for you to select a response variable...</p>`
+  }
+
+  if (selectedPredictors.length === 0) {
+    return html`
+      <div class="model-equation partial">
+        <p><strong>Response:</strong> ${selectedResponse.label}</p>
+        <p class="model-building">Add predictors to build the linear predictor equation...</p>
+      </div>
+    `
+  }
+
+  const predictorTerms = selectedPredictors.map((p, i) =>
+    `β<sub>${i+1}</sub>·${p.label.replace(/ /g, '')}`
+  ).join(' + ')
+
+  return html`
+    <div class="model-equation ${currentStep === tutorialScript.steps.length ? 'complete' : ''}">
+      <p><strong>Response (y):</strong> ${selectedResponse.label}</p>
+      <p><strong>Predictors (X):</strong> ${selectedPredictors.map(p => p.label).join(', ')}</p>
+      <p><strong>Linear predictor:</strong></p>
+      <p class="equation">η = β<sub>0</sub> + ${predictorTerms}</p>
+      ${currentStep === tutorialScript.steps.length ? html`
+        <p class="model-complete">✓ Model specification complete!</p>
+      ` : ''}
+    </div>
+  `
+}
+```
+
+${tutorialModelSummary}
+
+---
+
+```{ojs}
+//| echo: false
+
+// Navigation
+tutorialNav = {
+  const canContinue = currentStep === tutorialScript.steps.length
+
+  return html`
+    <div class="nav-buttons">
+      <button class="btn btn-secondary" onclick=${() => {
+        mutable currentStep = 1
+        mutable selectedPredictors = []
+        mutable selectedResponse = null
+      }}>↻ Restart Tutorial</button>
+
+      <div class="nav-right">
+        <a href="../model-builder.html" class="btn btn-outline">Skip to Free Explore</a>
+        <button class="btn btn-primary" ${canContinue ? '' : 'disabled'}>
+          Continue to Transforms →
+        </button>
+      </div>
+    </div>
+  `
+}
+```
+
+${tutorialNav}
+
+---
+
+## What You're Learning
+
+::: {.callout-note collapse="true"}
+## Understanding the Model Structure
+
+When you select variables, you're defining:
+
+1. **Response (y)**: The variable we observe and want to explain
+2. **Predictors (X)**: Variables we think influence the response
+3. **Linear predictor (η)**: A weighted sum of predictors: η = β₀ + β₁X₁ + β₂X₂ + ...
+
+The **β coefficients** (which we'll estimate later) tell us how much each predictor affects the response.
+:::

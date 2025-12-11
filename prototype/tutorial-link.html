@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Choose the Link Function</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.8;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #27ae60;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #27ae60;
+    }
+
+    /* Context panel - shows what we've built so far */
+    .context-panel {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .equation-display {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.3em;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .equation-display .unknown {
+      background: #fff3cd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Link function cards */
+    .link-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .link-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .link-card:hover:not(.dimmed):not(.selected) {
+      border-color: #3498db;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .link-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .link-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .link-card.selected-semi {
+      border-color: #f39c12;
+      background: #fffbf0;
+    }
+
+    .link-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .link-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .link-card .formula {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.2em;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .link-card .description {
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .link-card .use-case {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 500px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result display */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    .result-equation {
+      font-family: 'Times New Roman', serif;
+      font-size: 1.4em;
+      background: white;
+      padding: 15px 25px;
+      border-radius: 6px;
+      display: inline-block;
+      margin: 10px 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #3498db;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2980b9;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-warning {
+      background: #f39c12;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #e67e22;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial: The Link Function</h1>
+      <p>Choose how to connect your predictors to the response</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic Component</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">2</span>
+        <span>Link Function</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">3</span>
+        <span>Distribution</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="equation-display">
+        MaxHeartRate = <span class="unknown">g(?)</span>(1, Age, ExerciseAngina, STDepression)
+      </div>
+      <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+        The link function <strong>g()</strong> determines how the linear combination of predictors relates to the expected response.
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>Choose the Link Function</h2>
+      <p>For predicting <strong>maximum heart rate</strong> (a continuous value typically 60-200 bpm), which link function is most appropriate?</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Link function options -->
+    <div class="link-options">
+      <!-- Identity -->
+      <div class="link-card" data-link="identity">
+        <h3>Identity</h3>
+        <div class="formula">g(&mu;) = &mu;</div>
+        <p class="description">
+          The simplest link: predictions are directly on the response scale.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Response can be any real number (positive, negative, or zero)
+        </p>
+      </div>
+
+      <!-- Log -->
+      <div class="link-card" data-link="log">
+        <h3>Log</h3>
+        <div class="formula">g(&mu;) = ln(&mu;)</div>
+        <p class="description">
+          Ensures predictions are always positive. Models multiplicative effects.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Response must be strictly positive (counts, concentrations)
+        </p>
+      </div>
+
+      <!-- Logit -->
+      <div class="link-card" data-link="logit">
+        <h3>Logit</h3>
+        <div class="formula">g(&mu;) = ln(&mu;/(1-&mu;))</div>
+        <p class="description">
+          Maps probabilities (0-1) to the real line. The "log-odds" transformation.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Response is a probability or proportion
+        </p>
+      </div>
+
+      <!-- Inverse -->
+      <div class="link-card" data-link="inverse">
+        <h3>Inverse</h3>
+        <div class="formula">g(&mu;) = 1/&mu;</div>
+        <p class="description">
+          Creates reciprocal relationship between predictors and response.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Modelling rates or times (Gamma regression)
+        </p>
+      </div>
+    </div>
+
+    <!-- Result panel (shown after correct selection) -->
+    <div class="result-panel" id="resultPanel">
+      <h3>Link Function Selected</h3>
+      <p>With the <strong>identity link</strong>, your model equation becomes:</p>
+      <div class="result-equation">
+        E[MaxHeartRate] = &beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;Age + &beta;<sub>2</sub>&middot;ExerciseAngina + &beta;<sub>3</sub>&middot;STDepression
+      </div>
+      <p style="margin-top: 15px; color: #666;">
+        The identity link means predicted heart rate equals the linear combination directly - no transformation needed.
+        This is the natural choice for continuous outcomes that can take any value.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="tutorial.html" class="btn btn-secondary">&larr; Back to Variables</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Distribution &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for identity (correct, but with caveats) -->
+  <div class="dialog-overlay" id="identityDialog">
+    <div class="dialog success">
+      <h3>&#10004; Good Choice!</h3>
+      <p>
+        The <strong>identity link</strong> is a sensible choice for predicting maximum heart rate.
+      </p>
+      <p>
+        Since heart rate is a continuous measure and we expect predictors to have
+        <em>additive</em> effects, the identity link gives us the most interpretable model.
+      </p>
+      <div class="highlight">
+        <strong>What this means:</strong> A one-year increase in age changes predicted heart rate
+        by &beta;<sub>1</sub> bpm directly - easy to interpret!
+      </div>
+      <p style="font-size: 0.9em; color: #666;">
+        <strong>A small caveat:</strong> The identity link allows predictions of any value,
+        including negative heart rates (which are impossible). In practice, if your model
+        predicts negative values, you might need to reconsider your approach. For typical
+        data ranges, this usually isn't a problem.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmIdentity()">Continue with Identity Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for log (semi-valid) -->
+  <div class="dialog-overlay" id="logDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Not a Bad Idea...</h3>
+      <p>
+        The <strong>log link</strong> isn't unreasonable here - heart rate is always positive,
+        so the log link would guarantee positive predictions.
+      </p>
+      <div class="highlight">
+        <strong>However, consider:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>We don't typically expect <em>multiplicative</em> effects of age on heart rate</li>
+          <li>Coefficients become harder to interpret (percentage changes rather than bpm)</li>
+          <li>The identity link is simpler and often sufficient</li>
+        </ul>
+      </div>
+      <p>
+        The log link is more natural when the response <em>must</em> be positive
+        (like counts or concentrations) and when effects are genuinely multiplicative.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        <em>For this tutorial, try the identity link instead. In free explore mode,
+        you could compare both approaches!</em>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for logit (wrong) -->
+  <div class="dialog-overlay" id="logitDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>logit link</strong> is designed for modelling <em>probabilities</em> -
+        values that must be between 0 and 1.
+      </p>
+      <p>
+        Maximum heart rate is measured in bpm (typically 60-200), not as a probability.
+        The logit transformation would produce nonsensical results here.
+      </p>
+      <div class="highlight">
+        <strong>Logit is the right choice for:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>Binary outcomes (yes/no, survived/died)</li>
+          <li>Proportions (percentage of successes)</li>
+          <li>Any response bounded between 0 and 1</li>
+        </ul>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logitDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for inverse (wrong) -->
+  <div class="dialog-overlay" id="inverseDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>inverse link</strong> creates a reciprocal relationship -
+        it's used when you expect that as predictors increase, the response
+        decreases in a specific hyperbolic way.
+      </p>
+      <p>
+        This is the canonical link for Gamma distributions, typically used for
+        modelling waiting times, rates, or other strictly positive continuous data
+        with right-skewed distributions.
+      </p>
+      <div class="highlight">
+        <strong>Inverse link is natural for:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li>Time-to-event data (waiting times)</li>
+          <li>Insurance claim amounts</li>
+          <li>Other right-skewed positive continuous data</li>
+        </ul>
+      </div>
+      <p>
+        For heart rate, we expect more straightforward additive effects, not reciprocal ones.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('inverseDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedLink = null;
+
+    // Link card click handlers
+    document.querySelectorAll('.link-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const link = card.dataset.link;
+        handleLinkSelection(link, card);
+      });
+    });
+
+    function handleLinkSelection(link, card) {
+      // Don't process if already confirmed
+      if (selectedLink === 'identity') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.link-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+      });
+
+      switch(link) {
+        case 'identity':
+          // Correct choice - show dialog with caveats
+          card.classList.add('selected-correct');
+          showDialog('identityDialog');
+          break;
+
+        case 'log':
+          // Semi-valid - show educational dialog
+          card.classList.add('selected-semi');
+          showDialog('logDialog');
+          break;
+
+        case 'logit':
+          // Wrong - logit is for probabilities
+          card.classList.add('selected-wrong');
+          showDialog('logitDialog');
+          break;
+
+        case 'inverse':
+          // Wrong - inverse is for Gamma/rates
+          card.classList.add('selected-wrong');
+          showDialog('inverseDialog');
+          break;
+      }
+    }
+
+    function confirmIdentity() {
+      // User confirmed identity link selection
+      selectedLink = 'identity';
+      closeDialog('identityDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.link-card:not([data-link="identity"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      document.getElementById(dialogId).classList.add('show');
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedLink !== 'identity') {
+        document.querySelectorAll('.link-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      alert('Distribution selection page coming soon!');
+    });
+  </script>
+</body>
+</html>
