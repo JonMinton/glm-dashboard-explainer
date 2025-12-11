@@ -116,33 +116,75 @@ Each tutorial follows a 6-page flow:
 - [JonStats Course Materials](https://jonminton.github.io/JonStats/)
 - Prior discussion: `support/claude-concept-chat.md`
 
+## User Feedback System
+
+The tutorials are in alpha testing. Users can report bugs and request features via GitHub Issues.
+
+### Querying Feedback (for Claude sessions)
+
+```bash
+# List all bug reports
+gh issue list --label bug
+
+# List all feature requests
+gh issue list --label enhancement
+
+# View a specific issue
+gh issue view <issue-number>
+
+# List open issues with details
+gh issue list --label bug --state open --json number,title,body
+```
+
+### Feedback Infrastructure
+
+- **Issue templates**: `.github/ISSUE_TEMPLATE/` (bug_report.md, feature_request.md)
+- **Feedback widget**: `prototype/js/feedback.js` - floating "?" button on all pages
+- **Auto-context**: Widget pre-fills issues with current tutorial/page location
+
+### Adding Feedback to New Pages
+
+Run the build script to add the feedback widget to any new HTML files:
+```bash
+python3 scripts/build/add-feedback-widget.py
+```
+
 ## File Structure
 
 ```
 glm-dashboard-explainer/
-├── claude.md                 # This file - project overview
+├── CLAUDE.md                 # This file - project overview
 ├── _quarto.yml               # Quarto project configuration
+├── .github/
+│   └── ISSUE_TEMPLATE/       # GitHub issue templates
+│       ├── bug_report.md
+│       ├── feature_request.md
+│       └── config.yml
 ├── .claude/
 │   ├── settings.json         # Claude Code settings
+│   ├── handover/             # Session handover documents
 │   ├── architecture.md       # Architectural decisions (ADRs)
-│   ├── components.md         # Component specifications
 │   └── commands/             # Custom slash commands
-│       ├── context.md        # Load full project context
-│       ├── review-page.md    # Review page implementation
-│       ├── add-scenario.md   # Add new scenario
-│       └── check-notation.md # Check notation consistency
-├── support/
-│   └── claude-concept-chat.md  # Prior discussion context
-├── pages/                    # Quarto pages (the actual content)
-│   ├── index.qmd             # Landing / scenario selection
-│   ├── data.qmd              # Data exploration page
-│   ├── model.qmd             # Model builder page
-│   ├── transform.qmd         # Predictor transformations
-│   ├── fit.qmd               # Fitting page
-│   └── advanced/             # Advanced topics
-│       └── loss-functions.qmd
-├── components/               # Reusable JS/Observable components
-├── data/                     # Sample datasets (R/CSV)
-├── R/                        # R scripts for data generation, examples
-└── _site/                    # Built site (git-ignored)
+├── prototype/                # Main tutorial site
+│   ├── index.html            # Tutorial index page
+│   ├── js/
+│   │   └── feedback.js       # Feedback widget (runtime JS)
+│   ├── css/                  # Shared CSS (for future use)
+│   └── tutorials/
+│       ├── 01-gaussian/      # 6 HTML files per tutorial
+│       ├── 02-logistic/
+│       ├── 03-poisson/
+│       ├── 04-negbin/
+│       └── 05-gamma/
+├── scripts/
+│   ├── build/                # Site processing scripts (Python)
+│   │   ├── extract-css.py
+│   │   └── add-feedback-widget.py
+│   ├── R/                    # R validation scripts
+│   │   └── validate-*.R
+│   └── py/                   # Python validation scripts
+│       └── validate_*.py
+├── data/                     # Sample datasets (JSON)
+│   └── heart.json
+└── _site/                    # Quarto build output (git-ignored)
 ```
