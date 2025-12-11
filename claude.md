@@ -65,7 +65,7 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 | # | Tutorial | GLM Family | Status |
 |---|----------|------------|--------|
 | 1 | Heart Rate Prediction | Gaussian + Identity | **COMPLETE** |
-| 2 | Heart Disease Classification | Binomial + Logit | PLANNED |
+| 2 | Heart Disease Classification | Binomial + Logit | **COMPLETE** |
 | 3 | Bike Rental Counts | Poisson + Log | PLANNED |
 | 4 | Overdispersed Counts | Negative Binomial + Log | PLANNED |
 | 5 | Insurance Claim Amounts | Gamma + Log | OPTIONAL |

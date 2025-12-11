@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced - Binomial Log-Likelihood Derivation</title>
+  <!-- KaTeX for LaTeX rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.4em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #e74c3c;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+
+    /* Section styling */
+    .section {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      color: #2c3e50;
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #3498db;
+    }
+
+    .section h3 {
+      color: #34495e;
+      font-size: 1.1em;
+      margin: 20px 0 10px 0;
+    }
+
+    .section p {
+      margin-bottom: 12px;
+      color: #555;
+    }
+
+    /* Math blocks */
+    .math-block {
+      background: #f8f9fa;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      margin: 15px 0;
+      overflow-x: auto;
+    }
+
+    .math-block.highlight {
+      background: #e8f4fd;
+      border-left-color: #2980b9;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .derivation-step {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed #ddd;
+    }
+
+    .derivation-step:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .step-num {
+      background: #3498db;
+      color: white;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85em;
+      font-weight: 600;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content .math {
+      font-size: 1.05em;
+      margin: 8px 0;
+    }
+
+    .step-content .explanation {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    /* Note boxes */
+    .note {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+    }
+
+    .note-title {
+      font-weight: 600;
+      color: #856404;
+      margin-bottom: 5px;
+    }
+
+    .note p {
+      color: #856404;
+      margin: 0;
+      font-size: 0.95em;
+    }
+
+    .note.info {
+      background: #e8f4fd;
+      border-color: #3498db;
+    }
+
+    .note.info .note-title,
+    .note.info p {
+      color: #2980b9;
+    }
+
+    /* Code sections */
+    .code-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .code-tab {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px 6px 0 0;
+      background: #dee2e6;
+      color: #666;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95em;
+      transition: all 0.2s;
+    }
+
+    .code-tab:hover {
+      background: #e9ecef;
+    }
+
+    .code-tab.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .code-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 6px 6px 6px;
+      padding: 20px;
+    }
+
+    .code-content.active {
+      display: block;
+    }
+
+    pre {
+      margin: 0;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      color: #ecf0f1;
+    }
+
+    code {
+      font-family: inherit;
+    }
+
+    /* Syntax highlighting */
+    .comment { color: #7f8c8d; }
+    .keyword { color: #e74c3c; }
+    .string { color: #2ecc71; }
+    .function { color: #9b59b6; }
+    .variable { color: #f39c12; }
+    .number { color: #3498db; }
+    .operator { color: #e74c3c; }
+
+    .output-section {
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #4a5568;
+    }
+
+    .output-section h4 {
+      color: #7f8c8d;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .output-example {
+      background: #1a252f;
+      border-radius: 4px;
+      padding: 15px;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.8em;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      color: #bdc3c7;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid #dee2e6;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2980b9;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #21618c;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    /* Table of contents */
+    .toc {
+      background: #f0f7ff;
+      border: 1px solid #bee3f8;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .toc h3 {
+      color: #2980b9;
+      margin-bottom: 12px;
+      font-size: 1em;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc li {
+      padding: 6px 0;
+    }
+
+    .toc a {
+      color: #3498db;
+      text-decoration: none;
+    }
+
+    .toc a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 15px;
+      }
+
+      .section {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Going Further: Binomial Log-Likelihood & IRLS <span class="badge">Advanced</span></h1>
+      <p>Understanding the mathematics behind logistic regression fitting</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Table of Contents -->
+    <div class="toc">
+      <h3>On This Page</h3>
+      <ul>
+        <li><a href="#likelihood">1. The Binomial Likelihood</a></li>
+        <li><a href="#loglik">2. Log-Likelihood for Logistic Regression</a></li>
+        <li><a href="#why-no-closed-form">3. Why No Closed-Form Solution?</a></li>
+        <li><a href="#irls">4. IRLS Algorithm Explained</a></li>
+        <li><a href="#implementation">5. Implementation from Scratch</a></li>
+      </ul>
+    </div>
+
+    <!-- Section 1: Binomial Likelihood -->
+    <div class="section" id="likelihood">
+      <h2>1. The Binomial Likelihood</h2>
+
+      <p>
+        For binary outcomes (0 or 1), each observation follows a Bernoulli distribution (special case of Binomial with n=1):
+      </p>
+
+      <div class="math-block highlight">
+        $$y_i \sim \text{Bernoulli}(p_i) \quad \text{where} \quad \text{logit}(p_i) = \mathbf{x}_i^T \boldsymbol{\beta}$$
+      </div>
+
+      <p>
+        The probability mass function for a single observation is:
+      </p>
+
+      <div class="math-block">
+        $$P(Y_i = y_i) = p_i^{y_i} (1-p_i)^{1-y_i}$$
+      </div>
+
+      <p>
+        Where $p_i$ is linked to our linear predictor via the logit function:
+      </p>
+
+      <div class="math-block">
+        $$p_i = \frac{1}{1 + e^{-\mathbf{x}_i^T \boldsymbol{\beta}}} = \frac{e^{\mathbf{x}_i^T \boldsymbol{\beta}}}{1 + e^{\mathbf{x}_i^T \boldsymbol{\beta}}}$$
+      </div>
+
+      <p>
+        Assuming independence, the <strong>likelihood</strong> for all n observations is:
+      </p>
+
+      <div class="math-block highlight">
+        $$L(\boldsymbol{\beta} | \mathbf{y}) = \prod_{i=1}^{n} p_i^{y_i} (1-p_i)^{1-y_i}$$
+      </div>
+    </div>
+
+    <!-- Section 2: Log-Likelihood -->
+    <div class="section" id="loglik">
+      <h2>2. Log-Likelihood for Logistic Regression</h2>
+
+      <p>
+        Taking the natural logarithm transforms the product into a sum:
+      </p>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="math">
+              $\ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} \left[ y_i \log(p_i) + (1-y_i) \log(1-p_i) \right]$
+            </div>
+            <div class="explanation">The log-likelihood as a sum over observations.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="math">
+              $\ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} \left[ y_i \log\left(\frac{p_i}{1-p_i}\right) + \log(1-p_i) \right]$
+            </div>
+            <div class="explanation">Rearrange using log rules.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="math">
+              $\ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} \left[ y_i \cdot \mathbf{x}_i^T \boldsymbol{\beta} - \log(1 + e^{\mathbf{x}_i^T \boldsymbol{\beta}}) \right]$
+            </div>
+            <div class="explanation">
+              Substitute $\log(p/(1-p)) = \mathbf{x}^T\boldsymbol{\beta}$ and $\log(1-p) = -\log(1+e^{\eta})$
+            </div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="math">
+              $\ell(\boldsymbol{\beta}) = \mathbf{y}^T \mathbf{X}\boldsymbol{\beta} - \sum_{i=1}^{n} \log(1 + e^{\mathbf{x}_i^T \boldsymbol{\beta}})$
+            </div>
+            <div class="explanation">
+              <strong>Final form in matrix notation.</strong> This is the binary cross-entropy loss (negated).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note info">
+        <div class="note-title">Connection to Cross-Entropy</div>
+        <p>
+          The negative log-likelihood for logistic regression is exactly the <strong>binary cross-entropy loss</strong>
+          used in machine learning. Minimizing cross-entropy = maximizing likelihood!
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 3: Why No Closed Form -->
+    <div class="section" id="why-no-closed-form">
+      <h2>3. Why No Closed-Form Solution?</h2>
+
+      <p>
+        The <strong>score equations</strong> (gradient set to zero) are:
+      </p>
+
+      <div class="math-block">
+        $$\frac{\partial \ell}{\partial \boldsymbol{\beta}} = \sum_{i=1}^{n} (y_i - p_i) \mathbf{x}_i = \mathbf{X}^T(\mathbf{y} - \mathbf{p}) = \mathbf{0}$$
+      </div>
+
+      <p>
+        The problem is that $\mathbf{p}$ depends on $\boldsymbol{\beta}$ through the logistic function:
+      </p>
+
+      <div class="math-block highlight">
+        $$p_i = \frac{1}{1 + e^{-\mathbf{x}_i^T \boldsymbol{\beta}}}$$
+      </div>
+
+      <p>
+        This creates a <strong>non-linear system of equations</strong>. We cannot algebraically isolate $\boldsymbol{\beta}$ on one side. Compare to Gaussian GLM where:
+      </p>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Gaussian GLM (Tutorial 1)</th>
+          <th>Logistic Regression (This Tutorial)</th>
+        </tr>
+        <tr>
+          <td>Score: $\mathbf{X}^T(\mathbf{y} - \mathbf{X}\boldsymbol{\beta}) = \mathbf{0}$</td>
+          <td>Score: $\mathbf{X}^T(\mathbf{y} - \mathbf{p}(\boldsymbol{\beta})) = \mathbf{0}$</td>
+        </tr>
+        <tr>
+          <td>Linear in $\boldsymbol{\beta}$ → solve directly</td>
+          <td>Non-linear in $\boldsymbol{\beta}$ → iterate</td>
+        </tr>
+        <tr>
+          <td>Solution: $(\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}$</td>
+          <td>No closed-form solution</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Section 4: IRLS Algorithm -->
+    <div class="section" id="irls">
+      <h2>4. IRLS Algorithm Explained</h2>
+
+      <p>
+        <strong>Iteratively Reweighted Least Squares (IRLS)</strong> is the standard method for fitting GLMs.
+        For logistic regression, it approximates the non-linear problem as a sequence of weighted linear regressions.
+      </p>
+
+      <h3>The Algorithm</h3>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="math">Initialize: $\boldsymbol{\beta}^{(0)} = \mathbf{0}$</div>
+            <div class="explanation">Start with all coefficients at zero.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="math">
+              Compute $\eta_i^{(t)} = \mathbf{x}_i^T \boldsymbol{\beta}^{(t)}$ and $p_i^{(t)} = \frac{1}{1+e^{-\eta_i^{(t)}}}$
+            </div>
+            <div class="explanation">Calculate current linear predictor and probabilities.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="math">
+              Compute weights: $w_i^{(t)} = p_i^{(t)}(1 - p_i^{(t)})$
+            </div>
+            <div class="explanation">Weights are the variance of Bernoulli at current $p_i$.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="math">
+              Compute working response: $z_i^{(t)} = \eta_i^{(t)} + \frac{y_i - p_i^{(t)}}{w_i^{(t)}}$
+            </div>
+            <div class="explanation">Linearize around current estimate.</div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="math">
+              Update: $\boldsymbol{\beta}^{(t+1)} = (\mathbf{X}^T \mathbf{W}^{(t)} \mathbf{X})^{-1} \mathbf{X}^T \mathbf{W}^{(t)} \mathbf{z}^{(t)}$
+            </div>
+            <div class="explanation">
+              <strong>Weighted least squares!</strong> $\mathbf{W} = \text{diag}(w_1, \ldots, w_n)$
+            </div>
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="math">
+              Repeat steps 2-5 until $\|\boldsymbol{\beta}^{(t+1)} - \boldsymbol{\beta}^{(t)}\| < \epsilon$
+            </div>
+            <div class="explanation">Typically converges in 3-7 iterations for well-behaved data.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="note-title">Why "Fisher Scoring"?</div>
+        <p>
+          IRLS for GLMs is equivalent to Newton-Raphson using the <em>expected</em> information matrix
+          (Fisher information) instead of the observed Hessian. This guarantees positive definiteness
+          and is called Fisher scoring. For canonical links like logit, observed = expected.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 5: Implementation -->
+    <div class="section" id="implementation">
+      <h2>5. Implementation from Scratch</h2>
+
+      <p>
+        Let's implement logistic regression fitting using both numerical optimization and IRLS.
+      </p>
+
+      <div class="code-tabs">
+        <button class="code-tab active" onclick="showCode('r')">R</button>
+        <button class="code-tab" onclick="showCode('python')">Python</button>
+      </div>
+
+      <div class="code-content active" id="r-code">
+        <pre><code><span class="comment"># Load and prepare data</span>
+<span class="variable">heart</span> <span class="operator">&lt;-</span> <span class="function">read.csv</span>(
+  <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>,
+  <span class="keyword">header</span> <span class="operator">=</span> <span class="keyword">FALSE</span>
+)
+<span class="function">names</span>(<span class="variable">heart</span>) <span class="operator">&lt;-</span> <span class="function">c</span>(<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>,
+                <span class="string">"fbs"</span>, <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>,
+                <span class="string">"oldpeak"</span>, <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>)
+<span class="variable">heart</span>$<span class="variable">target</span> <span class="operator">&lt;-</span> <span class="function">ifelse</span>(<span class="variable">heart</span>$<span class="variable">target</span> <span class="operator">&gt;</span> <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>)
+
+<span class="comment"># Prepare design matrix and response</span>
+<span class="variable">X</span> <span class="operator">&lt;-</span> <span class="function">cbind</span>(<span class="number">1</span>, <span class="variable">heart</span>$<span class="variable">age</span>, <span class="variable">heart</span>$<span class="variable">sex</span>, <span class="variable">heart</span>$<span class="variable">cp</span>,
+           <span class="variable">heart</span>$<span class="variable">thalach</span>, <span class="variable">heart</span>$<span class="variable">oldpeak</span>)
+<span class="variable">y</span> <span class="operator">&lt;-</span> <span class="variable">heart</span>$<span class="variable">target</span>
+
+<span class="comment"># Logistic (inverse logit) function</span>
+<span class="variable">logistic</span> <span class="operator">&lt;-</span> <span class="keyword">function</span>(<span class="variable">eta</span>) <span class="number">1</span> / (<span class="number">1</span> <span class="operator">+</span> <span class="function">exp</span>(<span class="operator">-</span><span class="variable">eta</span>))
+
+<span class="comment"># Negative log-likelihood</span>
+<span class="variable">neg_loglik</span> <span class="operator">&lt;-</span> <span class="keyword">function</span>(<span class="variable">beta</span>, <span class="variable">X</span>, <span class="variable">y</span>) {
+  <span class="variable">eta</span> <span class="operator">&lt;-</span> <span class="variable">X</span> <span class="operator">%*%</span> <span class="variable">beta</span>
+  <span class="variable">p</span> <span class="operator">&lt;-</span> <span class="function">logistic</span>(<span class="variable">eta</span>)
+  <span class="comment"># Clip probabilities for numerical stability</span>
+  <span class="variable">p</span> <span class="operator">&lt;-</span> <span class="function">pmax</span>(<span class="function">pmin</span>(<span class="variable">p</span>, <span class="number">1</span> <span class="operator">-</span> <span class="number">1e-10</span>), <span class="number">1e-10</span>)
+  <span class="operator">-</span><span class="function">sum</span>(<span class="variable">y</span> <span class="operator">*</span> <span class="function">log</span>(<span class="variable">p</span>) <span class="operator">+</span> (<span class="number">1</span> <span class="operator">-</span> <span class="variable">y</span>) <span class="operator">*</span> <span class="function">log</span>(<span class="number">1</span> <span class="operator">-</span> <span class="variable">p</span>))
+}
+
+<span class="comment"># IRLS implementation</span>
+<span class="variable">irls_logistic</span> <span class="operator">&lt;-</span> <span class="keyword">function</span>(<span class="variable">X</span>, <span class="variable">y</span>, <span class="keyword">tol</span> <span class="operator">=</span> <span class="number">1e-8</span>, <span class="keyword">max_iter</span> <span class="operator">=</span> <span class="number">25</span>) {
+  <span class="variable">n</span> <span class="operator">&lt;-</span> <span class="function">nrow</span>(<span class="variable">X</span>)
+  <span class="variable">p</span> <span class="operator">&lt;-</span> <span class="function">ncol</span>(<span class="variable">X</span>)
+  <span class="variable">beta</span> <span class="operator">&lt;-</span> <span class="function">rep</span>(<span class="number">0</span>, <span class="variable">p</span>)  <span class="comment"># Initialize at zero</span>
+
+  <span class="keyword">for</span> (<span class="variable">iter</span> <span class="keyword">in</span> <span class="number">1</span><span class="operator">:</span><span class="variable">max_iter</span>) {
+    <span class="variable">eta</span> <span class="operator">&lt;-</span> <span class="variable">X</span> <span class="operator">%*%</span> <span class="variable">beta</span>
+    <span class="variable">mu</span> <span class="operator">&lt;-</span> <span class="function">logistic</span>(<span class="variable">eta</span>)
+
+    <span class="comment"># Weights = variance of Bernoulli</span>
+    <span class="variable">w</span> <span class="operator">&lt;-</span> <span class="function">as.vector</span>(<span class="variable">mu</span> <span class="operator">*</span> (<span class="number">1</span> <span class="operator">-</span> <span class="variable">mu</span>))
+    <span class="variable">w</span> <span class="operator">&lt;-</span> <span class="function">pmax</span>(<span class="variable">w</span>, <span class="number">1e-10</span>)  <span class="comment"># Prevent division by zero</span>
+
+    <span class="comment"># Working response</span>
+    <span class="variable">z</span> <span class="operator">&lt;-</span> <span class="variable">eta</span> <span class="operator">+</span> (<span class="variable">y</span> <span class="operator">-</span> <span class="variable">mu</span>) / <span class="variable">w</span>
+
+    <span class="comment"># Weighted least squares update</span>
+    <span class="variable">W</span> <span class="operator">&lt;-</span> <span class="function">diag</span>(<span class="variable">w</span>)
+    <span class="variable">XtWX</span> <span class="operator">&lt;-</span> <span class="function">t</span>(<span class="variable">X</span>) <span class="operator">%*%</span> <span class="variable">W</span> <span class="operator">%*%</span> <span class="variable">X</span>
+    <span class="variable">XtWz</span> <span class="operator">&lt;-</span> <span class="function">t</span>(<span class="variable">X</span>) <span class="operator">%*%</span> <span class="variable">W</span> <span class="operator">%*%</span> <span class="variable">z</span>
+    <span class="variable">beta_new</span> <span class="operator">&lt;-</span> <span class="function">solve</span>(<span class="variable">XtWX</span>, <span class="variable">XtWz</span>)
+
+    <span class="comment"># Check convergence</span>
+    <span class="keyword">if</span> (<span class="function">max</span>(<span class="function">abs</span>(<span class="variable">beta_new</span> <span class="operator">-</span> <span class="variable">beta</span>)) <span class="operator">&lt;</span> <span class="variable">tol</span>) {
+      <span class="function">cat</span>(<span class="string">"Converged in"</span>, <span class="variable">iter</span>, <span class="string">"iterations\n"</span>)
+      <span class="keyword">break</span>
+    }
+    <span class="variable">beta</span> <span class="operator">&lt;-</span> <span class="function">as.vector</span>(<span class="variable">beta_new</span>)
+  }
+
+  <span class="comment"># Return coefficients and Fisher information</span>
+  <span class="function">list</span>(<span class="variable">beta</span> <span class="operator">=</span> <span class="variable">beta</span>, <span class="variable">fisher_info</span> <span class="operator">=</span> <span class="variable">XtWX</span>, <span class="variable">iterations</span> <span class="operator">=</span> <span class="variable">iter</span>)
+}
+
+<span class="comment"># Fit using our IRLS</span>
+<span class="function">cat</span>(<span class="string">"=== IRLS from scratch ===\n"</span>)
+<span class="variable">result</span> <span class="operator">&lt;-</span> <span class="function">irls_logistic</span>(<span class="variable">X</span>, <span class="variable">y</span>)
+<span class="variable">se</span> <span class="operator">&lt;-</span> <span class="function">sqrt</span>(<span class="function">diag</span>(<span class="function">solve</span>(<span class="variable">result</span>$<span class="variable">fisher_info</span>)))
+<span class="function">print</span>(<span class="function">data.frame</span>(
+  <span class="variable">Estimate</span> <span class="operator">=</span> <span class="function">round</span>(<span class="variable">result</span>$<span class="variable">beta</span>, <span class="number">4</span>),
+  <span class="variable">Std.Error</span> <span class="operator">=</span> <span class="function">round</span>(<span class="variable">se</span>, <span class="number">4</span>),
+  <span class="keyword">row.names</span> <span class="operator">=</span> <span class="function">c</span>(<span class="string">"Intercept"</span>, <span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"thalach"</span>, <span class="string">"oldpeak"</span>)
+))
+
+<span class="comment"># Compare with glm()</span>
+<span class="function">cat</span>(<span class="string">"\n=== Comparison with glm() ===\n"</span>)
+<span class="variable">glm_fit</span> <span class="operator">&lt;-</span> <span class="function">glm</span>(<span class="variable">target</span> <span class="operator">~</span> <span class="variable">age</span> <span class="operator">+</span> <span class="variable">sex</span> <span class="operator">+</span> <span class="variable">cp</span> <span class="operator">+</span> <span class="variable">thalach</span> <span class="operator">+</span> <span class="variable">oldpeak</span>,
+               <span class="keyword">data</span> <span class="operator">=</span> <span class="variable">heart</span>, <span class="keyword">family</span> <span class="operator">=</span> <span class="function">binomial</span>())
+<span class="function">print</span>(<span class="function">coef</span>(<span class="variable">glm_fit</span>))</code></pre>
+
+        <div class="output-section">
+          <h4>Expected Output</h4>
+          <div class="output-example">=== IRLS from scratch ===
+Converged in 5 iterations
+           Estimate Std.Error
+Intercept  -3.1655    2.0253
+age         0.0359    0.0188
+sex         1.6745    0.3506
+cp          0.8963    0.1702
+thalach    -0.0247    0.0080
+oldpeak     0.6829    0.1528
+
+=== Comparison with glm() ===
+(Intercept)         age         sex          cp     thalach     oldpeak
+-3.16551839  0.03593889  1.67450111  0.89626503 -0.02466255  0.68288325</div>
+        </div>
+      </div>
+
+      <div class="code-content" id="python-code">
+        <pre><code><span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">from</span> scipy.optimize <span class="keyword">import</span> minimize
+<span class="keyword">import</span> statsmodels.formula.api <span class="keyword">as</span> smf
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+
+<span class="comment"># Load and prepare data</span>
+<span class="variable">url</span> <span class="operator">=</span> <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>
+<span class="variable">cols</span> <span class="operator">=</span> [<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>, <span class="string">"fbs"</span>,
+        <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>,
+        <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>]
+<span class="variable">heart</span> <span class="operator">=</span> pd.<span class="function">read_csv</span>(<span class="variable">url</span>, <span class="keyword">header</span><span class="operator">=</span><span class="keyword">None</span>, <span class="keyword">names</span><span class="operator">=</span><span class="variable">cols</span>)
+<span class="variable">heart</span>[<span class="string">'target'</span>] <span class="operator">=</span> (<span class="variable">heart</span>[<span class="string">'target'</span>] <span class="operator">&gt;</span> <span class="number">0</span>).<span class="function">astype</span>(<span class="keyword">int</span>)
+
+<span class="comment"># Prepare design matrix and response</span>
+<span class="variable">X</span> <span class="operator">=</span> np.<span class="function">column_stack</span>([
+    np.<span class="function">ones</span>(<span class="function">len</span>(<span class="variable">heart</span>)),
+    <span class="variable">heart</span>[<span class="string">'age'</span>], <span class="variable">heart</span>[<span class="string">'sex'</span>], <span class="variable">heart</span>[<span class="string">'cp'</span>],
+    <span class="variable">heart</span>[<span class="string">'thalach'</span>], <span class="variable">heart</span>[<span class="string">'oldpeak'</span>]
+])
+<span class="variable">y</span> <span class="operator">=</span> <span class="variable">heart</span>[<span class="string">'target'</span>].<span class="variable">values</span>
+
+<span class="keyword">def</span> <span class="function">logistic</span>(<span class="variable">eta</span>):
+    <span class="string">"""Logistic (inverse logit) function"""</span>
+    <span class="keyword">return</span> <span class="number">1</span> / (<span class="number">1</span> <span class="operator">+</span> np.<span class="function">exp</span>(<span class="operator">-</span>np.<span class="function">clip</span>(<span class="variable">eta</span>, <span class="operator">-</span><span class="number">500</span>, <span class="number">500</span>)))
+
+<span class="keyword">def</span> <span class="function">irls_logistic</span>(<span class="variable">X</span>, <span class="variable">y</span>, <span class="keyword">tol</span><span class="operator">=</span><span class="number">1e-8</span>, <span class="keyword">max_iter</span><span class="operator">=</span><span class="number">25</span>):
+    <span class="string">"""IRLS for logistic regression"""</span>
+    <span class="variable">n</span>, <span class="variable">p</span> <span class="operator">=</span> <span class="variable">X</span>.<span class="variable">shape</span>
+    <span class="variable">beta</span> <span class="operator">=</span> np.<span class="function">zeros</span>(<span class="variable">p</span>)  <span class="comment"># Initialize at zero</span>
+
+    <span class="keyword">for</span> <span class="variable">iteration</span> <span class="keyword">in</span> <span class="function">range</span>(<span class="number">1</span>, <span class="variable">max_iter</span> <span class="operator">+</span> <span class="number">1</span>):
+        <span class="variable">eta</span> <span class="operator">=</span> <span class="variable">X</span> <span class="operator">@</span> <span class="variable">beta</span>
+        <span class="variable">mu</span> <span class="operator">=</span> <span class="function">logistic</span>(<span class="variable">eta</span>)
+
+        <span class="comment"># Weights = variance of Bernoulli</span>
+        <span class="variable">w</span> <span class="operator">=</span> <span class="variable">mu</span> <span class="operator">*</span> (<span class="number">1</span> <span class="operator">-</span> <span class="variable">mu</span>)
+        <span class="variable">w</span> <span class="operator">=</span> np.<span class="function">maximum</span>(<span class="variable">w</span>, <span class="number">1e-10</span>)  <span class="comment"># Prevent division by zero</span>
+
+        <span class="comment"># Working response</span>
+        <span class="variable">z</span> <span class="operator">=</span> <span class="variable">eta</span> <span class="operator">+</span> (<span class="variable">y</span> <span class="operator">-</span> <span class="variable">mu</span>) / <span class="variable">w</span>
+
+        <span class="comment"># Weighted least squares update</span>
+        <span class="variable">W</span> <span class="operator">=</span> np.<span class="function">diag</span>(<span class="variable">w</span>)
+        <span class="variable">XtWX</span> <span class="operator">=</span> <span class="variable">X</span>.<span class="variable">T</span> <span class="operator">@</span> <span class="variable">W</span> <span class="operator">@</span> <span class="variable">X</span>
+        <span class="variable">XtWz</span> <span class="operator">=</span> <span class="variable">X</span>.<span class="variable">T</span> <span class="operator">@</span> <span class="variable">W</span> <span class="operator">@</span> <span class="variable">z</span>
+        <span class="variable">beta_new</span> <span class="operator">=</span> np.linalg.<span class="function">solve</span>(<span class="variable">XtWX</span>, <span class="variable">XtWz</span>)
+
+        <span class="comment"># Check convergence</span>
+        <span class="keyword">if</span> np.<span class="function">max</span>(np.<span class="function">abs</span>(<span class="variable">beta_new</span> <span class="operator">-</span> <span class="variable">beta</span>)) <span class="operator">&lt;</span> <span class="variable">tol</span>:
+            <span class="function">print</span>(<span class="string">f"Converged in {iteration} iterations"</span>)
+            <span class="keyword">break</span>
+        <span class="variable">beta</span> <span class="operator">=</span> <span class="variable">beta_new</span>
+
+    <span class="keyword">return</span> {<span class="string">'beta'</span>: <span class="variable">beta</span>, <span class="string">'fisher_info'</span>: <span class="variable">XtWX</span>, <span class="string">'iterations'</span>: <span class="variable">iteration</span>}
+
+<span class="comment"># Fit using our IRLS</span>
+<span class="function">print</span>(<span class="string">"=== IRLS from scratch ==="</span>)
+<span class="variable">result</span> <span class="operator">=</span> <span class="function">irls_logistic</span>(<span class="variable">X</span>, <span class="variable">y</span>)
+<span class="variable">se</span> <span class="operator">=</span> np.<span class="function">sqrt</span>(np.<span class="function">diag</span>(np.linalg.<span class="function">inv</span>(<span class="variable">result</span>[<span class="string">'fisher_info'</span>])))
+
+<span class="variable">params_df</span> <span class="operator">=</span> pd.<span class="function">DataFrame</span>({
+    <span class="string">'Estimate'</span>: np.<span class="function">round</span>(<span class="variable">result</span>[<span class="string">'beta'</span>], <span class="number">4</span>),
+    <span class="string">'Std.Error'</span>: np.<span class="function">round</span>(<span class="variable">se</span>, <span class="number">4</span>)
+}, <span class="keyword">index</span><span class="operator">=</span>[<span class="string">'Intercept'</span>, <span class="string">'age'</span>, <span class="string">'sex'</span>, <span class="string">'cp'</span>, <span class="string">'thalach'</span>, <span class="string">'oldpeak'</span>])
+<span class="function">print</span>(<span class="variable">params_df</span>)
+
+<span class="comment"># Compare with statsmodels</span>
+<span class="function">print</span>(<span class="string">"\n=== Comparison with statsmodels ==="</span>)
+<span class="variable">glm_fit</span> <span class="operator">=</span> smf.<span class="function">glm</span>(
+    <span class="keyword">formula</span><span class="operator">=</span><span class="string">"target ~ age + sex + cp + thalach + oldpeak"</span>,
+    <span class="keyword">data</span><span class="operator">=</span><span class="variable">heart</span>,
+    <span class="keyword">family</span><span class="operator">=</span>sm.families.<span class="function">Binomial</span>()
+).<span class="function">fit</span>()
+<span class="function">print</span>(<span class="variable">glm_fit</span>.<span class="variable">params</span>)</code></pre>
+
+        <div class="output-section">
+          <h4>Expected Output</h4>
+          <div class="output-example">=== IRLS from scratch ===
+Converged in 5 iterations
+           Estimate  Std.Error
+Intercept   -3.1655     2.0253
+age          0.0359     0.0188
+sex          1.6745     0.3506
+cp           0.8963     0.1702
+thalach     -0.0247     0.0080
+oldpeak      0.6829     0.1528
+
+=== Comparison with statsmodels ===
+Intercept   -3.165518
+age          0.035939
+sex          1.674501
+cp           0.896265
+thalach     -0.024663
+oldpeak      0.682883
+dtype: float64</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Takeaways -->
+    <div class="note info">
+      <div class="note-title">Key Takeaways</div>
+      <p style="margin-bottom: 8px;">
+        1. <strong>Binomial log-likelihood</strong> is the binary cross-entropy loss (negated)
+      </p>
+      <p style="margin-bottom: 8px;">
+        2. <strong>No closed-form solution</strong> because $p_i$ depends non-linearly on $\boldsymbol{\beta}$
+      </p>
+      <p style="margin-bottom: 8px;">
+        3. <strong>IRLS</strong> converts the problem into a sequence of weighted least squares problems
+      </p>
+      <p>
+        4. <strong>Fisher scoring</strong> = Newton-Raphson with expected Hessian; converges in ~5 iterations
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Implementation</a>
+      <a href="../../index.html" class="btn btn-primary">Return to Tutorial Index</a>
+    </div>
+  </div>
+
+  <script>
+    function showCode(lang) {
+      // Update tabs
+      document.querySelectorAll('.code-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Update content
+      document.querySelectorAll('.code-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      document.getElementById(`${lang}-code`).classList.add('active');
+    }
+  </script>
+</body>
+</html>

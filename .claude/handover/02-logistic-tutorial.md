@@ -80,22 +80,35 @@ print(fit.summary())
 3. Record canonical coefficient values in this file before building pages
 4. Use EXACT same values on ALL pages
 
-## Canonical Coefficients (TO BE VALIDATED)
+## Canonical Coefficients (VALIDATED 2025-12-11)
 ```
 Model: target ~ age + sex + cp + thalach + oldpeak
 Family: binomial(link = "logit")
+n = 303 observations
 
-FILL IN AFTER RUNNING ACTUAL CODE:
-  β₀ (Intercept): [TBD]
-  β₁ (age):       [TBD]
-  β₂ (sex):       [TBD]
-  β₃ (cp):        [TBD]
-  β₄ (thalach):   [TBD]
-  β₅ (oldpeak):   [TBD]
+VALIDATED COEFFICIENTS (R and Python match):
+  β₀ (Intercept): -3.1655
+  β₁ (age):        0.0359
+  β₂ (sex):        1.6745
+  β₃ (cp):         0.8963
+  β₄ (thalach):   -0.0247
+  β₅ (oldpeak):    0.6829
 
-  AIC: [TBD]
-  Null deviance: [TBD]
-  Residual deviance: [TBD]
+Standard Errors:
+  SE(Intercept): 2.025
+  SE(age):       0.019
+  SE(sex):       0.351
+  SE(cp):        0.170
+  SE(thalach):   0.008
+  SE(oldpeak):   0.153
+
+Model Fit:
+  Null deviance:     417.98 on 302 df
+  Residual deviance: 273.13 on 297 df
+  AIC: 285.13
+  Log-Likelihood: -136.57
+  Pseudo R² (CS): 0.38
+  Fisher Scoring iterations: 5
 ```
 
 ## Styling Reference
@@ -134,16 +147,51 @@ Back to index: `../../index.html`
 
 2. Update `claude.md` status table
 
+## Future Improvement: Dataset Caching
+
+**Problem:** Tutorials currently fetch datasets from UCI repository URLs. This creates a dependency on external data providers being accessible.
+
+**Proposed Solution:** Implement conditional caching for datasets:
+1. **Local fallback:** Store datasets in `data/` folder (e.g., `data/heart.csv`)
+2. **Try-catch loading:** Try remote URL first, fall back to local copy
+3. **Size threshold:** Only cache datasets under a certain size (e.g., <1MB)
+
+**Implementation approaches:**
+- **Pre-downloaded CSV/JSON:** Simplest - commit copies to repo in `data/` folder
+- **Service worker:** PWA-style caching for offline support
+- **LocalStorage/IndexedDB:** Browser-based runtime caching after first load
+
+**R code pattern:**
+```r
+heart <- tryCatch(
+  read.csv("https://archive.ics.uci.edu/..."),
+  error = function(e) read.csv("data/heart.csv")
+)
+```
+
+**Python code pattern:**
+```python
+try:
+    heart = pd.read_csv("https://archive.ics.uci.edu/...")
+except:
+    heart = pd.read_csv("data/heart.csv")
+```
+
+**Note:** The `data/heart.json` file already exists but isn't currently used by tutorials.
+
+---
+
 ## Checklist
-- [ ] Validate coefficients in R
-- [ ] Validate coefficients in Python
-- [ ] Record canonical values above
-- [ ] Create systematic.html
-- [ ] Create link.html (with probit historical content)
-- [ ] Create distribution.html
-- [ ] Create fitting.html
-- [ ] Create code.html
-- [ ] Create advanced.html
-- [ ] Test all navigation links
-- [ ] Update index.html
-- [ ] Commit
+- [x] Validate coefficients in R
+- [x] Validate coefficients in Python
+- [x] Record canonical values above
+- [x] Create systematic.html
+- [x] Create link.html (with probit historical content)
+- [x] Create distribution.html
+- [x] Create fitting.html
+- [x] Create code.html
+- [x] Create advanced.html
+- [x] Test all navigation links
+- [x] Update index.html
+- [x] Update claude.md status table
+- [x] Commit (e0d28c1)

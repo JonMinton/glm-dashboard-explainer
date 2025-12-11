@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Fitting Logistic Regression</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #2980b9;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #2980b9;
+    }
+
+    /* Context panel */
+    .context-panel {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .model-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    .summary-item {
+      background: white;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 0.75em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-item .value {
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    /* Key difference panel */
+    .difference-panel {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .difference-panel h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .difference-panel p {
+      color: #856404;
+      font-size: 0.95em;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Fitting method cards */
+    .fitting-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .fitting-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .fitting-card:hover:not(.dimmed):not(.selected) {
+      border-color: #3498db;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .fitting-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .fitting-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .fitting-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .fitting-card .icon {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .fitting-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .fitting-card .description {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .fitting-card .details {
+      font-size: 0.8em;
+      color: #888;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 560px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin-bottom: 5px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2980b9;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #21618c;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    @media (max-width: 768px) {
+      .model-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 2: Fitting the Model</h1>
+      <p>How should we estimate the logistic regression parameters?</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">4</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="model-summary">
+        <div class="summary-item">
+          <div class="label">Systematic Component</div>
+          <div class="value">$\eta = \beta_0 + \beta_1 \cdot \text{Age} + \ldots$</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Link Function</div>
+          <div class="value">Logit: $\ln(p/(1-p)) = \eta$</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Distribution</div>
+          <div class="value">Binomial</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key difference from Tutorial 1 -->
+    <div class="difference-panel">
+      <h4>Key Difference from Tutorial 1</h4>
+      <p>
+        Unlike linear regression (Gaussian + identity), logistic regression has <strong>no closed-form solution</strong>.
+        We cannot simply compute $\beta = (X'X)^{-1}X'y$. The logit link creates a non-linear equation that must be
+        solved iteratively.
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>How should we find the $\beta$ coefficients?</h2>
+      <p>We have our model structure defined. Now we need to estimate the parameters ($\beta_0, \beta_1, \ldots, \beta_5$) that best fit the observed data.</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Fitting method options -->
+    <div class="fitting-options">
+      <!-- Maximum Likelihood (IRLS) -->
+      <div class="fitting-card" data-method="ml">
+        <div class="icon">🔄</div>
+        <h3>Maximum Likelihood (IRLS)</h3>
+        <p class="description">
+          Iteratively Reweighted Least Squares - the standard GLM fitting algorithm.
+        </p>
+        <p class="details">
+          Iterative optimization • Required for logistic • Fisher scoring
+        </p>
+      </div>
+
+      <!-- Closed-form (OLS) -->
+      <div class="fitting-card" data-method="ols">
+        <div class="icon">📐</div>
+        <h3>Closed-Form (OLS)</h3>
+        <p class="description">
+          Direct analytical solution using matrix algebra: $\beta = (X'X)^{-1}X'y$
+        </p>
+        <p class="details">
+          One-shot calculation • No iteration • Exact solution
+        </p>
+      </div>
+
+      <!-- Gradient Descent -->
+      <div class="fitting-card" data-method="gradient">
+        <div class="icon">⛰️</div>
+        <h3>Gradient Descent</h3>
+        <p class="description">
+          General-purpose optimization by following the gradient of the loss function.
+        </p>
+        <p class="details">
+          Step size tuning • Slower convergence • Deep learning standard
+        </p>
+      </div>
+
+      <!-- Newton-Raphson -->
+      <div class="fitting-card" data-method="newton">
+        <div class="icon">🎯</div>
+        <h3>Newton-Raphson</h3>
+        <p class="description">
+          Second-order optimization using the Hessian matrix.
+        </p>
+        <p class="details">
+          Fast convergence • Computes curvature • IRLS is a form of this
+        </p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10004; Fitting Method Selected</h3>
+      <p>
+        <strong>Maximum Likelihood via IRLS</strong> is the standard approach for GLMs,
+        and it's <em>required</em> for logistic regression since there's no closed-form solution.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        R's <code>glm()</code> and Python's <code>statsmodels</code> use IRLS (a form of Fisher scoring)
+        by default. For our heart disease model, it typically converges in about 5 iterations.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="distribution.html" class="btn btn-secondary">&larr; Back to Distribution</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Implementation &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for ML (correct) -->
+  <div class="dialog-overlay" id="mlDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct!</h3>
+      <p>
+        <strong>Maximum Likelihood Estimation (MLE)</strong> via Iteratively Reweighted Least Squares (IRLS)
+        is the standard method for logistic regression and all GLMs.
+      </p>
+      <div class="highlight green">
+        <strong>Why IRLS is essential for logistic regression:</strong><br>
+        The logit link creates a non-linear relationship between predictors and probability.
+        There's no algebraic trick to solve for $\beta$ directly - we must iterate to find the
+        maximum likelihood solution.
+      </div>
+      <p>
+        The IRLS algorithm for logistic regression:
+      </p>
+      <ul>
+        <li>Start with initial estimates (often $\beta = 0$)</li>
+        <li>Calculate current probabilities: $\hat{p} = \frac{1}{1 + e^{-X\beta}}$</li>
+        <li>Compute weights: $W = \text{diag}(\hat{p}(1-\hat{p}))$</li>
+        <li>Update: $\beta^{new} = (X'WX)^{-1}X'Wz$ where $z$ is a working response</li>
+        <li>Repeat until convergence (usually 3-7 iterations)</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        This is equivalent to Newton-Raphson optimization using Fisher information - hence "Fisher scoring".
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmML()">Continue →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for OLS (wrong - no closed form) -->
+  <div class="dialog-overlay" id="olsDialog">
+    <div class="dialog error">
+      <h3>&#10060; No Closed-Form Solution Exists</h3>
+      <p>
+        For linear regression (Gaussian + identity), the closed-form solution $\beta = (X'X)^{-1}X'y$ works beautifully.
+        <strong>But logistic regression has no such solution.</strong>
+      </p>
+      <div class="highlight">
+        <strong>Why?</strong> The logit link creates a non-linear relationship:
+        <br><br>
+        $\ln\left(\frac{p}{1-p}\right) = X\beta$
+        <br><br>
+        Solving for $\beta$ requires finding where the derivative of the log-likelihood equals zero,
+        which has no closed-form solution.
+      </div>
+      <p>
+        This is a fundamental difference between:
+      </p>
+      <ul>
+        <li><strong>Linear regression:</strong> Minimize sum of squared errors → closed-form</li>
+        <li><strong>Logistic regression:</strong> Maximize binomial likelihood → iteration required</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        <em>Select Maximum Likelihood (IRLS) to continue.</em>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('olsDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gradient Descent (valid but not standard) -->
+  <div class="dialog-overlay" id="gradientDialog">
+    <div class="dialog warning">
+      <h3>⚠️ Valid, But Not Standard for GLMs</h3>
+      <p>
+        <strong>Gradient descent</strong> would work for logistic regression - it's how neural networks are trained.
+        However, it's not the standard approach for GLMs.
+      </p>
+      <div class="highlight">
+        <strong>Why IRLS is preferred over gradient descent:</strong>
+        <ul style="margin: 10px 0 0 15px;">
+          <li><strong>Faster convergence:</strong> IRLS uses curvature information (2nd derivatives)</li>
+          <li><strong>No step size tuning:</strong> Gradient descent requires choosing learning rate</li>
+          <li><strong>Exact standard errors:</strong> IRLS gives information matrix for free</li>
+          <li><strong>Guaranteed convergence:</strong> For well-posed GLMs, IRLS always converges</li>
+        </ul>
+      </div>
+      <p>
+        Gradient descent is typically 10-100x slower than IRLS for logistic regression.
+        It's the standard for deep learning where computing the full Hessian is impractical.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        <em>Select Maximum Likelihood (IRLS) for the standard GLM approach.</em>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gradientDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Newton-Raphson (correct insight) -->
+  <div class="dialog-overlay" id="newtonDialog">
+    <div class="dialog warning">
+      <h3>⭐ Excellent Insight!</h3>
+      <p>
+        <strong>Newton-Raphson</strong> is indeed the mathematical foundation of how we fit logistic regression!
+        IRLS for binomial GLMs is actually <strong>equivalent to Newton-Raphson</strong> (specifically, Fisher scoring).
+      </p>
+      <div class="highlight">
+        <strong>The connection:</strong>
+        <br><br>
+        Newton-Raphson update: $\beta^{new} = \beta^{old} - H^{-1} \nabla \ell$
+        <br><br>
+        Where $H$ is the Hessian and $\nabla \ell$ is the score. For GLMs, this can be rewritten
+        as an iteratively reweighted least squares problem.
+      </div>
+      <p>
+        Fisher scoring (used in IRLS) replaces the observed Hessian with its expected value (Fisher information),
+        which simplifies computation and guarantees positive definiteness.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        <em>In practice, we use the term "Maximum Likelihood via IRLS" - select that option to continue.</em>
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('newtonDialog')">Select IRLS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedMethod = null;
+
+    // Card click handlers
+    document.querySelectorAll('.fitting-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const method = card.dataset.method;
+        handleMethodSelection(method, card);
+      });
+    });
+
+    function handleMethodSelection(method, card) {
+      // Don't process if already confirmed
+      if (selectedMethod === 'ml') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.fitting-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-wrong');
+      });
+
+      switch(method) {
+        case 'ml':
+          // Correct choice
+          card.classList.add('selected-correct');
+          showDialog('mlDialog');
+          break;
+
+        case 'ols':
+          // Wrong - no closed form for logistic
+          card.classList.add('selected-wrong');
+          showDialog('olsDialog');
+          break;
+
+        case 'gradient':
+          // Semi-valid but not standard
+          card.classList.add('selected-wrong');
+          showDialog('gradientDialog');
+          break;
+
+        case 'newton':
+          // Good insight - IRLS is Newton-Raphson
+          card.classList.add('selected-correct');
+          showDialog('newtonDialog');
+          break;
+      }
+    }
+
+    function confirmML() {
+      // User confirmed ML selection
+      selectedMethod = 'ml';
+      closeDialog('mlDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.fitting-card:not([data-method="ml"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+      // Render KaTeX in dialog
+      renderMathInElement(dialog, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedMethod !== 'ml') {
+        document.querySelectorAll('.fitting-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      window.location.href = 'code.html';
+    });
+
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Logistic Regression Implementation</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #2980b9;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #2980b9;
+    }
+
+    /* Celebration banner */
+    .celebration-banner {
+      background: linear-gradient(135deg, #d4edda, #e8f4fd);
+      border: 2px solid #2980b9;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .celebration-banner h2 {
+      color: #2980b9;
+      font-size: 1.5em;
+      margin-bottom: 8px;
+    }
+
+    .celebration-banner p {
+      color: #666;
+    }
+
+    /* Model recap */
+    .model-recap {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .model-recap h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .model-equation {
+      font-size: 1.0em;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+
+    .model-specs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .spec-item {
+      background: white;
+      padding: 10px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .spec-item .label {
+      font-size: 0.7em;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    .spec-item .value {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 2px;
+    }
+
+    /* Language tabs */
+    .language-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 0;
+    }
+
+    .tab-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      background: #dee2e6;
+      color: #666;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1em;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #e9ecef;
+    }
+
+    .tab-btn.active {
+      background: white;
+      color: #2980b9;
+      border: 1px solid #dee2e6;
+      border-bottom: 1px solid white;
+      margin-bottom: -1px;
+    }
+
+    /* Code panel */
+    .code-panel {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .code-panel.active {
+      display: block;
+    }
+
+    .code-section {
+      margin-bottom: 20px;
+    }
+
+    .code-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .code-section h4 {
+      color: #2980b9;
+      font-size: 0.95em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .code-section h4 .step-num {
+      background: #3498db;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+    }
+
+    pre {
+      background: #2c3e50;
+      border-radius: 6px;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      color: #ecf0f1;
+    }
+
+    code {
+      font-family: inherit;
+    }
+
+    /* Syntax highlighting */
+    .comment { color: #7f8c8d; }
+    .keyword { color: #e74c3c; }
+    .string { color: #2ecc71; }
+    .function { color: #9b59b6; }
+    .variable { color: #f39c12; }
+    .number { color: #3498db; }
+    .operator { color: #e74c3c; }
+
+    .code-note {
+      background: #e8f4fd;
+      border-left: 3px solid #3498db;
+      padding: 10px 15px;
+      border-radius: 0 6px 6px 0;
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .output-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .output-section h4 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    .output-example {
+      background: #2c3e50;
+      border-radius: 6px;
+      padding: 15px;
+      font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+      font-size: 0.75em;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      color: #ecf0f1;
+      overflow-x: auto;
+    }
+
+    /* Next steps */
+    .next-steps {
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .next-steps h3 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+    }
+
+    .next-steps ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .next-steps li {
+      padding: 8px 0;
+      padding-left: 25px;
+      position: relative;
+      color: #666;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .next-steps li:last-child {
+      border-bottom: none;
+    }
+
+    .next-steps li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: #3498db;
+      font-weight: bold;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2980b9;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #21618c;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-advanced {
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      color: white;
+    }
+
+    .btn-advanced:hover {
+      background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    }
+
+    @media (max-width: 768px) {
+      .model-specs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 2: Implementation</h1>
+      <p>See your logistic regression model in R and Python code</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Celebration -->
+    <div class="celebration-banner">
+      <h2>Tutorial Complete!</h2>
+      <p>You've successfully specified a logistic regression model. Here's how to fit it in practice.</p>
+    </div>
+
+    <!-- Model Recap -->
+    <div class="model-recap">
+      <h3>Your Complete Model</h3>
+      <div class="model-equation">
+        $\text{HeartDisease} \sim \text{Binomial}(1, p)$ where $\text{logit}(p) = \beta_0 + \beta_1 \cdot \text{Age} + \beta_2 \cdot \text{Sex} + \beta_3 \cdot \text{CP} + \beta_4 \cdot \text{MaxHR} + \beta_5 \cdot \text{STDep}$
+      </div>
+      <div class="model-specs">
+        <div class="spec-item">
+          <div class="label">Response</div>
+          <div class="value">Heart Disease (0/1)</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">Link</div>
+          <div class="value">Logit</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">Family</div>
+          <div class="value">Binomial</div>
+        </div>
+        <div class="spec-item">
+          <div class="label">Method</div>
+          <div class="value">IRLS (5 iterations)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Language Tabs -->
+    <div class="language-tabs">
+      <button class="tab-btn active" onclick="showTab('r')">R</button>
+      <button class="tab-btn" onclick="showTab('python')">Python</button>
+    </div>
+
+    <!-- R Code Panel -->
+    <div class="code-panel active" id="r-panel">
+      <div class="code-section">
+        <h4><span class="step-num">1</span> Load the data</h4>
+        <pre><code><span class="comment"># Load the UCI Heart Disease dataset</span>
+<span class="variable">heart</span> <span class="operator">&lt;-</span> <span class="function">read.csv</span>(
+  <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>,
+  <span class="keyword">header</span> <span class="operator">=</span> <span class="keyword">FALSE</span>
+)
+<span class="function">names</span>(<span class="variable">heart</span>) <span class="operator">&lt;-</span> <span class="function">c</span>(<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>, <span class="string">"fbs"</span>,
+                <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>,
+                <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>)
+
+<span class="comment"># Binarise target: 0 = no disease, 1 = disease</span>
+<span class="variable">heart</span>$<span class="variable">target</span> <span class="operator">&lt;-</span> <span class="function">ifelse</span>(<span class="variable">heart</span>$<span class="variable">target</span> <span class="operator">&gt;</span> <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>)
+
+<span class="comment"># Preview the data</span>
+<span class="function">head</span>(<span class="variable">heart</span>)</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">2</span> Fit the GLM</h4>
+        <pre><code><span class="comment"># Fit logistic regression using glm()</span>
+<span class="variable">model</span> <span class="operator">&lt;-</span> <span class="function">glm</span>(
+  <span class="variable">target</span> <span class="operator">~</span> <span class="variable">age</span> <span class="operator">+</span> <span class="variable">sex</span> <span class="operator">+</span> <span class="variable">cp</span> <span class="operator">+</span> <span class="variable">thalach</span> <span class="operator">+</span> <span class="variable">oldpeak</span>,
+  <span class="keyword">data</span> <span class="operator">=</span> <span class="variable">heart</span>,
+  <span class="keyword">family</span> <span class="operator">=</span> <span class="function">binomial</span>(<span class="keyword">link</span> <span class="operator">=</span> <span class="string">"logit"</span>)
+)</code></pre>
+        <div class="code-note">
+          <strong>Note:</strong> <code>family = binomial(link = "logit")</code> specifies logistic regression.
+          The logit link is the default for binomial, so you could also write just <code>family = binomial</code>.
+        </div>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">3</span> View results</h4>
+        <pre><code><span class="comment"># Summary of fitted model</span>
+<span class="function">summary</span>(<span class="variable">model</span>)
+
+<span class="comment"># Extract coefficients (log-odds scale)</span>
+<span class="function">coef</span>(<span class="variable">model</span>)
+
+<span class="comment"># Calculate odds ratios</span>
+<span class="function">exp</span>(<span class="function">coef</span>(<span class="variable">model</span>))
+
+<span class="comment"># Confidence intervals for odds ratios</span>
+<span class="function">exp</span>(<span class="function">confint</span>(<span class="variable">model</span>))</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">4</span> Assess model fit</h4>
+        <pre><code><span class="comment"># Deviance and AIC</span>
+<span class="variable">model</span>$<span class="variable">deviance</span>   <span class="comment"># Residual deviance</span>
+<span class="variable">model</span>$<span class="variable">null.deviance</span>  <span class="comment"># Null deviance</span>
+<span class="function">AIC</span>(<span class="variable">model</span>)
+
+<span class="comment"># Pseudo R-squared (McFadden)</span>
+<span class="number">1</span> <span class="operator">-</span> (<span class="variable">model</span>$<span class="variable">deviance</span> / <span class="variable">model</span>$<span class="variable">null.deviance</span>)
+
+<span class="comment"># Confusion matrix (at threshold 0.5)</span>
+<span class="variable">predicted</span> <span class="operator">&lt;-</span> <span class="function">ifelse</span>(<span class="function">predict</span>(<span class="variable">model</span>, <span class="keyword">type</span> <span class="operator">=</span> <span class="string">"response"</span>) <span class="operator">&gt;</span> <span class="number">0.5</span>, <span class="number">1</span>, <span class="number">0</span>)
+<span class="function">table</span>(<span class="variable">Actual</span> <span class="operator">=</span> <span class="variable">heart</span>$<span class="variable">target</span>, <span class="variable">Predicted</span> <span class="operator">=</span> <span class="variable">predicted</span>)</code></pre>
+      </div>
+
+      <div class="output-section">
+        <h4>Expected Output</h4>
+        <div class="output-example">Call:
+glm(formula = target ~ age + sex + cp + thalach + oldpeak, family = binomial(link = "logit"),
+    data = heart)
+
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)
+(Intercept) -3.165518   2.025288  -1.563  0.11805
+age          0.035939   0.018825   1.909  0.05624 .
+sex          1.674501   0.350569   4.777 1.78e-06 ***
+cp           0.896265   0.170199   5.266 1.39e-07 ***
+thalach     -0.024663   0.007989  -3.087  0.00202 **
+oldpeak      0.682883   0.152781   4.470 7.83e-06 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 417.98  on 302  degrees of freedom
+Residual deviance: 273.13  on 297  degrees of freedom
+AIC: 285.13
+
+Number of Fisher Scoring iterations: 5</div>
+      </div>
+    </div>
+
+    <!-- Python Code Panel -->
+    <div class="code-panel" id="python-panel">
+      <div class="code-section">
+        <h4><span class="step-num">1</span> Import libraries and load data</h4>
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+<span class="keyword">import</span> statsmodels.formula.api <span class="keyword">as</span> smf
+
+<span class="comment"># Load the UCI Heart Disease dataset</span>
+<span class="variable">url</span> <span class="operator">=</span> <span class="string">"https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"</span>
+<span class="variable">cols</span> <span class="operator">=</span> [<span class="string">"age"</span>, <span class="string">"sex"</span>, <span class="string">"cp"</span>, <span class="string">"trestbps"</span>, <span class="string">"chol"</span>, <span class="string">"fbs"</span>,
+        <span class="string">"restecg"</span>, <span class="string">"thalach"</span>, <span class="string">"exang"</span>, <span class="string">"oldpeak"</span>,
+        <span class="string">"slope"</span>, <span class="string">"ca"</span>, <span class="string">"thal"</span>, <span class="string">"target"</span>]
+<span class="variable">heart</span> <span class="operator">=</span> pd.<span class="function">read_csv</span>(<span class="variable">url</span>, <span class="keyword">header</span><span class="operator">=</span><span class="keyword">None</span>, <span class="keyword">names</span><span class="operator">=</span><span class="variable">cols</span>)
+
+<span class="comment"># Binarise target: 0 = no disease, 1 = disease</span>
+<span class="variable">heart</span>[<span class="string">'target'</span>] <span class="operator">=</span> (<span class="variable">heart</span>[<span class="string">'target'</span>] <span class="operator">&gt;</span> <span class="number">0</span>).<span class="function">astype</span>(<span class="keyword">int</span>)
+
+<span class="comment"># Preview the data</span>
+<span class="function">print</span>(<span class="variable">heart</span>.<span class="function">head</span>())</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">2</span> Fit the GLM</h4>
+        <pre><code><span class="comment"># Fit logistic regression using formula interface</span>
+<span class="variable">model</span> <span class="operator">=</span> smf.<span class="function">glm</span>(
+    <span class="keyword">formula</span><span class="operator">=</span><span class="string">"target ~ age + sex + cp + thalach + oldpeak"</span>,
+    <span class="keyword">data</span><span class="operator">=</span><span class="variable">heart</span>,
+    <span class="keyword">family</span><span class="operator">=</span>sm.families.<span class="function">Binomial</span>()
+).<span class="function">fit</span>()</code></pre>
+        <div class="code-note">
+          <strong>Note:</strong> <code>Binomial()</code> uses the logit link by default.
+          You could explicitly specify <code>Binomial(link=sm.families.links.Logit())</code>.
+        </div>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">3</span> View results</h4>
+        <pre><code><span class="comment"># Summary of fitted model</span>
+<span class="function">print</span>(<span class="variable">model</span>.<span class="function">summary</span>())
+
+<span class="comment"># Extract coefficients (log-odds scale)</span>
+<span class="function">print</span>(<span class="variable">model</span>.<span class="variable">params</span>)
+
+<span class="comment"># Calculate odds ratios</span>
+<span class="function">print</span>(np.<span class="function">exp</span>(<span class="variable">model</span>.<span class="variable">params</span>))
+
+<span class="comment"># Confidence intervals for odds ratios</span>
+<span class="function">print</span>(np.<span class="function">exp</span>(<span class="variable">model</span>.<span class="function">conf_int</span>()))</code></pre>
+      </div>
+
+      <div class="code-section">
+        <h4><span class="step-num">4</span> Assess model fit</h4>
+        <pre><code><span class="comment"># Deviance and AIC</span>
+<span class="function">print</span>(<span class="string">f"Deviance: {model.deviance:.2f}"</span>)
+<span class="function">print</span>(<span class="string">f"AIC: {model.aic:.2f}"</span>)
+
+<span class="comment"># Pseudo R-squared (McFadden)</span>
+<span class="variable">pseudo_r2</span> <span class="operator">=</span> <span class="number">1</span> <span class="operator">-</span> (<span class="variable">model</span>.<span class="variable">deviance</span> / <span class="variable">model</span>.<span class="variable">null_deviance</span>)
+<span class="function">print</span>(<span class="string">f"Pseudo R²: {pseudo_r2:.4f}"</span>)
+
+<span class="comment"># Confusion matrix</span>
+<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> confusion_matrix, classification_report
+<span class="variable">predicted</span> <span class="operator">=</span> (<span class="variable">model</span>.<span class="function">predict</span>() <span class="operator">&gt;</span> <span class="number">0.5</span>).<span class="function">astype</span>(<span class="keyword">int</span>)
+<span class="function">print</span>(confusion_matrix(<span class="variable">heart</span>[<span class="string">'target'</span>], <span class="variable">predicted</span>))
+<span class="function">print</span>(classification_report(<span class="variable">heart</span>[<span class="string">'target'</span>], <span class="variable">predicted</span>))</code></pre>
+      </div>
+
+      <div class="output-section">
+        <h4>Expected Output</h4>
+        <div class="output-example">                 Generalized Linear Model Regression Results
+==============================================================================
+Dep. Variable:                 target   No. Observations:                  303
+Model:                            GLM   Df Residuals:                      297
+Model Family:                Binomial   Df Model:                            5
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -136.57
+Date:                Thu, 11 Dec 2025   Deviance:                       273.13
+Time:                        16:37:21   Pearson chi2:                     309.
+No. Iterations:                     5   Pseudo R-squ. (CS):             0.3800
+Covariance Type:            nonrobust
+==============================================================================
+                 coef    std err          z      P>|z|      [0.025      0.975]
+------------------------------------------------------------------------------
+Intercept     -3.1655      2.025     -1.563      0.118      -7.135       0.804
+age            0.0359      0.019      1.909      0.056      -0.001       0.073
+sex            1.6745      0.351      4.777      0.000       0.987       2.362
+cp             0.8963      0.170      5.266      0.000       0.563       1.230
+thalach       -0.0247      0.008     -3.087      0.002      -0.040      -0.009
+oldpeak        0.6829      0.153      4.470      0.000       0.383       0.982
+==============================================================================</div>
+      </div>
+    </div>
+
+    <!-- Next Steps / Interpretation -->
+    <div class="next-steps">
+      <h3>What's Next?</h3>
+      <ul>
+        <li><strong>Interpret coefficients as odds ratios:</strong> $e^{0.0359} = 1.037$ for age means ~4% higher odds per year; $e^{1.67} = 5.3$ for sex means males have 5.3x higher odds than females</li>
+        <li><strong>Assess predictive accuracy:</strong> Calculate AUC-ROC, sensitivity, specificity at various thresholds</li>
+        <li><strong>Check for influential observations:</strong> Cook's distance, leverage plots</li>
+        <li><strong>Validate predictions:</strong> Cross-validation or train/test split to assess generalization</li>
+        <li><strong>Consider interactions:</strong> Do effects differ by age group or sex? Try <code>age:sex</code> interaction terms</li>
+      </ul>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-advanced">Going Further (Advanced) &rarr;</a>
+      <a href="systematic.html" class="btn btn-primary">Start Over</a>
+    </div>
+  </div>
+
+  <script>
+    function showTab(language) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // Update code panels
+      document.querySelectorAll('.code-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.getElementById(`${language}-panel`).classList.add('active');
+    }
+
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

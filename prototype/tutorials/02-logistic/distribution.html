@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Choose the Distribution for Classification</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress indicator */
+    .progress-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+
+    .progress-step .dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75em;
+      font-weight: 600;
+    }
+
+    .progress-step.completed .dot {
+      background: #2980b9;
+      color: white;
+    }
+
+    .progress-step.current .dot {
+      background: #3498db;
+      color: white;
+    }
+
+    .progress-step.pending .dot {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .progress-connector {
+      flex: 1;
+      height: 2px;
+      background: #e0e0e0;
+    }
+
+    .progress-connector.completed {
+      background: #2980b9;
+    }
+
+    /* Context panel */
+    .context-panel {
+      background: #f0f7ff;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .context-panel h3 {
+      font-size: 0.9em;
+      color: #2980b9;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .equation-display {
+      font-size: 1.1em;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+
+    .equation-display .unknown {
+      background: #fff3cd;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #856404;
+      font-weight: bold;
+    }
+
+    .equation-display .confirmed {
+      background: #d4edda;
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: #155724;
+    }
+
+    /* Key insight panel */
+    .insight-panel {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .insight-panel h4 {
+      color: #856404;
+      margin-bottom: 8px;
+    }
+
+    .insight-panel p {
+      color: #856404;
+      font-size: 0.95em;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 25px;
+    }
+
+    .instruction-panel h2 {
+      color: #2980b9;
+      margin-bottom: 8px;
+      font-size: 1.2em;
+    }
+
+    .instruction-panel p {
+      margin-bottom: 8px;
+    }
+
+    /* Distribution cards */
+    .distribution-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .dist-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .dist-card:hover:not(.dimmed):not(.selected) {
+      border-color: #3498db;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+
+    .dist-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .dist-card.selected-correct {
+      border-color: #27ae60;
+      background: #f0fff4;
+    }
+
+    .dist-card.selected-semi {
+      border-color: #f39c12;
+      background: #fffbf0;
+    }
+
+    .dist-card.selected-wrong {
+      animation: shake 0.4s ease-in-out;
+      border-color: #e74c3c;
+      background: #fdf2f2;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .dist-card h3 {
+      font-size: 1.1em;
+      margin-bottom: 8px;
+    }
+
+    .dist-card .formula {
+      font-size: 1.0em;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .dist-card .description {
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .dist-card .use-case {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+
+    .dist-card .variance-note {
+      font-size: 0.75em;
+      color: #999;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 560px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin-bottom: 5px;
+    }
+
+    /* Result display */
+    .result-panel {
+      display: none;
+      background: #f0fff4;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 15px;
+    }
+
+    .final-model {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .final-model .equation {
+      font-size: 1.1em;
+      margin: 10px 0;
+    }
+
+    .model-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .summary-item {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    .summary-item .label {
+      font-size: 0.8em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-item .value {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-top: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2980b9;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #21618c;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Tutorial 2: The Stochastic Component</h1>
+      <p>Choose the distribution for binary outcomes</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-indicator">
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Systematic</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step completed">
+        <span class="dot">&#10003;</span>
+        <span>Link</span>
+      </div>
+      <div class="progress-connector completed"></div>
+      <div class="progress-step current">
+        <span class="dot">3</span>
+        <span>Distribution</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">4</span>
+        <span>Fitting</span>
+      </div>
+      <div class="progress-connector"></div>
+      <div class="progress-step pending">
+        <span class="dot">5</span>
+        <span>Implementation</span>
+      </div>
+    </div>
+
+    <!-- Context: what we've built -->
+    <div class="context-panel">
+      <h3>Your model so far</h3>
+      <div class="equation-display">
+        HeartDisease ~ <span class="unknown">f(?)</span> with $\text{logit}(p) = \beta_0 + \beta_1 \cdot \text{Age} + \ldots$
+      </div>
+      <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+        The distribution <strong>f()</strong> describes the probability of observing each outcome (0 or 1).
+        This is the <em>stochastic</em> (random) component of the model.
+      </p>
+    </div>
+
+    <!-- Key insight -->
+    <div class="insight-panel">
+      <h4>Binary Outcomes Are Special</h4>
+      <p>
+        Our response is either 0 (no disease) or 1 (disease). This isn't continuous data that varies around a mean - it's a <strong>binary outcome</strong> where we model the probability of "success" (disease = 1).
+      </p>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h2>Choose the Distribution Family</h2>
+      <p>For modelling <strong>heart disease presence</strong> - a binary outcome (0 or 1) - which distribution family describes this type of data?</p>
+      <p style="font-size: 0.9em; color: #666;"><em>Click on a card to select it.</em></p>
+    </div>
+
+    <!-- Distribution options -->
+    <div class="distribution-options">
+      <!-- Binomial (correct) -->
+      <div class="dist-card" data-dist="binomial">
+        <h3>Binomial</h3>
+        <div class="formula">$y \sim \text{Binomial}(n, p)$</div>
+        <p class="description">
+          For counting successes in n trials. When n=1, this is the Bernoulli distribution for binary outcomes.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Binary outcomes (yes/no), counts of successes
+        </p>
+        <p class="variance-note">Variance: $np(1-p)$</p>
+      </div>
+
+      <!-- Gaussian/Normal -->
+      <div class="dist-card" data-dist="gaussian">
+        <h3>Gaussian (Normal)</h3>
+        <div class="formula">$y \sim N(\mu, \sigma^2)$</div>
+        <p class="description">
+          The classic bell curve. Observations scatter symmetrically around the mean.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Continuous data, symmetric residuals
+        </p>
+        <p class="variance-note">Variance: constant ($\sigma^2$)</p>
+      </div>
+
+      <!-- Poisson -->
+      <div class="dist-card" data-dist="poisson">
+        <h3>Poisson</h3>
+        <div class="formula">$y \sim \text{Poisson}(\lambda)$</div>
+        <p class="description">
+          For count data (0, 1, 2, ...). Mean equals variance.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Counting events, integers $\geq 0$
+        </p>
+        <p class="variance-note">Variance: equals $\mu$</p>
+      </div>
+
+      <!-- Gamma -->
+      <div class="dist-card" data-dist="gamma">
+        <h3>Gamma</h3>
+        <div class="formula">$y \sim \text{Gamma}(\alpha, \beta)$</div>
+        <p class="description">
+          For positive continuous data that's often right-skewed.
+        </p>
+        <p class="use-case">
+          <strong>Use when:</strong> Strictly positive, right-skewed
+        </p>
+        <p class="variance-note">Variance: proportional to $\mu^2$</p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>Model Complete: Logistic Regression!</h3>
+      <p>You've specified all three components of your GLM:</p>
+
+      <div class="final-model">
+        <p class="equation">
+          $\text{HeartDisease} \sim \text{Binomial}(1, p)$
+        </p>
+        <p class="equation">
+          where $\text{logit}(p) = \beta_0 + \beta_1 \cdot \text{Age} + \beta_2 \cdot \text{Sex} + \beta_3 \cdot \text{CP} + \beta_4 \cdot \text{MaxHR} + \beta_5 \cdot \text{STDep}$
+        </p>
+      </div>
+
+      <div class="model-summary">
+        <div class="summary-item">
+          <div class="label">Systematic Component</div>
+          <div class="value">6 terms (incl. intercept)</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Link Function</div>
+          <div class="value">Logit</div>
+        </div>
+        <div class="summary-item">
+          <div class="label">Distribution</div>
+          <div class="value">Binomial</div>
+        </div>
+      </div>
+
+      <p style="margin-top: 20px; color: #666;">
+        This combination - <strong>Binomial distribution + Logit link</strong> - is <strong>logistic regression</strong>,
+        the workhorse of binary classification. The logit is the "canonical" link for the Binomial family,
+        making this a natural and mathematically elegant pairing.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="link.html" class="btn btn-secondary">&larr; Back to Link Function</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for Binomial (correct) -->
+  <div class="dialog-overlay" id="binomialDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct!</h3>
+      <p>
+        The <strong>Binomial distribution</strong> is the natural choice for binary outcomes.
+      </p>
+      <p>
+        When each observation is a single trial (n=1), the Binomial reduces to the <strong>Bernoulli distribution</strong>:
+      </p>
+      <div class="highlight green">
+        $P(Y = y) = p^y (1-p)^{1-y}$ for $y \in \{0, 1\}$
+        <br><br>
+        Where $p$ is the probability of "success" (heart disease = 1)
+      </div>
+      <p>
+        <strong>Key properties:</strong>
+      </p>
+      <ul>
+        <li><strong>Variance = $p(1-p)$:</strong> Variance is highest at $p=0.5$, lowest near 0 or 1</li>
+        <li><strong>Canonical link:</strong> The logit is the natural pairing for Binomial in GLM theory</li>
+        <li><strong>Dispersion fixed at 1:</strong> Unlike Gaussian GLM, no separate variance parameter</li>
+      </ul>
+      <p style="font-size: 0.9em; color: #666;">
+        Binomial + Logit = <strong>Logistic Regression</strong> - the most widely used method for binary classification.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmBinomial()">Complete the Model</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (wrong) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate for Binary Data</h3>
+      <p>
+        The <strong>Gaussian distribution</strong> is designed for continuous data that can take any real value.
+      </p>
+      <p>
+        Our outcome is binary: only 0 or 1. The Gaussian assumes:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 15px;">
+          <li>Continuous values (not discrete 0/1)</li>
+          <li>Symmetric errors around the mean</li>
+          <li>Constant variance regardless of predicted value</li>
+        </ul>
+      </div>
+      <p>
+        For binary data, the variance changes with p: it's highest at p=0.5 and approaches 0 as p approaches 0 or 1. The Gaussian's constant variance assumption is violated.
+      </p>
+      <p style="font-size: 0.9em; color: #666;">
+        Use Gaussian for continuous outcomes like heart rate, blood pressure, or test scores.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Poisson (wrong) -->
+  <div class="dialog-overlay" id="poissonDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>Poisson distribution</strong> is for count data: 0, 1, 2, 3, ... with no upper bound.
+      </p>
+      <p>
+        Our outcome can only be 0 or 1 - it's bounded above at 1. With Poisson:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 15px;">
+          <li>You could predict values like 2, 3, or higher</li>
+          <li>Mean = Variance assumption doesn't fit binary data</li>
+          <li>It's designed for "how many events?" not "did it happen?"</li>
+        </ul>
+      </div>
+      <p>
+        Poisson is the right choice for outcomes like:
+      </p>
+      <ul>
+        <li>Number of hospital admissions per day</li>
+        <li>Counts of accidents per month</li>
+        <li>Number of customer complaints</li>
+      </ul>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('poissonDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gamma (wrong) -->
+  <div class="dialog-overlay" id="gammaDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not Appropriate Here</h3>
+      <p>
+        The <strong>Gamma distribution</strong> is for positive continuous data - values like 0.5, 1.7, 23.4, etc.
+      </p>
+      <p>
+        Our outcome is discrete (only 0 or 1), not continuous. Gamma is used for:
+      </p>
+      <div class="highlight">
+        <ul style="margin: 0 0 0 15px;">
+          <li>Insurance claim amounts (always positive, can be any value)</li>
+          <li>Waiting times (duration until an event)</li>
+          <li>Rainfall amounts</li>
+          <li>Income or financial data</li>
+        </ul>
+      </div>
+      <p>
+        The Gamma assumes variance increases with the mean squared, which doesn't apply to binary outcomes where values can only be 0 or 1.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gammaDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedDist = null;
+
+    // Distribution card click handlers
+    document.querySelectorAll('.dist-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const dist = card.dataset.dist;
+        handleDistSelection(dist, card);
+      });
+    });
+
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'binomial') return;
+
+      // Remove previous selection styling
+      document.querySelectorAll('.dist-card').forEach(c => {
+        c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+      });
+
+      switch(dist) {
+        case 'binomial':
+          // Correct choice
+          card.classList.add('selected-correct');
+          showDialog('binomialDialog');
+          break;
+
+        case 'gaussian':
+          // Wrong - for continuous data
+          card.classList.add('selected-wrong');
+          showDialog('gaussianDialog');
+          break;
+
+        case 'poisson':
+          // Wrong - for counts
+          card.classList.add('selected-wrong');
+          showDialog('poissonDialog');
+          break;
+
+        case 'gamma':
+          // Wrong - for positive continuous
+          card.classList.add('selected-wrong');
+          showDialog('gammaDialog');
+          break;
+      }
+    }
+
+    function confirmBinomial() {
+      // User confirmed Binomial selection
+      selectedDist = 'binomial';
+      closeDialog('binomialDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Re-render KaTeX in result panel
+      renderMathInElement(document.getElementById('resultPanel'), {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+
+      // Dim other cards
+      document.querySelectorAll('.dist-card:not([data-dist="binomial"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+      // Render KaTeX in dialog
+      renderMathInElement(dialog, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'binomial') {
+        document.querySelectorAll('.dist-card').forEach(c => {
+          c.classList.remove('selected-correct', 'selected-semi', 'selected-wrong');
+        });
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    // Continue button
+    document.getElementById('continueBtn').addEventListener('click', () => {
+      window.location.href = 'fitting.html';
+    });
+
+    // Initial KaTeX render
+    document.addEventListener('DOMContentLoaded', () => {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>
