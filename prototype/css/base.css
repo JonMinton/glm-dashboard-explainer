@@ -1,0 +1,125 @@
+/* GLM Tutorial - Base Styles
+ * Reset, typography, layout, and common elements
+ */
+
+/* Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Typography and body */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: #f8f9fa;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* Container */
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+header {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-secondary) 100%);
+  color: white;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 1.5em;
+  margin-bottom: 5px;
+}
+
+header p {
+  opacity: 0.8;
+  font-size: 0.95em;
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* Context panel - shows current model state */
+.context-panel {
+  background: #f0f7ff;
+  border-left: 4px solid var(--theme-accent, var(--theme-primary));
+  padding: 15px 20px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 20px;
+}
+
+.context-panel h3 {
+  font-size: 0.9em;
+  color: var(--theme-accent-secondary, var(--theme-secondary));
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Equation display */
+.equation-display {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.3em;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.equation-display .unknown {
+  background: #fff3cd;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #856404;
+  font-weight: bold;
+}
+
+.equation-display .confirmed {
+  background: #d4edda;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #155724;
+}
+
+/* Instruction panel */
+.instruction-panel {
+  background: #e8f4fd;
+  border-left: 4px solid var(--theme-accent, var(--theme-primary));
+  padding: 15px 20px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 25px;
+}
+
+.instruction-panel h2 {
+  color: var(--theme-accent-secondary, var(--theme-secondary));
+  margin-bottom: 8px;
+  font-size: 1.2em;
+}
+
+.instruction-panel p {
+  margin-bottom: 8px;
+}
+
+/* Navigation */
+.nav-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}

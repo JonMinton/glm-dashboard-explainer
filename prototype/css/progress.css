@@ -1,0 +1,59 @@
+/* GLM Tutorial - Progress Bar Styles
+ * Step indicator showing tutorial progress
+ */
+
+.progress-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.progress-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.progress-step .dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  font-weight: 600;
+}
+
+/* Step states */
+.progress-step.completed .dot {
+  background: #27ae60;
+  color: white;
+}
+
+.progress-step.current .dot {
+  background: var(--theme-accent, var(--theme-primary));
+  color: white;
+}
+
+.progress-step.pending .dot {
+  background: #e0e0e0;
+  color: #666;
+}
+
+/* Connector lines between steps */
+.progress-connector {
+  flex: 1;
+  height: 2px;
+  background: #e0e0e0;
+}
+
+.progress-connector.completed {
+  background: #27ae60;
+}

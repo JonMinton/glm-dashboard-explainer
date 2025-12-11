@@ -1,0 +1,10 @@
+/* Theme: Negative Binomial (Tutorial 4)
+ * Color: Orange gradient (#d35400 to #e67e22)
+ * Used for: Overdispersed Counts - Negative Binomial + Log link
+ */
+
+:root {
+  --theme-primary: #d35400;
+  --theme-secondary: #e67e22;
+  --theme-light: #fef5e7;
+}

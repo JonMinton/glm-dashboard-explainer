@@ -1,0 +1,220 @@
+/* GLM Tutorial - Component Styles
+ * Buttons, cards, panels, and other reusable components
+ */
+
+/* Buttons */
+.btn {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+  border: none;
+  font-size: 1em;
+}
+
+.btn-primary {
+  background: var(--theme-accent, var(--theme-primary));
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--theme-accent-secondary, var(--theme-secondary));
+}
+
+.btn-primary:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #ecf0f1;
+  color: #666;
+}
+
+.btn-secondary:hover {
+  background: #bdc3c7;
+}
+
+.btn-success {
+  background: #27ae60;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #219a52;
+}
+
+/* Option cards (link/distribution selection) */
+.option-card,
+.dist-card {
+  background: white;
+  border: 3px solid #dee2e6;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.option-card:hover:not(.dimmed):not(.selected):not(.selected-correct),
+.dist-card:hover:not(.dimmed):not(.selected):not(.selected-correct) {
+  border-color: var(--theme-accent, var(--theme-primary));
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.option-card.dimmed,
+.dist-card.dimmed {
+  opacity: 0.4;
+  filter: grayscale(40%);
+  pointer-events: none;
+}
+
+/* Card selection states */
+.option-card.selected,
+.option-card.selected-correct,
+.dist-card.selected-correct {
+  border-color: #27ae60;
+  background: #f0fff4;
+}
+
+.option-card.semi-valid,
+.dist-card.selected-semi {
+  border-color: #f39c12;
+  background: #fffbf0;
+}
+
+.option-card.wrong,
+.dist-card.selected-wrong {
+  animation: shake 0.4s ease-in-out;
+  border-color: #e74c3c;
+  background: #fdf2f2;
+}
+
+/* Card content */
+.option-card h3,
+.dist-card h3 {
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.option-card .formula,
+.dist-card .formula {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.1em;
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.option-card .description,
+.dist-card .description {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.option-card .use-case,
+.dist-card .use-case {
+  font-size: 0.8em;
+  color: #888;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.dist-card .variance-note {
+  font-size: 0.75em;
+  color: #999;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Options grid layout */
+.link-options,
+.distribution-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+/* Result panel */
+.result-panel {
+  display: none;
+  background: var(--theme-light, #f0fff4);
+  border-left: 4px solid #27ae60;
+  padding: 20px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 20px;
+}
+
+.result-panel.show {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+.result-panel h3 {
+  color: #27ae60;
+  margin-bottom: 15px;
+}
+
+/* Final model display */
+.final-model {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.final-model .equation {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.3em;
+  margin: 10px 0;
+}
+
+/* Model summary grid */
+.model-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.summary-item {
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.summary-item .label {
+  font-size: 0.8em;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-item .value {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-top: 4px;
+}
+
+/* Highlight boxes */
+.highlight {
+  background: #fff3cd;
+  padding: 12px 15px;
+  border-radius: 6px;
+  margin: 15px 0;
+  font-size: 0.95em;
+}
+
+.highlight.green {
+  background: #d4edda;
+}

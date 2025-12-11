@@ -13,8 +13,44 @@ The tutorial series (5 tutorials × 6 pages each = 30 HTML files) contains signi
 - Instruction/result panels
 - Typography and spacing
 
-## Current State
-All tutorials now use consistent modal dialog patterns (`.dialog-overlay` with `.dialog` classes). This standardization was completed in December 2025.
+## Current State (December 2025)
+
+### What Was Attempted
+A CSS extraction was attempted with:
+1. Shared CSS files created in `prototype/css/`
+2. Theme files with CSS custom properties in `prototype/css/themes/`
+3. A Python script (`scripts/extract-css.py`) to automate conversion
+
+### What Happened
+The automated extraction broke styling on Tutorials 2-5 because:
+- Each tutorial has subtle style variations (different colours for progress dots, borders, etc.)
+- The shared CSS used generic green (`#27ae60`) for completed states, but tutorials 2-5 use their theme colours
+- Some page-specific styles weren't captured in the shared files
+
+### Current Decision
+**Keep CSS infrastructure but don't convert existing tutorials.** The inline styles work correctly. Use external CSS only for:
+- New tutorials added in future
+- As a reference for what shared patterns look like
+
+### Files Created (kept for future use)
+```
+prototype/css/
+├── base.css           # Reset, typography, container, header
+├── components.css     # Buttons, cards, panels
+├── dialogs.css        # Modal overlay system
+├── progress.css       # Progress bar component
+└── themes/
+    ├── gaussian.css   # Tutorial 1 (gray/blue)
+    ├── binomial.css   # Tutorial 2 (blue)
+    ├── poisson.css    # Tutorial 3 (purple)
+    ├── negbin.css     # Tutorial 4 (orange)
+    └── gamma.css      # Tutorial 5 (red)
+
+scripts/
+└── extract-css.py     # Automation script (needs refinement)
+```
+
+All tutorials still use inline `<style>` blocks and work correctly with modal dialog patterns.
 
 ## Proposed Structure
 
@@ -186,3 +222,50 @@ Open each tutorial page in browser and:
 2. Click through option cards, verify modal appears
 3. Confirm selection, verify result panel shows
 4. Check navigation buttons work
+
+---
+
+## Future Work: Proper CSS Extraction
+
+If attempting this again, here's what needs to change:
+
+### Key Issue: Theme-Specific Completed States
+The main problem was that `.progress-step.completed .dot` and `.progress-connector.completed` use different colours per tutorial:
+- Tutorial 1: `#27ae60` (green) - but this was the only one using green!
+- Tutorial 2: `#2980b9` (blue)
+- Tutorial 3: `#8e44ad` (purple)
+- Tutorial 4: `#d35400` (orange)
+- Tutorial 5: `#c0392b` (red)
+
+The shared CSS assumed green for all completed states, breaking tutorials 2-5.
+
+### Solution Approach
+1. **Use CSS variables for ALL themed colours**, not just primary/secondary:
+   ```css
+   /* In theme file */
+   :root {
+     --theme-primary: #3498db;
+     --theme-secondary: #2980b9;
+     --theme-completed: #2980b9;  /* Add this */
+   }
+
+   /* In progress.css */
+   .progress-step.completed .dot {
+     background: var(--theme-completed);
+   }
+   ```
+
+2. **Audit each tutorial's inline styles** to identify ALL colour variations before extraction
+
+3. **Test incrementally** - convert one tutorial at a time and verify visually
+
+### Estimated Additional Effort
+- Colour audit across all tutorials: ~30 mins
+- Update CSS files with complete variables: ~1 hour
+- Careful re-extraction with testing: ~2 hours
+
+### Priority
+Low - The tutorials work correctly with inline styles. Only revisit if:
+- Adding Tutorial 6+
+- Need to make bulk style changes
+- Setting up a build/bundling system

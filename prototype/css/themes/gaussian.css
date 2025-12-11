@@ -1,0 +1,13 @@
+/* Theme: Gaussian (Tutorial 1)
+ * Color: Neutral gray header with blue accents
+ * Used for: Heart Rate Prediction - Gaussian + Identity link
+ * Note: Tutorial 1 uses neutral styling as it's the introductory tutorial
+ */
+
+:root {
+  --theme-primary: #2c3e50;
+  --theme-secondary: #2c3e50;
+  --theme-accent: #3498db;
+  --theme-accent-secondary: #2980b9;
+  --theme-light: #d4edda;
+}

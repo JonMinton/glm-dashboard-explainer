@@ -1,0 +1,10 @@
+/* Theme: Poisson (Tutorial 3)
+ * Color: Purple (#9b59b6)
+ * Used for: Bike Rental Counts - Poisson + Log link
+ */
+
+:root {
+  --theme-primary: #9b59b6;
+  --theme-secondary: #8e44ad;
+  --theme-light: #ebdef0;
+}

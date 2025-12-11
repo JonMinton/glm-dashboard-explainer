@@ -1,0 +1,10 @@
+/* Theme: Binomial (Tutorial 2)
+ * Color: Blue (#3498db)
+ * Used for: Heart Disease Classification - Binomial + Logit link
+ */
+
+:root {
+  --theme-primary: #3498db;
+  --theme-secondary: #2980b9;
+  --theme-light: #d6eaf8;
+}

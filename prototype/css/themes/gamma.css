@@ -1,0 +1,10 @@
+/* Theme: Gamma (Tutorial 5)
+ * Color: Red gradient (#c0392b to #e74c3c)
+ * Used for: Blood Pressure Prediction - Gamma + Log link
+ */
+
+:root {
+  --theme-primary: #c0392b;
+  --theme-secondary: #e74c3c;
+  --theme-light: #fadbd8;
+}
