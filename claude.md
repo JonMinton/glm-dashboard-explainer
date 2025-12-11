@@ -73,13 +73,19 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 ### Tutorial Files
 ```
 prototype/
-├── index.html              # Tutorial/datasets index page
-├── tutorial.html           # Tutorial 1: Systematic component (drag & drop)
-├── tutorial-link.html      # Tutorial 1: Link function selection
-├── tutorial-distribution.html  # Tutorial 1: Distribution selection
-├── tutorial-fitting.html   # Tutorial 1: Fitting method explanation
-├── tutorial-code.html      # Tutorial 1: R/Python implementation
-└── tutorial-advanced.html  # Tutorial 1: Log-likelihood derivation (KaTeX)
+├── index.html                      # Tutorial/datasets index page
+└── tutorials/
+    ├── 01-gaussian/                # Tutorial 1: Heart Rate (Gaussian)
+    │   ├── systematic.html         # Select response & predictors
+    │   ├── link.html               # Link function selection
+    │   ├── distribution.html       # Distribution selection
+    │   ├── fitting.html            # Fitting method explanation
+    │   ├── code.html               # R/Python implementation
+    │   └── advanced.html           # Log-likelihood derivation (KaTeX)
+    ├── 02-logistic/                # Tutorial 2: Heart Disease (Binomial)
+    ├── 03-poisson/                 # Tutorial 3: Bike Rentals (Poisson)
+    ├── 04-negbin/                  # Tutorial 4: Overdispersed Counts
+    └── 05-gamma/                   # Tutorial 5: Insurance Claims (optional)
 ```
 
 ### Design Pattern
