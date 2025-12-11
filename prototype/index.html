@@ -107,6 +107,10 @@
       color: white;
     }
 
+    /* Neutral colour for incomplete tutorials - don't reveal the GLM type */
+    .card-header.unknown { background: linear-gradient(135deg, #7f8c8d 0%, #95a5a6 100%); }
+
+    /* Revealed colours for completed tutorials */
     .card-header.gaussian { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); }
     .card-header.binomial { background: linear-gradient(135deg, #2980b9 0%, #3498db 100%); }
     .card-header.poisson { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); }
@@ -158,19 +162,28 @@
       color: #2c3e50;
     }
 
-    .outcome-type {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.8em;
-      font-weight: 600;
-      margin-bottom: 10px;
+    .challenge-text {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      color: #856404;
     }
 
-    .outcome-type.continuous { background: #d5f5e3; color: #1e8449; }
-    .outcome-type.binary { background: #d6eaf8; color: #1a5276; }
-    .outcome-type.count { background: #e8daef; color: #6c3483; }
-    .outcome-type.positive { background: #fadbd8; color: #922b21; }
+    .revealed-answer {
+      background: #d4edda;
+      border: 1px solid #28a745;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      color: #155724;
+    }
+
+    .revealed-answer strong {
+      display: block;
+      margin-bottom: 5px;
+    }
 
     .status-badge {
       display: inline-block;
@@ -350,48 +363,51 @@
 
     <h2 style="margin: 40px 0 20px; color: #2c3e50;">Tutorial Series</h2>
     <p style="color: #666; margin-bottom: 20px;">
-      Each tutorial uses a real dataset to demonstrate when and why a particular GLM family is appropriate.
+      Each tutorial presents a real dataset and decision problem. Your task is to figure out the appropriate model.
     </p>
 
     <div class="tutorials-grid">
 
-      <!-- Tutorial 1: Gaussian -->
+      <!-- Tutorial 1: Gaussian (COMPLETE - reveal answer) -->
       <div class="tutorial-card">
         <div class="card-header gaussian">
           <h3>1. Heart Rate Prediction</h3>
           <div class="family">Gaussian + Identity Link</div>
         </div>
         <div class="card-body">
-          <span class="outcome-type continuous">Continuous Outcome</span>
           <h4>The Decision Problem</h4>
           <p>Predict a patient's maximum heart rate during exercise from their characteristics.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Heart Disease (Cleveland)</div>
           </div>
-          <p><strong>Why Gaussian?</strong> Heart rate is continuous and approximately symmetric&mdash;OLS and Gaussian GLM give identical results.</p>
+          <div class="revealed-answer">
+            <strong>You discovered:</strong>
+            Heart rate is continuous and approximately symmetric&mdash;the Gaussian family with identity link is appropriate. OLS and Gaussian GLM give identical results.
+          </div>
         </div>
         <div class="card-footer">
           <span class="status-badge complete">Complete</span>
-          <a href="tutorial.html" class="start-btn">Start Tutorial</a>
+          <a href="tutorial.html" class="start-btn">Review Tutorial</a>
         </div>
       </div>
 
-      <!-- Tutorial 2: Logistic -->
+      <!-- Tutorial 2: Logistic (NOT STARTED - hide answer) -->
       <div class="tutorial-card">
-        <div class="card-header binomial">
+        <div class="card-header unknown">
           <h3>2. Heart Disease Classification</h3>
-          <div class="family">Binomial + Logit Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
-          <span class="outcome-type binary">Binary Outcome</span>
           <h4>The Decision Problem</h4>
           <p>Classify whether a patient has heart disease based on diagnostic measurements.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Heart Disease (Cleveland)</div>
           </div>
-          <p><strong>Why Logistic?</strong> The outcome is binary (disease/no disease)&mdash;we need predictions bounded between 0 and 1.</p>
+          <div class="challenge-text">
+            The outcome is whether a patient has heart disease (yes/no). What kind of model handles this type of data?
+          </div>
         </div>
         <div class="card-footer">
           <span class="status-badge coming-soon">Coming Soon</span>
@@ -399,21 +415,22 @@
         </div>
       </div>
 
-      <!-- Tutorial 3: Poisson -->
+      <!-- Tutorial 3: Poisson (NOT STARTED - hide answer) -->
       <div class="tutorial-card coming-soon">
-        <div class="card-header poisson">
-          <h3>3. Bike Rental Counts</h3>
-          <div class="family">Poisson + Log Link</div>
+        <div class="card-header unknown">
+          <h3>3. Bike Rental Demand</h3>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
-          <span class="outcome-type count">Count Outcome</span>
           <h4>The Decision Problem</h4>
           <p>Predict daily bike rental demand from weather and calendar variables.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing Dataset</div>
           </div>
-          <p><strong>Why Poisson?</strong> Rental counts are non-negative integers. The log link ensures predictions stay positive.</p>
+          <div class="challenge-text">
+            The outcome is the number of rentals per day (0, 1, 2, 3, ...). What kind of model handles counts?
+          </div>
         </div>
         <div class="card-footer">
           <span class="status-badge coming-soon">Coming Soon</span>
@@ -421,21 +438,22 @@
         </div>
       </div>
 
-      <!-- Tutorial 4: Negative Binomial -->
+      <!-- Tutorial 4: Negative Binomial (NOT STARTED - hide answer) -->
       <div class="tutorial-card coming-soon">
-        <div class="card-header negbin">
-          <h3>4. Overdispersed Counts</h3>
-          <div class="family">Negative Binomial + Log Link</div>
+        <div class="card-header unknown">
+          <h3>4. When Counts Misbehave</h3>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
-          <span class="outcome-type count">Count Outcome</span>
           <h4>The Decision Problem</h4>
-          <p>Handle count data where variance exceeds the mean (overdispersion).</p>
+          <p>What happens when our count model's assumptions don't hold?</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">UCI Bike Sharing (revisited)</div>
           </div>
-          <p><strong>Why Negative Binomial?</strong> When Poisson's mean=variance assumption fails, NegBin adds a dispersion parameter.</p>
+          <div class="challenge-text">
+            Sometimes count data has more variation than expected. How do we handle "overdispersion"?
+          </div>
         </div>
         <div class="card-footer">
           <span class="status-badge coming-soon">Coming Soon</span>
@@ -443,21 +461,22 @@
         </div>
       </div>
 
-      <!-- Tutorial 5: Gamma (Optional) -->
+      <!-- Tutorial 5: Gamma (OPTIONAL - hide answer) -->
       <div class="tutorial-card coming-soon">
-        <div class="card-header gamma">
+        <div class="card-header unknown">
           <h3>5. Insurance Claim Amounts</h3>
-          <div class="family">Gamma + Log Link</div>
+          <div class="family">Which GLM family?</div>
         </div>
         <div class="card-body">
-          <span class="outcome-type positive">Positive Continuous</span>
           <h4>The Decision Problem</h4>
           <p>Predict insurance claim amounts given a claim has occurred.</p>
           <div class="dataset-info">
             <div class="label">Dataset</div>
             <div class="value">Insurance Claims (TBD)</div>
           </div>
-          <p><strong>Why Gamma?</strong> Claim amounts are positive and right-skewed. Gamma handles this naturally.</p>
+          <div class="challenge-text">
+            Claim amounts are always positive and often right-skewed. What model handles positive continuous data?
+          </div>
         </div>
         <div class="card-footer">
           <span class="status-badge coming-soon">Optional</span>
