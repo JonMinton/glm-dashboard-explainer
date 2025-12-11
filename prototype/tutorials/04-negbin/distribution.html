@@ -166,10 +166,16 @@
       transition: all 0.2s ease;
     }
 
-    .dist-card:hover {
+    .dist-card:hover:not(.dimmed):not(.selected) {
       border-color: #e67e22;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .dist-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
     }
 
     .dist-card.selected {
@@ -222,74 +228,65 @@
       font-size: 0.9em;
     }
 
-    /* Dialog box */
-    .dialog-box {
+    /* Dialog overlay (modal style) */
+    .dialog-overlay {
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
       background: white;
       border-radius: 12px;
       padding: 25px;
-      margin-top: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      max-width: 600px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
-    .dialog-box.show {
-      display: block;
-      animation: fadeIn 0.3s ease;
+    .dialog.success {
+      border-top: 4px solid #27ae60;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
     }
 
-    .dialog-box.correct {
-      border-left: 5px solid #27ae60;
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
     }
 
-    .dialog-box.wrong {
-      border-left: 5px solid #e74c3c;
-    }
-
-    .dialog-box.semi-correct {
-      border-left: 5px solid #f39c12;
-    }
-
-    .dialog-header {
+    .dialog h3 {
+      margin-bottom: 15px;
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 15px;
     }
 
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5em;
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
     }
 
-    .dialog-icon.correct { background: #d4edda; }
-    .dialog-icon.wrong { background: #f8d7da; }
-    .dialog-icon.semi-correct { background: #fff3cd; }
-
-    .dialog-title {
-      font-size: 1.2em;
-      font-weight: 600;
-    }
-
-    .dialog-content {
-      color: #555;
-      line-height: 1.7;
-    }
-
-    .dialog-content ul {
+    .dialog ul {
       margin: 10px 0 10px 20px;
     }
 
-    .dialog-content li {
+    .dialog li {
       margin: 5px 0;
     }
 
@@ -297,8 +294,8 @@
       background: #fef5e7;
       border-radius: 6px;
       padding: 12px 15px;
-      margin-top: 15px;
-      font-size: 0.9em;
+      margin: 15px 0;
+      font-size: 0.95em;
     }
 
     .highlight-box.success {
@@ -333,6 +330,38 @@
       color: #155724;
     }
 
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Navigation */
     .nav-buttons {
       display: flex;
@@ -350,12 +379,13 @@
       transition: all 0.2s ease;
       text-decoration: none;
       display: inline-block;
+      border: none;
+      font-size: 1em;
     }
 
     .btn-primary {
       background: #d35400;
       color: white;
-      border: none;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -370,11 +400,19 @@
     .btn-secondary {
       background: #ecf0f1;
       color: #666;
-      border: none;
     }
 
     .btn-secondary:hover {
       background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
     }
   </style>
 </head>
@@ -450,13 +488,10 @@
       </div>
     </div>
 
-    <!-- Dialog box -->
-    <div class="dialog-box" id="dialogBox">
-      <div class="dialog-header">
-        <div class="dialog-icon" id="dialogIcon"></div>
-        <div class="dialog-title" id="dialogTitle"></div>
-      </div>
-      <div class="dialog-content" id="dialogContent"></div>
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Negative Binomial Selected</h3>
+      <p>The Negative Binomial distribution properly handles overdispersed count data by estimating a dispersion parameter &theta; from the data.</p>
     </div>
 
     <!-- Navigation -->
@@ -466,147 +501,202 @@
     </div>
   </div>
 
+  <!-- Dialog for Negative Binomial (correct) -->
+  <div class="dialog-overlay" id="negbinDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Negative Binomial handles overdispersion.</h3>
+      <p>The <strong>Negative Binomial</strong> distribution is perfect for overdispersed count data:</p>
+      <ul>
+        <li><strong>Variance = &mu; + &mu;&sup2;/&theta;:</strong> Always larger than the mean</li>
+        <li><strong>Dispersion parameter &theta;:</strong> Estimated from data, controls extra variance</li>
+        <li><strong>Proper probability model:</strong> Unlike quasi-Poisson, has a full likelihood</li>
+        <li><strong>Reduces to Poisson:</strong> When &theta; &rarr; &infin;, NegBin &rarr; Poisson</li>
+      </ul>
+      <table class="comparison-table">
+        <tr>
+          <th>Metric</th>
+          <th>Poisson (Tutorial 3)</th>
+          <th>Negative Binomial</th>
+        </tr>
+        <tr>
+          <td>Deviance/df</td>
+          <td class="bad">524.1</td>
+          <td class="good">1.04</td>
+        </tr>
+        <tr>
+          <td>AIC</td>
+          <td class="bad">387,415</td>
+          <td class="good">12,840</td>
+        </tr>
+        <tr>
+          <td>SE(temp)</td>
+          <td class="bad">0.0032</td>
+          <td class="good">0.0813</td>
+        </tr>
+      </table>
+      <div class="highlight-box success">
+        <strong>Key insight:</strong> The standard errors are ~25x larger with Negative Binomial.
+        This gives honest uncertainty estimates - Poisson was massively overconfident!
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmNegBin()">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Poisson (wrong) -->
+  <div class="dialog-overlay" id="poissonDialog">
+    <div class="dialog error">
+      <h3>&#10060; We already know Poisson doesn't fit!</h3>
+      <p>We tried Poisson in <strong>Tutorial 3</strong> and discovered severe problems:</p>
+      <ul>
+        <li><strong>Deviance/df = 524:</strong> Should be ~1 for a good fit</li>
+        <li><strong>Variance = Mean assumption:</strong> Our data violates this drastically</li>
+        <li><strong>Underestimated SEs:</strong> p-values are unreliable (too optimistic)</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>The overdispersion problem:</strong> Poisson assumes Var(Y) = &mu;.
+        But our bike rental counts have far more variability than that.
+        Days with similar predicted counts can have wildly different actual counts.
+        <br><br>
+        Try selecting <strong>Negative Binomial</strong> to properly model this extra variance.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('poissonDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Quasi-Poisson (semi-correct) -->
+  <div class="dialog-overlay" id="quasipoissonDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Quick fix, but not ideal.</h3>
+      <p>The <strong>Quasi-Poisson</strong> is a pragmatic workaround:</p>
+      <ul>
+        <li><strong>Inflates SEs:</strong> Multiplies by &radic;&phi; to account for overdispersion</li>
+        <li><strong>Same coefficients:</strong> Point estimates identical to Poisson</li>
+        <li><strong>No proper likelihood:</strong> Can't compute AIC or do likelihood ratio tests</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>When to use Quasi-Poisson:</strong>
+        <ul>
+          <li>Quick exploratory analysis</li>
+          <li>When you just need corrected SEs</li>
+          <li>Teaching/simple demonstrations</li>
+        </ul>
+        <strong>Why Negative Binomial is better:</strong>
+        <ul>
+          <li>Proper probability model with full likelihood</li>
+          <li>Can compute AIC, do model selection</li>
+          <li>More flexible variance structure: Var = &mu; + &mu;&sup2;/&theta;</li>
+        </ul>
+        Try selecting <strong>Negative Binomial</strong> for the proper solution.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('quasipoissonDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (wrong) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong data type - counts, not continuous!</h3>
+      <p>The <strong>Gaussian</strong> distribution is wrong for several reasons:</p>
+      <ul>
+        <li><strong>Allows negative values:</strong> You can't have -100 bike rentals</li>
+        <li><strong>Continuous, not discrete:</strong> Counts are integers (0, 1, 2, ...)</li>
+        <li><strong>Constant variance:</strong> Assumes same spread at all levels of &mu;</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>When to use Gaussian:</strong> Tutorial 1 (heart rate) was continuous and
+        could theoretically take any value. Bike rental counts are fundamentally different.
+        <br><br>
+        Try selecting <strong>Negative Binomial</strong> - it's designed for overdispersed counts.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const dialogs = {
-      negbin: {
-        type: 'correct',
-        icon: '&#10003;',
-        title: 'Correct! Negative Binomial handles overdispersion.',
-        content: `
-          <p>The <strong>Negative Binomial</strong> distribution is perfect for overdispersed count data:</p>
-          <ul>
-            <li><strong>Variance = &mu; + &mu;&sup2;/&theta;:</strong> Always larger than the mean</li>
-            <li><strong>Dispersion parameter &theta;:</strong> Estimated from data, controls extra variance</li>
-            <li><strong>Proper probability model:</strong> Unlike quasi-Poisson, has a full likelihood</li>
-            <li><strong>Reduces to Poisson:</strong> When &theta; &rarr; &infin;, NegBin &rarr; Poisson</li>
-          </ul>
-          <table class="comparison-table">
-            <tr>
-              <th>Metric</th>
-              <th>Poisson (Tutorial 3)</th>
-              <th>Negative Binomial</th>
-            </tr>
-            <tr>
-              <td>Deviance/df</td>
-              <td class="bad">524.1</td>
-              <td class="good">1.04</td>
-            </tr>
-            <tr>
-              <td>AIC</td>
-              <td class="bad">387,415</td>
-              <td class="good">12,840</td>
-            </tr>
-            <tr>
-              <td>SE(temp)</td>
-              <td class="bad">0.0032</td>
-              <td class="good">0.0813</td>
-            </tr>
-          </table>
-          <div class="highlight-box success">
-            <strong>Key insight:</strong> The standard errors are ~25x larger with Negative Binomial.
-            This gives honest uncertainty estimates - Poisson was massively overconfident!
-          </div>
-        `
-      },
-      poisson: {
-        type: 'wrong',
-        icon: '&#10007;',
-        title: 'We already know Poisson doesn\'t fit!',
-        content: `
-          <p>We tried Poisson in <strong>Tutorial 3</strong> and discovered severe problems:</p>
-          <ul>
-            <li><strong>Deviance/df = 524:</strong> Should be ~1 for a good fit</li>
-            <li><strong>Variance = Mean assumption:</strong> Our data violates this drastically</li>
-            <li><strong>Underestimated SEs:</strong> p-values are unreliable (too optimistic)</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>The overdispersion problem:</strong> Poisson assumes Var(Y) = &mu;.
-            But our bike rental counts have far more variability than that.
-            Days with similar predicted counts can have wildly different actual counts.
-            <br><br>
-            Try selecting <strong>Negative Binomial</strong> to properly model this extra variance.
-          </div>
-        `
-      },
-      quasipoisson: {
-        type: 'semi-correct',
-        icon: '~',
-        title: 'Quick fix, but not ideal.',
-        content: `
-          <p>The <strong>Quasi-Poisson</strong> is a pragmatic workaround:</p>
-          <ul>
-            <li><strong>Inflates SEs:</strong> Multiplies by &radic;&phi; to account for overdispersion</li>
-            <li><strong>Same coefficients:</strong> Point estimates identical to Poisson</li>
-            <li><strong>No proper likelihood:</strong> Can't compute AIC or do likelihood ratio tests</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>When to use Quasi-Poisson:</strong>
-            <ul>
-              <li>Quick exploratory analysis</li>
-              <li>When you just need corrected SEs</li>
-              <li>Teaching/simple demonstrations</li>
-            </ul>
-            <strong>Why Negative Binomial is better:</strong>
-            <ul>
-              <li>Proper probability model with full likelihood</li>
-              <li>Can compute AIC, do model selection</li>
-              <li>More flexible variance structure: Var = &mu; + &mu;&sup2;/&theta;</li>
-            </ul>
-            Try selecting <strong>Negative Binomial</strong> for the proper solution.
-          </div>
-        `
-      },
-      gaussian: {
-        type: 'wrong',
-        icon: '&#10007;',
-        title: 'Wrong data type - counts, not continuous!',
-        content: `
-          <p>The <strong>Gaussian</strong> distribution is wrong for several reasons:</p>
-          <ul>
-            <li><strong>Allows negative values:</strong> You can't have -100 bike rentals</li>
-            <li><strong>Continuous, not discrete:</strong> Counts are integers (0, 1, 2, ...)</li>
-            <li><strong>Constant variance:</strong> Assumes same spread at all levels of &mu;</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>When to use Gaussian:</strong> Tutorial 1 (heart rate) was continuous and
-            could theoretically take any value. Bike rental counts are fundamentally different.
-            <br><br>
-            Try selecting <strong>Negative Binomial</strong> - it's designed for overdispersed counts.
-          </div>
-        `
-      }
-    };
+    // State
+    let selectedDist = null;
 
     const cards = document.querySelectorAll('.dist-card');
-    const dialogBox = document.getElementById('dialogBox');
     const continueBtn = document.getElementById('continueBtn');
 
     cards.forEach(card => {
       card.addEventListener('click', () => {
         const dist = card.dataset.dist;
-        const dialog = dialogs[dist];
+        handleDistSelection(dist, card);
+      });
+    });
 
-        // Reset all cards
-        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-correct'));
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'negbin') return;
 
-        // Style the clicked card
-        if (dialog.type === 'correct') {
+      // Remove previous selection styling
+      cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-correct'));
+
+      switch(dist) {
+        case 'negbin':
           card.classList.add('selected');
-          continueBtn.disabled = false;
-        } else if (dialog.type === 'semi-correct') {
-          card.classList.add('semi-correct');
-          continueBtn.disabled = true;
-        } else {
-          card.classList.add('wrong');
-          continueBtn.disabled = true;
-        }
+          showDialog('negbinDialog');
+          break;
 
-        // Show dialog
-        dialogBox.className = `dialog-box show ${dialog.type}`;
-        document.getElementById('dialogIcon').className = `dialog-icon ${dialog.type}`;
-        document.getElementById('dialogIcon').innerHTML = dialog.icon;
-        document.getElementById('dialogTitle').textContent = dialog.title;
-        document.getElementById('dialogContent').innerHTML = dialog.content;
+        case 'poisson':
+          card.classList.add('wrong');
+          showDialog('poissonDialog');
+          break;
+
+        case 'quasipoisson':
+          card.classList.add('semi-correct');
+          showDialog('quasipoissonDialog');
+          break;
+
+        case 'gaussian':
+          card.classList.add('wrong');
+          showDialog('gaussianDialog');
+          break;
+      }
+    }
+
+    function confirmNegBin() {
+      selectedDist = 'negbin';
+      closeDialog('negbinDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.dist-card:not([data-dist="negbin"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      document.getElementById(dialogId).classList.add('show');
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'negbin') {
+        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-correct'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
       });
     });
 

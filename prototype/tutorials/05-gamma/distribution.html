@@ -139,10 +139,16 @@
       transition: all 0.2s ease;
     }
 
-    .option-card:hover:not(.disabled) {
+    .option-card:hover:not(.dimmed):not(.selected) {
       border-color: #e74c3c;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .option-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
     }
 
     .option-card.selected {
@@ -159,11 +165,6 @@
     .option-card.semi-valid {
       border-color: #f39c12;
       background: #fff3cd;
-    }
-
-    .option-card.disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
 
     @keyframes shake {
@@ -198,55 +199,77 @@
       font-style: italic;
     }
 
-    /* Dialog box */
-    .dialog-box {
+    /* Dialog overlay (modal style) */
+    .dialog-overlay {
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
       background: white;
       border-radius: 12px;
       padding: 25px;
-      margin-top: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-width: 600px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
-    .dialog-box.show {
-      display: block;
-      animation: slideIn 0.3s ease;
+    .dialog.success {
+      border-top: 4px solid #27ae60;
     }
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
     }
 
-    .dialog-box.success {
-      border-left: 4px solid #27ae60;
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
     }
 
-    .dialog-box.error {
-      border-left: 4px solid #e74c3c;
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .dialog-box.warning {
-      border-left: 4px solid #f39c12;
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
     }
 
-    .dialog-box h4 {
-      margin-bottom: 10px;
+    .dialog ul {
+      margin: 10px 0 10px 20px;
     }
 
-    .dialog-box.success h4 { color: #155724; }
-    .dialog-box.error h4 { color: #721c24; }
-    .dialog-box.warning h4 { color: #856404; }
-
-    .dialog-box p {
-      margin-bottom: 10px;
+    .dialog li {
+      margin: 5px 0;
     }
 
-    .dialog-box .key-point {
+    .key-point {
       background: #f8f9fa;
       padding: 12px 15px;
       border-radius: 6px;
       margin: 15px 0;
+    }
+
+    .key-point.success {
+      background: #d4edda;
     }
 
     /* Comparison table */
@@ -275,6 +298,38 @@
     .better { color: #27ae60; font-weight: 600; }
     .worse { color: #e74c3c; }
 
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     /* Navigation */
     .nav-buttons {
       display: flex;
@@ -292,12 +347,13 @@
       transition: all 0.2s ease;
       text-decoration: none;
       display: inline-block;
+      border: none;
+      font-size: 1em;
     }
 
     .btn-primary {
       background: #c0392b;
       color: white;
-      border: none;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -312,11 +368,19 @@
     .btn-secondary {
       background: #ecf0f1;
       color: #666;
-      border: none;
     }
 
     .btn-secondary:hover {
       background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
     }
   </style>
 </head>
@@ -382,10 +446,10 @@
       </div>
     </div>
 
-    <!-- Dialog -->
-    <div class="dialog-box" id="dialogBox">
-      <h4 id="dialogTitle"></h4>
-      <div id="dialogContent"></div>
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Gamma Distribution Selected</h3>
+      <p>The Gamma distribution is ideal for positive continuous data with variance proportional to the mean squared.</p>
     </div>
 
     <!-- Navigation -->
@@ -395,187 +459,247 @@
     </div>
   </div>
 
+  <!-- Dialog for Gamma (correct) -->
+  <div class="dialog-overlay" id="gammaDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Gamma is ideal for positive continuous data.</h3>
+      <p>
+        The <strong>Gamma distribution</strong> is perfect for blood pressure because:
+      </p>
+      <div class="key-point success">
+        <ul style="margin: 0 0 0 20px;">
+          <li><strong>Positive support:</strong> Only produces values > 0</li>
+          <li><strong>Right-skewed:</strong> Matches the asymmetry in our data</li>
+          <li><strong>Variance ~ mean&sup2;:</strong> Higher BP → more variability</li>
+        </ul>
+      </div>
+      <p>
+        <strong>Model comparison for our blood pressure data:</strong>
+      </p>
+      <table class="comparison-table">
+        <tr>
+          <th>Metric</th>
+          <th>Gaussian</th>
+          <th>Gamma</th>
+        </tr>
+        <tr>
+          <td>AIC</td>
+          <td class="worse">2528.5</td>
+          <td class="better">2512.8 (lower is better!)</td>
+        </tr>
+        <tr>
+          <td>Can predict negative?</td>
+          <td class="worse">Yes (problematic)</td>
+          <td class="better">No (impossible)</td>
+        </tr>
+        <tr>
+          <td>Variance assumption</td>
+          <td>Constant</td>
+          <td>Increases with mean</td>
+        </tr>
+        <tr>
+          <td>Interpretation</td>
+          <td>Additive effects</td>
+          <td>Multiplicative (with log link)</td>
+        </tr>
+      </table>
+      <p>
+        <strong>Key insight:</strong> The Gamma + log link combination gives us both:
+        <br>(1) Positive predictions guaranteed
+        <br>(2) Intuitive multiplicative interpretation
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmGamma()">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (wrong) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Gaussian allows negative predictions.</h3>
+      <p>
+        The <strong>Gaussian (Normal) distribution</strong> has support on $(-\infty, \infty)$,
+        meaning it allows both positive and negative values.
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> Blood pressure can never be negative!</p>
+        <p>With Gaussian, extreme predictions could give negative BP values.</p>
+      </div>
+      <p>
+        <strong>Other issues with Gaussian for blood pressure:</strong>
+      </p>
+      <ul>
+        <li><strong>Constant variance:</strong> Assumes same variability at all BP levels</li>
+        <li><strong>Symmetric:</strong> BP data is often right-skewed</li>
+        <li><strong>Higher AIC:</strong> 2528.5 vs 2512.8 for Gamma (Gamma fits better!)</li>
+      </ul>
+      <p>
+        Gaussian is appropriate for truly continuous data that can be negative
+        (e.g., temperature in Celsius, profit/loss). For strictly positive data,
+        use Gamma or another positive-support distribution.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Inverse Gaussian (semi-valid) -->
+  <div class="dialog-overlay" id="inverseGaussianDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Valid alternative, but Gamma is simpler.</h3>
+      <p>
+        The <strong>Inverse Gaussian</strong> is another member of the exponential family
+        that supports only positive values. It's a valid choice!
+      </p>
+      <div class="key-point">
+        <p><strong>Variance:</strong> $\text{Var}(Y) = \mu^3/\lambda$</p>
+        <p>Variance increases even faster with the mean (cubic vs quadratic).</p>
+      </div>
+      <p>
+        <strong>When to use Inverse Gaussian:</strong>
+      </p>
+      <ul>
+        <li>Data has an even heavier right tail than Gamma</li>
+        <li>Often used for waiting times and reliability data</li>
+        <li>More extreme variance-mean relationship needed</li>
+      </ul>
+      <p>
+        For blood pressure, the <strong>Gamma</strong> distribution typically provides
+        a better fit because the variance-mean relationship is closer to quadratic than cubic.
+        Try both and compare AIC if unsure!
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('inverseGaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Log-Normal (semi-valid) -->
+  <div class="dialog-overlay" id="lognormalDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Common alternative, but not a GLM.</h3>
+      <p>
+        The <strong>Log-Normal</strong> approach is very common for positive continuous data:
+        transform Y to log(Y) and fit a Gaussian model.
+      </p>
+      <div class="key-point">
+        <p><strong>Approach:</strong> $\log(Y) \sim N(\mu, \sigma^2)$</p>
+        <p>Coefficients still have multiplicative interpretation on the original scale.</p>
+      </div>
+      <p>
+        <strong>Why Gamma GLM is often preferred:</strong>
+      </p>
+      <ul>
+        <li><strong>Models E[Y] directly:</strong> Gamma models the mean; log-transform models E[log(Y)]</li>
+        <li><strong>Proper GLM:</strong> Stays in the exponential family framework</li>
+        <li><strong>Inference:</strong> Standard errors and tests are for E[Y], not geometric mean</li>
+        <li><strong>Zeros:</strong> Gamma can't handle zeros, but neither can log-transform</li>
+      </ul>
+      <p>
+        Both are valid approaches! Log-Normal is simpler conceptually,
+        while Gamma GLM is more principled for modelling the arithmetic mean.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('lognormalDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const dialogs = {
-      gamma: {
-        type: 'success',
-        title: 'Correct! Gamma is ideal for positive continuous data.',
-        content: `
-          <p>
-            The <strong>Gamma distribution</strong> is perfect for blood pressure because:
-          </p>
-          <div class="key-point">
-            <ul style="margin: 0 0 0 20px;">
-              <li><strong>Positive support:</strong> Only produces values > 0</li>
-              <li><strong>Right-skewed:</strong> Matches the asymmetry in our data</li>
-              <li><strong>Variance ~ mean&sup2;:</strong> Higher BP → more variability</li>
-            </ul>
-          </div>
-          <p>
-            <strong>Model comparison for our blood pressure data:</strong>
-          </p>
-          <table class="comparison-table">
-            <tr>
-              <th>Metric</th>
-              <th>Gaussian</th>
-              <th>Gamma</th>
-            </tr>
-            <tr>
-              <td>AIC</td>
-              <td class="worse">2528.5</td>
-              <td class="better">2512.8 (lower is better!)</td>
-            </tr>
-            <tr>
-              <td>Can predict negative?</td>
-              <td class="worse">Yes (problematic)</td>
-              <td class="better">No (impossible)</td>
-            </tr>
-            <tr>
-              <td>Variance assumption</td>
-              <td>Constant</td>
-              <td>Increases with mean</td>
-            </tr>
-            <tr>
-              <td>Interpretation</td>
-              <td>Additive effects</td>
-              <td>Multiplicative (with log link)</td>
-            </tr>
-          </table>
-          <p>
-            <strong>Key insight:</strong> The Gamma + log link combination gives us both:
-            <br>(1) Positive predictions guaranteed
-            <br>(2) Intuitive multiplicative interpretation
-          </p>
-        `
-      },
-      gaussian: {
-        type: 'error',
-        title: 'Wrong! Gaussian allows negative predictions.',
-        content: `
-          <p>
-            The <strong>Gaussian (Normal) distribution</strong> has support on $(-\\infty, \\infty)$,
-            meaning it allows both positive and negative values.
-          </p>
-          <div class="key-point">
-            <p><strong>Problem:</strong> Blood pressure can never be negative!</p>
-            <p>With Gaussian, extreme predictions could give negative BP values.</p>
-          </div>
-          <p>
-            <strong>Other issues with Gaussian for blood pressure:</strong>
-          </p>
-          <ul style="margin: 10px 0 10px 20px;">
-            <li><strong>Constant variance:</strong> Assumes same variability at all BP levels</li>
-            <li><strong>Symmetric:</strong> BP data is often right-skewed</li>
-            <li><strong>Higher AIC:</strong> 2528.5 vs 2512.8 for Gamma (Gamma fits better!)</li>
-          </ul>
-          <p>
-            Gaussian is appropriate for truly continuous data that can be negative
-            (e.g., temperature in Celsius, profit/loss). For strictly positive data,
-            use Gamma or another positive-support distribution.
-          </p>
-        `
-      },
-      'inverse-gaussian': {
-        type: 'warning',
-        title: 'Valid alternative, but Gamma is simpler.',
-        content: `
-          <p>
-            The <strong>Inverse Gaussian</strong> is another member of the exponential family
-            that supports only positive values. It's a valid choice!
-          </p>
-          <div class="key-point">
-            <p><strong>Variance:</strong> $\\text{Var}(Y) = \\mu^3/\\lambda$</p>
-            <p>Variance increases even faster with the mean (cubic vs quadratic).</p>
-          </div>
-          <p>
-            <strong>When to use Inverse Gaussian:</strong>
-          </p>
-          <ul style="margin: 10px 0 10px 20px;">
-            <li>Data has an even heavier right tail than Gamma</li>
-            <li>Often used for waiting times and reliability data</li>
-            <li>More extreme variance-mean relationship needed</li>
-          </ul>
-          <p>
-            For blood pressure, the <strong>Gamma</strong> distribution typically provides
-            a better fit because the variance-mean relationship is closer to quadratic than cubic.
-            Try both and compare AIC if unsure!
-          </p>
-        `
-      },
-      lognormal: {
-        type: 'warning',
-        title: 'Common alternative, but not a GLM.',
-        content: `
-          <p>
-            The <strong>Log-Normal</strong> approach is very common for positive continuous data:
-            transform Y to log(Y) and fit a Gaussian model.
-          </p>
-          <div class="key-point">
-            <p><strong>Approach:</strong> $\\log(Y) \\sim N(\\mu, \\sigma^2)$</p>
-            <p>Coefficients still have multiplicative interpretation on the original scale.</p>
-          </div>
-          <p>
-            <strong>Why Gamma GLM is often preferred:</strong>
-          </p>
-          <ul style="margin: 10px 0 10px 20px;">
-            <li><strong>Models E[Y] directly:</strong> Gamma models the mean; log-transform models E[log(Y)]</li>
-            <li><strong>Proper GLM:</strong> Stays in the exponential family framework</li>
-            <li><strong>Inference:</strong> Standard errors and tests are for E[Y], not geometric mean</li>
-            <li><strong>Zeros:</strong> Gamma can't handle zeros, but neither can log-transform</li>
-          </ul>
-          <p>
-            Both are valid approaches! Log-Normal is simpler conceptually,
-            while Gamma GLM is more principled for modelling the arithmetic mean.
-          </p>
-        `
-      }
-    };
+    // State
+    let selectedDist = null;
 
-    let selectedCorrect = false;
+    const cards = document.querySelectorAll('.option-card');
+    const continueBtn = document.getElementById('continueBtn');
 
-    document.querySelectorAll('.option-card').forEach(card => {
+    cards.forEach(card => {
       card.addEventListener('click', () => {
-        if (card.classList.contains('disabled')) return;
-
-        // Reset all cards
-        document.querySelectorAll('.option-card').forEach(c => {
-          c.classList.remove('selected', 'wrong', 'semi-valid');
-        });
-
         const dist = card.dataset.dist;
-        const dialog = dialogs[dist];
-        const dialogBox = document.getElementById('dialogBox');
+        handleDistSelection(dist, card);
+      });
+    });
 
-        // Apply appropriate class
-        if (dialog.type === 'success') {
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'gamma') return;
+
+      // Remove previous selection styling
+      cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+
+      switch(dist) {
+        case 'gamma':
           card.classList.add('selected');
-          selectedCorrect = true;
-          document.getElementById('continueBtn').disabled = false;
-        } else if (dialog.type === 'warning') {
-          card.classList.add('semi-valid');
-        } else {
+          showDialog('gammaDialog');
+          break;
+
+        case 'gaussian':
           card.classList.add('wrong');
-        }
+          showDialog('gaussianDialog');
+          break;
 
-        // Show dialog
-        dialogBox.className = `dialog-box show ${dialog.type}`;
-        document.getElementById('dialogTitle').textContent = dialog.title;
-        document.getElementById('dialogContent').innerHTML = dialog.content;
+        case 'inverse-gaussian':
+          card.classList.add('semi-valid');
+          showDialog('inverseGaussianDialog');
+          break;
 
-        // Re-render math
-        if (typeof renderMathInElement !== 'undefined') {
-          renderMathInElement(dialogBox, {
-            delimiters: [
-              {left: '$$', right: '$$', display: true},
-              {left: '$', right: '$', display: false}
-            ]
-          });
+        case 'lognormal':
+          card.classList.add('semi-valid');
+          showDialog('lognormalDialog');
+          break;
+      }
+    }
+
+    function confirmGamma() {
+      selectedDist = 'gamma';
+      closeDialog('gammaDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.option-card:not([data-dist="gamma"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+
+      // Re-render math in dialog
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(dialog, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'gamma') {
+        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
         }
       });
     });
 
-    document.getElementById('continueBtn').addEventListener('click', () => {
-      if (selectedCorrect) {
+    continueBtn.addEventListener('click', () => {
+      if (selectedDist === 'gamma') {
         window.location.href = 'fitting.html';
       }
     });

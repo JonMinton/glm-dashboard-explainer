@@ -155,24 +155,30 @@
       transition: all 0.2s ease;
     }
 
-    .link-card:hover {
+    .link-card:hover:not(.dimmed) {
       border-color: #e67e22;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    .link-card.selected {
+    .link-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .link-card.selected-correct {
       border-color: #27ae60;
       background: #eafaf1;
     }
 
-    .link-card.wrong {
+    .link-card.selected-wrong {
       border-color: #e74c3c;
       background: #fdedec;
       animation: shake 0.3s;
     }
 
-    .link-card.semi-correct {
+    .link-card.selected-semi {
       border-color: #f39c12;
       background: #fef9e7;
     }
@@ -205,83 +211,110 @@
       font-size: 0.9em;
     }
 
-    /* Dialog box */
-    .dialog-box {
+    /* Dialog overlay (modal) */
+    .dialog-overlay {
       display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
       background: white;
       border-radius: 12px;
       padding: 25px;
-      margin-top: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      max-width: 550px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
-    .dialog-box.show {
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin-bottom: 5px;
+    }
+
+    .dialog .highlight {
+      background: #fff3cd;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .dialog .highlight.green {
+      background: #d4edda;
+    }
+
+    .dialog .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #eafaf1;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
       display: block;
       animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #27ae60;
+      margin-bottom: 10px;
     }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    .dialog-box.correct {
-      border-left: 5px solid #27ae60;
-    }
-
-    .dialog-box.wrong {
-      border-left: 5px solid #e74c3c;
-    }
-
-    .dialog-box.semi-correct {
-      border-left: 5px solid #f39c12;
-    }
-
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    .dialog-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5em;
-    }
-
-    .dialog-icon.correct { background: #d4edda; }
-    .dialog-icon.wrong { background: #f8d7da; }
-    .dialog-icon.semi-correct { background: #fff3cd; }
-
-    .dialog-title {
-      font-size: 1.2em;
-      font-weight: 600;
-    }
-
-    .dialog-content {
-      color: #555;
-      line-height: 1.7;
-    }
-
-    .dialog-content ul {
-      margin: 10px 0 10px 20px;
-    }
-
-    .dialog-content li {
-      margin: 5px 0;
-    }
-
-    .highlight-box {
-      background: #fef5e7;
-      border-radius: 6px;
-      padding: 12px 15px;
-      margin-top: 15px;
-      font-size: 0.9em;
     }
 
     /* Navigation */
@@ -301,12 +334,13 @@
       transition: all 0.2s ease;
       text-decoration: none;
       display: inline-block;
+      border: none;
+      font-size: 1em;
     }
 
     .btn-primary {
       background: #d35400;
       color: white;
-      border: none;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -321,7 +355,6 @@
     .btn-secondary {
       background: #ecf0f1;
       color: #666;
-      border: none;
     }
 
     .btn-secondary:hover {
@@ -397,13 +430,16 @@
       </div>
     </div>
 
-    <!-- Dialog box -->
-    <div class="dialog-box" id="dialogBox">
-      <div class="dialog-header">
-        <div class="dialog-icon" id="dialogIcon"></div>
-        <div class="dialog-title" id="dialogTitle"></div>
-      </div>
-      <div class="dialog-content" id="dialogContent"></div>
+    <!-- Result panel (shown after correct selection) -->
+    <div class="result-panel" id="resultPanel">
+      <h3>Link Function Selected: Log</h3>
+      <p>With the <strong>log link</strong>, your model equation is:</p>
+      <p style="font-family: 'Times New Roman', serif; font-size: 1.2em; background: white; padding: 12px 20px; border-radius: 6px; display: inline-block;">
+        ln(E[cnt]) = &beta;<sub>0</sub> + &beta;<sub>1</sub>&middot;temp + &beta;<sub>2</sub>&middot;hum + &beta;<sub>3</sub>&middot;windspeed + ...
+      </p>
+      <p style="margin-top: 15px; color: #666;">
+        The log link is identical for Poisson and Negative Binomial. The difference will be in the distribution (variance function).
+      </p>
     </div>
 
     <!-- Navigation -->
@@ -413,115 +449,168 @@
     </div>
   </div>
 
-  <script>
-    const dialogs = {
-      log: {
-        type: 'correct',
-        icon: '&#10003;',
-        title: 'Correct! Log link is the standard choice.',
-        content: `
-          <p>The <strong>log link</strong> is the canonical link for both Poisson and Negative Binomial regression:</p>
-          <ul>
-            <li><strong>Positive predictions:</strong> Since &mu; = exp(X&beta;), predictions are always > 0</li>
-            <li><strong>Multiplicative interpretation:</strong> exp(&beta;) gives rate ratios</li>
-            <li><strong>Natural for count processes:</strong> Counts often grow multiplicatively with predictors</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>Key insight:</strong> The link function is the same for Poisson and Negative Binomial.
-            Both model counts, so both need the log link to ensure positive predictions.
-            The difference is in the <em>variance function</em>, not the link.
-          </div>
-        `
-      },
-      sqrt: {
-        type: 'semi-correct',
-        icon: '~',
-        title: 'Historically used, but not recommended today.',
-        content: `
-          <p>The <strong>square root link</strong> was sometimes used for count data:</p>
-          <ul>
-            <li><strong>Variance stabilising:</strong> For Poisson data, sqrt transform stabilises variance</li>
-            <li><strong>Historical usage:</strong> Common before GLMs were well-understood</li>
-            <li><strong>Less interpretable:</strong> Coefficients don't have a natural rate ratio interpretation</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>Modern practice:</strong> The log link is strongly preferred because exp(&beta;) gives
-            interpretable rate ratios. Try selecting <strong>Log Link</strong> instead.
-          </div>
-        `
-      },
-      identity: {
-        type: 'wrong',
-        icon: '&#10007;',
-        title: 'Not appropriate for count data!',
-        content: `
-          <p>The <strong>identity link</strong> is problematic for counts:</p>
-          <ul>
-            <li><strong>Negative predictions:</strong> If X&beta; < 0, we predict negative counts!</li>
-            <li><strong>No natural lower bound:</strong> Counts must be &ge; 0, but &mu; = X&beta; can be anything</li>
-            <li><strong>Works for Gaussian:</strong> Identity is appropriate when the response can be any real number</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>Example:</strong> With &beta;<sub>0</sub> = 100 and a large negative coefficient on temperature,
-            cold days could predict -50 bike rentals. That's impossible!
-            Try selecting <strong>Log Link</strong> instead.
-          </div>
-        `
-      },
-      logit: {
-        type: 'wrong',
-        icon: '&#10007;',
-        title: 'Wrong data type - logit is for probabilities!',
-        content: `
-          <p>The <strong>logit link</strong> is designed for binary/proportion outcomes:</p>
-          <ul>
-            <li><strong>Bounded output:</strong> Logit<sup>-1</sup>(x) is always between 0 and 1</li>
-            <li><strong>For probabilities:</strong> Perfect for Tutorial 2 (heart disease risk)</li>
-            <li><strong>Not for counts:</strong> We need outputs > 1 (thousands of bike rentals!)</li>
-          </ul>
-          <div class="highlight-box">
-            <strong>Data type mismatch:</strong> Logit constrains output to [0,1].
-            Our bike rentals range from 22 to 8,714 - way outside this range!
-            Try selecting <strong>Log Link</strong> instead.
-          </div>
-        `
-      }
-    };
+  <!-- Dialog for Log (correct) -->
+  <div class="dialog-overlay" id="logDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Log link is the standard choice.</h3>
+      <p>
+        The <strong>log link</strong> is the canonical link for both Poisson and Negative Binomial regression:
+      </p>
+      <ul>
+        <li><strong>Positive predictions:</strong> Since &mu; = exp(X&beta;), predictions are always > 0</li>
+        <li><strong>Multiplicative interpretation:</strong> exp(&beta;) gives rate ratios</li>
+        <li><strong>Natural for count processes:</strong> Counts often grow multiplicatively with predictors</li>
+      </ul>
+      <div class="highlight green">
+        <strong>Key insight:</strong> The link function is the same for Poisson and Negative Binomial.
+        Both model counts, so both need the log link to ensure positive predictions.
+        The difference is in the <em>variance function</em>, not the link.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="confirmLog()">Continue with Log Link</button>
+      </div>
+    </div>
+  </div>
 
+  <!-- Dialog for Sqrt (semi-valid) -->
+  <div class="dialog-overlay" id="sqrtDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Historically used, but not recommended today.</h3>
+      <p>
+        The <strong>square root link</strong> was sometimes used for count data:
+      </p>
+      <ul>
+        <li><strong>Variance stabilising:</strong> For Poisson data, sqrt transform stabilises variance</li>
+        <li><strong>Historical usage:</strong> Common before GLMs were well-understood</li>
+        <li><strong>Less interpretable:</strong> Coefficients don't have a natural rate ratio interpretation</li>
+      </ul>
+      <div class="highlight">
+        <strong>Modern practice:</strong> The log link is strongly preferred because exp(&beta;) gives
+        interpretable rate ratios. Try selecting <strong>Log Link</strong> instead.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('sqrtDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Identity (wrong) -->
+  <div class="dialog-overlay" id="identityDialog">
+    <div class="dialog error">
+      <h3>&#10060; Not appropriate for count data!</h3>
+      <p>
+        The <strong>identity link</strong> is problematic for counts:
+      </p>
+      <ul>
+        <li><strong>Negative predictions:</strong> If X&beta; < 0, we predict negative counts!</li>
+        <li><strong>No natural lower bound:</strong> Counts must be &ge; 0, but &mu; = X&beta; can be anything</li>
+        <li><strong>Works for Gaussian:</strong> Identity is appropriate when the response can be any real number</li>
+      </ul>
+      <div class="highlight">
+        <strong>Example:</strong> With &beta;<sub>0</sub> = 100 and a large negative coefficient on temperature,
+        cold days could predict -50 bike rentals. That's impossible!
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('identityDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Logit (wrong) -->
+  <div class="dialog-overlay" id="logitDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong data type - logit is for probabilities!</h3>
+      <p>
+        The <strong>logit link</strong> is designed for binary/proportion outcomes:
+      </p>
+      <ul>
+        <li><strong>Bounded output:</strong> Logit<sup>-1</sup>(x) is always between 0 and 1</li>
+        <li><strong>For probabilities:</strong> Perfect for Tutorial 2 (heart disease risk)</li>
+        <li><strong>Not for counts:</strong> We need outputs > 1 (thousands of bike rentals!)</li>
+      </ul>
+      <div class="highlight">
+        <strong>Data type mismatch:</strong> Logit constrains output to [0,1].
+        Our bike rentals range from 22 to 8,714 - way outside this range!
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logitDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedLink = null;
     const cards = document.querySelectorAll('.link-card');
-    const dialogBox = document.getElementById('dialogBox');
-    const continueBtn = document.getElementById('continueBtn');
 
     cards.forEach(card => {
       card.addEventListener('click', () => {
+        if (selectedLink === 'log') return; // Already confirmed
+
         const link = card.dataset.link;
-        const dialog = dialogs[link];
 
         // Reset all cards
-        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-correct'));
+        cards.forEach(c => c.classList.remove('selected-correct', 'selected-wrong', 'selected-semi'));
 
-        // Style the clicked card
-        if (dialog.type === 'correct') {
-          card.classList.add('selected');
-          continueBtn.disabled = false;
-        } else if (dialog.type === 'semi-correct') {
-          card.classList.add('semi-correct');
-          continueBtn.disabled = true;
-        } else {
-          card.classList.add('wrong');
-          continueBtn.disabled = true;
+        // Style and show dialog
+        switch(link) {
+          case 'log':
+            card.classList.add('selected-correct');
+            showDialog('logDialog');
+            break;
+          case 'sqrt':
+            card.classList.add('selected-semi');
+            showDialog('sqrtDialog');
+            break;
+          case 'identity':
+            card.classList.add('selected-wrong');
+            showDialog('identityDialog');
+            break;
+          case 'logit':
+            card.classList.add('selected-wrong');
+            showDialog('logitDialog');
+            break;
         }
-
-        // Show dialog
-        dialogBox.className = `dialog-box show ${dialog.type}`;
-        document.getElementById('dialogIcon').className = `dialog-icon ${dialog.type}`;
-        document.getElementById('dialogIcon').innerHTML = dialog.icon;
-        document.getElementById('dialogTitle').textContent = dialog.title;
-        document.getElementById('dialogContent').innerHTML = dialog.content;
       });
     });
 
-    continueBtn.addEventListener('click', () => {
+    function showDialog(dialogId) {
+      document.getElementById(dialogId).classList.add('show');
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+      // Clear selection styling
+      if (selectedLink !== 'log') {
+        cards.forEach(c => c.classList.remove('selected-correct', 'selected-wrong', 'selected-semi'));
+      }
+    }
+
+    function confirmLog() {
+      selectedLink = 'log';
+      closeDialog('logDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('continueBtn').disabled = false;
+
+      // Dim other cards
+      cards.forEach(c => {
+        if (c.dataset.link !== 'log') {
+          c.classList.add('dimmed');
+        }
+      });
+    }
+
+    // Close dialog on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
       window.location.href = 'distribution.html';
     });
   </script>

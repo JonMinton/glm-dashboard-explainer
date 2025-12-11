@@ -139,10 +139,16 @@
       transition: all 0.2s ease;
     }
 
-    .option-card:hover:not(.disabled) {
+    .option-card:hover:not(.dimmed):not(.selected) {
       border-color: #e74c3c;
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .option-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
     }
 
     .option-card.selected {
@@ -159,11 +165,6 @@
     .option-card.semi-valid {
       border-color: #f39c12;
       background: #fff3cd;
-    }
-
-    .option-card.disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
     }
 
     @keyframes shake {
@@ -194,66 +195,109 @@
       color: #666;
     }
 
-    .badge {
-      font-size: 0.7em;
-      padding: 3px 8px;
-      border-radius: 10px;
-      font-weight: 600;
+    /* Dialog overlay (modal style) */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
     }
 
-    .badge.correct { background: #d4edda; color: #155724; }
-    .badge.wrong { background: #f8d7da; color: #721c24; }
-    .badge.semi { background: #fff3cd; color: #856404; }
+    .dialog-overlay.show {
+      display: flex;
+    }
 
-    /* Dialog box */
-    .dialog-box {
-      display: none;
+    .dialog {
       background: white;
       border-radius: 12px;
       padding: 25px;
-      margin-top: 20px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-width: 550px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
-    .dialog-box.show {
-      display: block;
-      animation: slideIn 0.3s ease;
+    .dialog.success {
+      border-top: 4px solid #27ae60;
     }
 
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
     }
 
-    .dialog-box.success {
-      border-left: 4px solid #27ae60;
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
     }
 
-    .dialog-box.error {
-      border-left: 4px solid #e74c3c;
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
-    .dialog-box.warning {
-      border-left: 4px solid #f39c12;
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
     }
 
-    .dialog-box h4 {
-      margin-bottom: 10px;
+    .dialog ul {
+      margin: 10px 0 10px 20px;
     }
 
-    .dialog-box.success h4 { color: #155724; }
-    .dialog-box.error h4 { color: #721c24; }
-    .dialog-box.warning h4 { color: #856404; }
-
-    .dialog-box p {
-      margin-bottom: 10px;
+    .dialog li {
+      margin: 5px 0;
     }
 
-    .dialog-box .key-point {
+    .key-point {
       background: #f8f9fa;
       padding: 12px 15px;
       border-radius: 6px;
       margin: 15px 0;
+    }
+
+    .key-point.success {
+      background: #d4edda;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Navigation */
@@ -273,12 +317,13 @@
       transition: all 0.2s ease;
       text-decoration: none;
       display: inline-block;
+      border: none;
+      font-size: 1em;
     }
 
     .btn-primary {
       background: #c0392b;
       color: white;
-      border: none;
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -293,21 +338,19 @@
     .btn-secondary {
       background: #ecf0f1;
       color: #666;
-      border: none;
     }
 
     .btn-secondary:hover {
       background: #bdc3c7;
     }
 
-    /* Math display */
-    .math-display {
-      background: #f8f9fa;
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin: 15px 0;
-      text-align: center;
-      overflow-x: auto;
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
     }
   </style>
 </head>
@@ -369,10 +412,10 @@
       </div>
     </div>
 
-    <!-- Dialog -->
-    <div class="dialog-box" id="dialogBox">
-      <h4 id="dialogTitle"></h4>
-      <div id="dialogContent"></div>
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Log Link Selected</h3>
+      <p>The log link ensures positive predictions and gives interpretable multiplicative effects.</p>
     </div>
 
     <!-- Navigation -->
@@ -382,149 +425,209 @@
     </div>
   </div>
 
+  <!-- Dialog for Log (correct) -->
+  <div class="dialog-overlay" id="logDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Log link ensures positive predictions.</h3>
+      <p>
+        The <strong>log link</strong> is the best choice for positive continuous data because:
+      </p>
+      <div class="key-point success">
+        <p><strong>Inverse link function:</strong> $\mu = e^{\eta} = e^{\beta_0 + \beta_1 X_1 + ...}$</p>
+        <p>Since $e^x > 0$ for all $x$, predictions are <strong>always positive</strong>!</p>
+      </div>
+      <p>
+        <strong>Bonus:</strong> Coefficients have a <strong>multiplicative interpretation</strong>:
+      </p>
+      <ul>
+        <li>$e^{\beta}$ gives the <strong>multiplicative effect</strong> on the mean</li>
+        <li>$e^{0.004} \approx 1.004$ means each year of age multiplies BP by 1.004 (≈ +0.4%)</li>
+        <li>Much more intuitive than additive effects for many positive outcomes</li>
+      </ul>
+      <p>
+        <strong>Note:</strong> Log is <em>not</em> the canonical link for Gamma (inverse is), but log is more commonly used because of interpretability.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmLog()">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Inverse (semi-valid) -->
+  <div class="dialog-overlay" id="inverseDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Valid but rarely used in practice.</h3>
+      <p>
+        The <strong>inverse link</strong> is actually the <em>canonical</em> link for the Gamma distribution.
+        This means it has nice mathematical properties for estimation.
+      </p>
+      <div class="key-point">
+        <p><strong>Inverse link:</strong> $\mu = \frac{1}{\eta}$</p>
+        <p>Only positive if $\eta > 0$, which isn't guaranteed.</p>
+      </div>
+      <p>
+        <strong>Problems with inverse link:</strong>
+      </p>
+      <ul>
+        <li>Predictions can be negative if $\eta < 0$</li>
+        <li>Coefficients are hard to interpret (reciprocal relationships)</li>
+        <li>Model can be unstable near $\eta = 0$</li>
+      </ul>
+      <p>
+        In practice, the <strong>log link</strong> is almost always preferred for Gamma regression
+        because it guarantees positive predictions and gives interpretable multiplicative effects.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('inverseDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Identity (wrong) -->
+  <div class="dialog-overlay" id="identityDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Identity link allows negative predictions.</h3>
+      <p>
+        With the <strong>identity link</strong>, predictions equal the linear predictor directly:
+      </p>
+      <div class="key-point">
+        <p>$\mu = \eta = \beta_0 + \beta_1 X_1 + ...$</p>
+        <p>This can easily be negative!</p>
+      </div>
+      <p>
+        <strong>Example:</strong> If $\beta_0 = 100$ and $\beta_1 = -5$, then for someone with $X_1 = 30$:
+      </p>
+      <p style="text-align: center; margin: 10px 0;">
+        $\mu = 100 + (-5)(30) = 100 - 150 = -50$ mm Hg
+      </p>
+      <p>
+        <strong>Negative blood pressure is impossible!</strong> For positive continuous outcomes,
+        we need a link function that constrains predictions to be positive.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('identityDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Logit (wrong) -->
+  <div class="dialog-overlay" id="logitDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Logit is for probabilities, not continuous data.</h3>
+      <p>
+        The <strong>logit link</strong> constrains $\mu$ to the interval (0, 1):
+      </p>
+      <div class="key-point">
+        <p>$\mu = \frac{e^{\eta}}{1 + e^{\eta}}$ is always between 0 and 1</p>
+      </div>
+      <p>
+        <strong>Problem:</strong> Blood pressure ranges from 94 to 200 mm Hg in our data,
+        not 0 to 1!
+      </p>
+      <p>
+        The logit link is designed for <strong>binary outcomes</strong> (Bernoulli/Binomial)
+        where we're modelling a probability. For positive continuous outcomes like blood pressure,
+        we need a link that allows any positive value.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logitDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const dialogs = {
-      log: {
-        type: 'success',
-        title: 'Correct! Log link ensures positive predictions.',
-        content: `
-          <p>
-            The <strong>log link</strong> is the best choice for positive continuous data because:
-          </p>
-          <div class="key-point">
-            <p><strong>Inverse link function:</strong> $\\mu = e^{\\eta} = e^{\\beta_0 + \\beta_1 X_1 + ...}$</p>
-            <p>Since $e^x > 0$ for all $x$, predictions are <strong>always positive</strong>!</p>
-          </div>
-          <p>
-            <strong>Bonus:</strong> Coefficients have a <strong>multiplicative interpretation</strong>:
-          </p>
-          <ul style="margin: 10px 0 10px 20px;">
-            <li>$e^{\\beta}$ gives the <strong>multiplicative effect</strong> on the mean</li>
-            <li>$e^{0.004} \\approx 1.004$ means each year of age multiplies BP by 1.004 (≈ +0.4%)</li>
-            <li>Much more intuitive than additive effects for many positive outcomes</li>
-          </ul>
-          <p>
-            <strong>Note:</strong> Log is <em>not</em> the canonical link for Gamma (inverse is), but log is more commonly used because of interpretability.
-          </p>
-        `
-      },
-      inverse: {
-        type: 'warning',
-        title: 'Valid but rarely used in practice.',
-        content: `
-          <p>
-            The <strong>inverse link</strong> is actually the <em>canonical</em> link for the Gamma distribution.
-            This means it has nice mathematical properties for estimation.
-          </p>
-          <div class="key-point">
-            <p><strong>Inverse link:</strong> $\\mu = \\frac{1}{\\eta}$</p>
-            <p>Only positive if $\\eta > 0$, which isn't guaranteed.</p>
-          </div>
-          <p>
-            <strong>Problems with inverse link:</strong>
-          </p>
-          <ul style="margin: 10px 0 10px 20px;">
-            <li>Predictions can be negative if $\\eta < 0$</li>
-            <li>Coefficients are hard to interpret (reciprocal relationships)</li>
-            <li>Model can be unstable near $\\eta = 0$</li>
-          </ul>
-          <p>
-            In practice, the <strong>log link</strong> is almost always preferred for Gamma regression
-            because it guarantees positive predictions and gives interpretable multiplicative effects.
-          </p>
-        `
-      },
-      identity: {
-        type: 'error',
-        title: 'Wrong! Identity link allows negative predictions.',
-        content: `
-          <p>
-            With the <strong>identity link</strong>, predictions equal the linear predictor directly:
-          </p>
-          <div class="key-point">
-            <p>$\\mu = \\eta = \\beta_0 + \\beta_1 X_1 + ...$</p>
-            <p>This can easily be negative!</p>
-          </div>
-          <p>
-            <strong>Example:</strong> If $\\beta_0 = 100$ and $\\beta_1 = -5$, then for someone with $X_1 = 30$:
-          </p>
-          <p style="text-align: center; margin: 10px 0;">
-            $\\mu = 100 + (-5)(30) = 100 - 150 = -50$ mm Hg
-          </p>
-          <p>
-            <strong>Negative blood pressure is impossible!</strong> For positive continuous outcomes,
-            we need a link function that constrains predictions to be positive.
-          </p>
-        `
-      },
-      logit: {
-        type: 'error',
-        title: 'Wrong! Logit is for probabilities, not continuous data.',
-        content: `
-          <p>
-            The <strong>logit link</strong> constrains $\\mu$ to the interval (0, 1):
-          </p>
-          <div class="key-point">
-            <p>$\\mu = \\frac{e^{\\eta}}{1 + e^{\\eta}}$ is always between 0 and 1</p>
-          </div>
-          <p>
-            <strong>Problem:</strong> Blood pressure ranges from 94 to 200 mm Hg in our data,
-            not 0 to 1!
-          </p>
-          <p>
-            The logit link is designed for <strong>binary outcomes</strong> (Bernoulli/Binomial)
-            where we're modelling a probability. For positive continuous outcomes like blood pressure,
-            we need a link that allows any positive value.
-          </p>
-        `
-      }
-    };
+    // State
+    let selectedLink = null;
 
-    let selectedCorrect = false;
+    const cards = document.querySelectorAll('.option-card');
+    const continueBtn = document.getElementById('continueBtn');
 
-    document.querySelectorAll('.option-card').forEach(card => {
+    cards.forEach(card => {
       card.addEventListener('click', () => {
-        if (card.classList.contains('disabled')) return;
-
-        // Reset all cards
-        document.querySelectorAll('.option-card').forEach(c => {
-          c.classList.remove('selected', 'wrong', 'semi-valid');
-        });
-
         const link = card.dataset.link;
-        const dialog = dialogs[link];
-        const dialogBox = document.getElementById('dialogBox');
+        handleLinkSelection(link, card);
+      });
+    });
 
-        // Apply appropriate class
-        if (dialog.type === 'success') {
+    function handleLinkSelection(link, card) {
+      // Don't process if already confirmed
+      if (selectedLink === 'log') return;
+
+      // Remove previous selection styling
+      cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+
+      switch(link) {
+        case 'log':
           card.classList.add('selected');
-          selectedCorrect = true;
-          document.getElementById('continueBtn').disabled = false;
-        } else if (dialog.type === 'warning') {
+          showDialog('logDialog');
+          break;
+
+        case 'inverse':
           card.classList.add('semi-valid');
-        } else {
+          showDialog('inverseDialog');
+          break;
+
+        case 'identity':
           card.classList.add('wrong');
-        }
+          showDialog('identityDialog');
+          break;
 
-        // Show dialog
-        dialogBox.className = `dialog-box show ${dialog.type}`;
-        document.getElementById('dialogTitle').textContent = dialog.title;
-        document.getElementById('dialogContent').innerHTML = dialog.content;
+        case 'logit':
+          card.classList.add('wrong');
+          showDialog('logitDialog');
+          break;
+      }
+    }
 
-        // Re-render math
-        if (typeof renderMathInElement !== 'undefined') {
-          renderMathInElement(dialogBox, {
-            delimiters: [
-              {left: '$$', right: '$$', display: true},
-              {left: '$', right: '$', display: false}
-            ]
-          });
+    function confirmLog() {
+      selectedLink = 'log';
+      closeDialog('logDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.option-card:not([data-link="log"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+
+      // Re-render math in dialog
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(dialog, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedLink !== 'log') {
+        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
         }
       });
     });
 
-    document.getElementById('continueBtn').addEventListener('click', () => {
-      if (selectedCorrect) {
+    continueBtn.addEventListener('click', () => {
+      if (selectedLink === 'log') {
         window.location.href = 'distribution.html';
       }
     });
