@@ -72,7 +72,7 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 
 ### Tutorial Files
 ```
-prototype/
+docs/
 ├── index.html                      # Tutorial/datasets index page
 └── tutorials/
     ├── 01-gaussian/                # Tutorial 1: Heart Rate (Gaussian)
@@ -85,7 +85,7 @@ prototype/
     ├── 02-logistic/                # Tutorial 2: Heart Disease (Binomial)
     ├── 03-poisson/                 # Tutorial 3: Bike Rentals (Poisson)
     ├── 04-negbin/                  # Tutorial 4: Overdispersed Counts
-    └── 05-gamma/                   # Tutorial 5: Insurance Claims (optional)
+    └── 05-gamma/                   # Tutorial 5: Blood Pressure (Gamma)
 ```
 
 ### Design Pattern
@@ -139,7 +139,7 @@ gh issue list --label bug --state open --json number,title,body
 ### Feedback Infrastructure
 
 - **Issue templates**: `.github/ISSUE_TEMPLATE/` (bug_report.md, feature_request.md)
-- **Feedback widget**: `prototype/js/feedback.js` - floating "?" button on all pages
+- **Feedback widget**: `docs/js/feedback.js` - floating "?" button on all pages
 - **Auto-context**: Widget pre-fills issues with current tutorial/page location
 
 ### Adding Feedback to New Pages
@@ -165,7 +165,7 @@ glm-dashboard-explainer/
 │   ├── handover/             # Session handover documents
 │   ├── architecture.md       # Architectural decisions (ADRs)
 │   └── commands/             # Custom slash commands
-├── prototype/                # Main tutorial site
+├── docs/                     # Main tutorial site (GitHub Pages source)
 │   ├── index.html            # Tutorial index page
 │   ├── js/
 │   │   └── feedback.js       # Feedback widget (runtime JS)

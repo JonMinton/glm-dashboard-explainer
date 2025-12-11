@@ -3,7 +3,7 @@
 Extract inline CSS from tutorial HTML files and replace with external stylesheet links.
 
 This script:
-1. Finds all HTML files in prototype/tutorials/
+1. Finds all HTML files in docs/tutorials/
 2. Removes the <style>...</style> block from each
 3. Adds <link> tags to the shared CSS files
 4. Uses the appropriate theme based on the tutorial folder
@@ -88,7 +88,7 @@ def main():
         print("DRY RUN MODE - no files will be modified\n")
 
     # Find all HTML files in tutorials
-    base_path = Path(__file__).parent.parent / 'prototype' / 'tutorials'
+    base_path = Path(__file__).parent.parent.parent / 'docs' / 'tutorials'
     html_files = sorted(base_path.glob('**/*.html'))
 
     print(f"Found {len(html_files)} HTML files\n")

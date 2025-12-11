@@ -10,8 +10,8 @@ import os
 from pathlib import Path
 
 # Root of tutorials
-TUTORIALS_DIR = Path(__file__).parent.parent.parent / "prototype" / "tutorials"
-INDEX_FILE = Path(__file__).parent.parent.parent / "prototype" / "index.html"
+TUTORIALS_DIR = Path(__file__).parent.parent.parent / "docs" / "tutorials"
+INDEX_FILE = Path(__file__).parent.parent.parent / "docs" / "index.html"
 
 # Script tag to add (path relative from tutorial page location)
 SCRIPT_TAG_TUTORIAL = '<script src="../../js/feedback.js"></script>'
