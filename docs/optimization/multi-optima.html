@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Optima: Soldiers vs Scouts</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #9b59b6;
+      font-weight: 600;
+    }
+
+    /* Visualization card */
+    .visualization-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .viz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .viz-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    /* Scout/Soldier intro */
+    .mindset-intro {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    @media (max-width: 700px) {
+      .mindset-intro {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mindset-card {
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid;
+    }
+
+    .mindset-card.soldier {
+      background: #fef3e2;
+      border-color: #e67e22;
+    }
+
+    .mindset-card.scout {
+      background: #e8f6f3;
+      border-color: #1abc9c;
+    }
+
+    .mindset-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .mindset-card.soldier h3 {
+      color: #d35400;
+    }
+
+    .mindset-card.scout h3 {
+      color: #16a085;
+    }
+
+    .mindset-card .icon {
+      font-size: 1.5em;
+    }
+
+    .mindset-card p {
+      font-size: 0.95em;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .mindset-card ul {
+      margin-left: 20px;
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .mindset-card li {
+      margin: 5px 0;
+    }
+
+    /* Map container */
+    .map-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    #terrain-map {
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.9em;
+      color: #666;
+      font-weight: 500;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.9em;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: #9b59b6;
+      color: white;
+    }
+
+    button.primary:hover {
+      background: #8e44ad;
+    }
+
+    button.secondary {
+      background: #95a5a6;
+      color: white;
+    }
+
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+
+    button.soldier-btn {
+      background: #e67e22;
+      color: white;
+    }
+
+    button.soldier-btn:hover {
+      background: #d35400;
+    }
+
+    button.scout-btn {
+      background: #1abc9c;
+      color: white;
+    }
+
+    button.scout-btn:hover {
+      background: #16a085;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Stats panel */
+    .stats-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-item .label {
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .stat-item .value {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #2c3e50;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .stat-item .value.soldier {
+      color: #e67e22;
+    }
+
+    .stat-item .value.scout {
+      color: #1abc9c;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    .legend-swatch {
+      width: 18px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    .legend-marker {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    /* Algorithm trace */
+    .algorithm-trace {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.8em;
+      background: #1a1a2e;
+      color: #a0ffa0;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .trace-line {
+      margin: 3px 0;
+    }
+
+    .trace-line.soldier {
+      color: #f0a030;
+    }
+
+    .trace-line.scout {
+      color: #40f0c0;
+    }
+
+    .trace-line.success {
+      color: #90ff90;
+      font-weight: bold;
+    }
+
+    .trace-line.stuck {
+      color: #ff9090;
+    }
+
+    /* Explanation */
+    .explanation {
+      background: #f8f9fa;
+      border-left: 4px solid #9b59b6;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .explanation h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .explanation p {
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .key-insight {
+      background: #f0e6ff;
+      border: 1px solid #d4b8e8;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+
+    .key-insight h4 {
+      color: #8e44ad;
+      margin-bottom: 8px;
+    }
+
+    .key-insight p {
+      color: #5a3d6a;
+      margin: 0;
+    }
+
+    /* Book reference */
+    .book-ref {
+      background: #f8f9fa;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+    }
+
+    .book-ref .book-icon {
+      font-size: 2em;
+    }
+
+    .book-ref .book-text {
+      flex: 1;
+    }
+
+    .book-ref .book-title {
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .book-ref .book-author {
+      font-style: italic;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .book-ref .book-desc {
+      color: #666;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    footer a {
+      color: #9b59b6;
+      text-decoration: none;
+    }
+
+    /* Hidden ant easter egg */
+    .ant-easter-egg {
+      position: fixed;
+      bottom: 20px;
+      right: 25px;
+      font-size: 16px;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 100;
+      user-select: none;
+    }
+
+    .ant-easter-egg:hover {
+      opacity: 1;
+      transform: scale(1.3);
+    }
+
+    /* Ant modal */
+    .ant-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .ant-modal-overlay.visible {
+      display: flex;
+    }
+
+    .ant-modal {
+      background: white;
+      border-radius: 12px;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 30px;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .ant-modal-close {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .ant-modal-close:hover {
+      color: #333;
+    }
+
+    .ant-modal h2 {
+      color: #2c3e50;
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ant-modal h2 .ant-icon {
+      font-size: 1.5em;
+    }
+
+    .ant-modal .subtitle {
+      color: #888;
+      font-style: italic;
+      margin-bottom: 20px;
+      font-size: 0.95em;
+    }
+
+    .ant-modal h3 {
+      color: #8e44ad;
+      margin: 20px 0 10px;
+      font-size: 1.1em;
+    }
+
+    .ant-modal p {
+      color: #555;
+      margin-bottom: 12px;
+      line-height: 1.7;
+    }
+
+    .ant-modal ul {
+      color: #555;
+      margin: 10px 0 15px 25px;
+    }
+
+    .ant-modal li {
+      margin: 8px 0;
+    }
+
+    .ant-modal .metaphor-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .ant-modal .metaphor-table th,
+    .ant-modal .metaphor-table td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    .ant-modal .metaphor-table th {
+      background: #f0e6ff;
+      color: #5a3d6a;
+    }
+
+    .ant-modal .insight-callout {
+      background: #e8f6f3;
+      border-left: 4px solid #1abc9c;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .ant-modal .insight-callout p {
+      margin: 0;
+      color: #16a085;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Multi-Optima: When Algorithms Get Stuck</h1>
+      <p>Soldiers vs Scouts in the search for the global maximum</p>
+      <div class="nav-links">
+        <a href="index.html">1D (Mean Only)</a>
+        <a href="2d.html">2D (Line Fit)</a>
+        <a href="3d.html">3D (Multiple Regression)</a>
+        <a href="4d.html">4D+ (Beyond Visualisation)</a>
+        <a href="multi-optima.html" class="current">Multi-Optima</a>
+      </div>
+    </header>
+
+    <!-- Scout vs Soldier Introduction -->
+    <div class="visualization-card">
+      <div class="mindset-intro">
+        <div class="mindset-card soldier">
+          <h3><span class="icon">&#9876;</span> Soldier Mindset</h3>
+          <p><strong>"Always seek higher ground"</strong></p>
+          <p>Fast, decisive, follows orders (the gradient). But if started on the wrong hill, will climb to a local peak and declare victory.</p>
+          <ul>
+            <li>Gradient Descent</li>
+            <li>Newton-Raphson</li>
+            <li>Steepest Ascent</li>
+          </ul>
+        </div>
+        <div class="mindset-card scout">
+          <h3><span class="icon">&#128270;</span> Scout Mindset</h3>
+          <p><strong>"Survey the territory first"</strong></p>
+          <p>Slower, willing to explore, may temporarily go downhill. More likely to find the true global maximum.</p>
+          <ul>
+            <li>Random Restarts</li>
+            <li>Simulated Annealing</li>
+            <li>Basin Hopping</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="key-insight">
+        <h4>The Trade-off</h4>
+        <p>When you're <em>certain</em> about the landscape (like most GLMs with convex likelihood), soldier algorithms are efficient. When <em>uncertain</em> (complex models, neural networks), scout algorithms are worth the extra cost.</p>
+      </div>
+    </div>
+
+    <!-- Main Visualization -->
+    <div class="visualization-card">
+      <div class="viz-header">
+        <span class="viz-title">Arthur's Seat: A Multi-Peak Landscape</span>
+      </div>
+
+      <div class="controls">
+        <div class="control-group">
+          <label>Algorithm:</label>
+          <select id="algorithm-select">
+            <optgroup label="Soldier (Local)">
+              <option value="gradient">Gradient Ascent</option>
+              <option value="newton">Newton-Raphson</option>
+            </optgroup>
+            <optgroup label="Scout (Global)">
+              <option value="random-restart">Random Restarts (×5)</option>
+              <option value="annealing">Simulated Annealing</option>
+            </optgroup>
+          </select>
+        </div>
+        <button id="run-btn" class="primary">Run Algorithm</button>
+        <button id="step-btn" class="secondary">Step</button>
+        <button id="reset-btn" class="secondary">Reset</button>
+        <div class="control-group" style="margin-left: auto;">
+          <label>
+            <input type="checkbox" id="show-gradient" checked> Show gradient
+          </label>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <svg id="terrain-map"></svg>
+      </div>
+
+      <div class="legend" id="legend">
+        <!-- Filled by JS -->
+      </div>
+
+      <div class="stats-panel">
+        <div class="stat-item">
+          <div class="label">Current Position</div>
+          <div class="value" id="current-pos">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Current Elevation</div>
+          <div class="value" id="current-elev">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Iterations</div>
+          <div class="value" id="iterations">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Best Found</div>
+          <div class="value" id="best-found">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Global Max</div>
+          <div class="value" id="global-max">261m</div>
+        </div>
+      </div>
+
+      <div class="algorithm-trace" id="trace">
+        <div class="trace-line">Click "Run Algorithm" or "Step" to begin...</div>
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div class="explanation">
+      <h3>Why This Matters for Statistics</h3>
+      <p>
+        Most GLM likelihoods are <strong>concave</strong> (bowl-shaped when maximising), meaning there's only one peak.
+        Soldier algorithms like Newton-Raphson are perfect here &mdash; they'll always find the global maximum.
+      </p>
+      <p>
+        But some models have <strong>multiple local optima</strong>:
+      </p>
+      <ul style="margin-left: 20px; color: #666;">
+        <li>Mixture models (EM algorithm can converge to different solutions)</li>
+        <li>Neural networks (loss landscape has many local minima)</li>
+        <li>Non-convex penalised regression (some LASSO variants)</li>
+        <li>Latent variable models</li>
+      </ul>
+
+      <div class="key-insight">
+        <h4>The Uncertainty Principle of Optimisation</h4>
+        <p>
+          The more uncertain you are about your landscape's shape, the more valuable exploration becomes.
+          A soldier who always seeks higher ground will summit <em>a</em> peak quickly &mdash; but it may not be the highest one.
+          A scout who surveys the territory first moves slower but is more likely to find the true summit.
+        </p>
+      </div>
+
+      <div class="book-ref">
+        <div class="book-icon">&#128214;</div>
+        <div class="book-text">
+          <div class="book-title">The Scout Mindset</div>
+          <div class="book-author">Julia Galef (2021)</div>
+          <div class="book-desc">
+            The soldier/scout distinction is borrowed (loosely!) from Galef's book about reasoning and truth-seeking.
+            In her framing, soldiers fight to defend beliefs they already hold; scouts explore to understand reality.
+            We're repurposing the metaphor for optimisation: soldiers follow orders (the gradient) without question;
+            scouts survey the territory before committing. Galef's book is about epistemology, not algorithms &mdash;
+            but the core insight transfers: when uncertain about the landscape, exploration beats exploitation.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <!-- Hidden ant easter egg -->
+  <div class="ant-easter-egg" id="ant-trigger" title="What's this?">&#128028;</div>
+
+  <!-- Ant modal -->
+  <div class="ant-modal-overlay" id="ant-modal">
+    <div class="ant-modal">
+      <button class="ant-modal-close" id="ant-close">&times;</button>
+      <h2><span class="ant-icon">&#128028;</span> You found the ant!</h2>
+      <p class="subtitle">What's an ant doing on a page about optimisation?</p>
+
+      <p>
+        Real ants have solved the exploration-exploitation trade-off that plagues optimisation algorithms.
+        Their solution is now a real algorithm: <strong>Ant Colony Optimisation (ACO)</strong>.
+      </p>
+
+      <h3>The Colony's Dilemma</h3>
+      <p>
+        Most ants follow <strong>pheromone trails</strong> left by other ants. The more ants that travel a route,
+        the stronger the trail becomes. This is efficient &mdash; why reinvent the wheel?
+      </p>
+      <p>
+        But here's the problem: if <em>all</em> ants followed the strongest trail 100% of the time,
+        the colony would deplete that food source and starve. They'd be stuck on a "local optimum"
+        while better resources exist elsewhere.
+      </p>
+
+      <h3>The Solution: Disciplined Wandering</h3>
+      <p>
+        A small percentage of ants <strong>ignore the pheromone trail</strong> and wander randomly.
+        Most of these "rebels" find nothing. But occasionally, one discovers a new food source &mdash;
+        and starts a new trail.
+      </p>
+
+      <table class="metaphor-table">
+        <thead>
+          <tr>
+            <th>Ant Behaviour</th>
+            <th>Algorithm Equivalent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Follow strong pheromone trail</td>
+            <td>Exploit current best solution</td>
+          </tr>
+          <tr>
+            <td>Random wandering</td>
+            <td>Explore new regions</td>
+          </tr>
+          <tr>
+            <td>Pheromone strength</td>
+            <td>Solution quality memory</td>
+          </tr>
+          <tr>
+            <td>Pheromone evaporation</td>
+            <td>Forgetting old solutions</td>
+          </tr>
+          <tr>
+            <td>% that wander</td>
+            <td>Exploration parameter (&epsilon;)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="insight-callout">
+        <p>
+          <strong>The profound bit:</strong> Individual ants that wander off probably fail.
+          But the <em>colony</em> benefits from having some percentage of "failures" &mdash;
+          because resources deplete, environments change, and better solutions exist elsewhere.
+          The 100% disciplined colony is perfectly adapted to current conditions, and doomed when they change.
+        </p>
+      </div>
+
+      <h3>Beyond Search: A Philosophy</h3>
+      <p>
+        This maps to model selection too. Don't just fit the model that worked last time.
+        Some "wasted" exploration prevents overfitting to one dataset or problem type.
+      </p>
+      <p>
+        The ants figured this out millions of years before we invented gradient descent.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Load elevation data and render
+    let elevationData = null;
+    let currentState = null;
+    let animationId = null;
+    let traceLog = [];
+
+    const width = 700;
+    const height = 550;
+    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+
+    // Color scale for terrain
+    const colorScale = d3.scaleSequential()
+      .interpolator(d3.interpolateRgbBasis([
+        '#2d5016', '#4a7c23', '#8fbc8f', '#c4a35a',
+        '#a0522d', '#8b4513', '#d2b48c', '#f5f5dc', '#ffffff'
+      ]));
+
+    // Initialize SVG
+    const svg = d3.select('#terrain-map')
+      .attr('width', width)
+      .attr('height', height);
+
+    const g = svg.append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    // Scales (will be set after data loads)
+    let xScale, yScale, lonScale, latScale;
+
+    // Load data
+    fetch('../data/arthurs_seat_elevation.json')
+      .then(response => response.json())
+      .then(data => {
+        elevationData = data;
+        colorScale.domain([data.stats.min, data.stats.max]);
+        initializeVisualization();
+        document.getElementById('global-max').textContent = data.stats.max + 'm';
+      })
+      .catch(err => {
+        console.error('Failed to load elevation data:', err);
+        document.getElementById('terrain-map').innerHTML = '<text x="300" y="250">Failed to load data</text>';
+      });
+
+    function initializeVisualization() {
+      const data = elevationData;
+      const rows = data.grid.rows;
+      const cols = data.grid.cols;
+      const elevations = data.elevations.flat();
+
+      // Scales
+      xScale = d3.scaleLinear().domain([0, cols]).range([0, plotWidth]);
+      yScale = d3.scaleLinear().domain([0, rows]).range([plotHeight, 0]);
+      lonScale = d3.scaleLinear().domain([data.bounds.west, data.bounds.east]).range([0, plotWidth]);
+      latScale = d3.scaleLinear().domain([data.bounds.south, data.bounds.north]).range([plotHeight, 0]);
+
+      // Contours
+      const contours = d3.contours()
+        .size([cols, rows])
+        .thresholds(d3.range(30, 280, 15));
+
+      const contourData = contours(elevations);
+
+      const path = d3.geoPath()
+        .projection(d3.geoTransform({
+          point: function(x, y) {
+            this.stream.point(xScale(x), yScale(y));
+          }
+        }));
+
+      // Draw filled contours
+      g.selectAll('path.contour-fill')
+        .data(contourData)
+        .enter()
+        .append('path')
+        .attr('class', 'contour-fill')
+        .attr('d', path)
+        .attr('fill', d => colorScale(d.value))
+        .attr('stroke', '#333')
+        .attr('stroke-width', 0.2)
+        .attr('stroke-opacity', 0.3);
+
+      // Major contour lines
+      const majorContours = d3.contours()
+        .size([cols, rows])
+        .thresholds(d3.range(50, 280, 50))(elevations);
+
+      g.selectAll('path.contour-line')
+        .data(majorContours)
+        .enter()
+        .append('path')
+        .attr('class', 'contour-line')
+        .attr('d', path)
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 0.8);
+
+      // Mark peaks
+      if (data.peaks) {
+        g.selectAll('circle.peak')
+          .data(data.peaks)
+          .enter()
+          .append('circle')
+          .attr('class', 'peak')
+          .attr('cx', d => lonScale(d.lon))
+          .attr('cy', d => latScale(d.lat))
+          .attr('r', 5)
+          .attr('fill', '#c0392b')
+          .attr('stroke', 'white')
+          .attr('stroke-width', 2);
+
+        g.selectAll('text.peak-label')
+          .data(data.peaks)
+          .enter()
+          .append('text')
+          .attr('class', 'peak-label')
+          .attr('x', d => lonScale(d.lon) + 8)
+          .attr('y', d => latScale(d.lat) + 4)
+          .attr('font-size', '10px')
+          .attr('fill', '#333')
+          .text(d => `${d.elevation}m`);
+      }
+
+      // Axes
+      const lonAxis = d3.scaleLinear()
+        .domain([data.bounds.west, data.bounds.east])
+        .range([0, plotWidth]);
+
+      const latAxis = d3.scaleLinear()
+        .domain([data.bounds.south, data.bounds.north])
+        .range([plotHeight, 0]);
+
+      g.append('g')
+        .attr('transform', `translate(0,${plotHeight})`)
+        .call(d3.axisBottom(lonAxis).ticks(5).tickFormat(d => d.toFixed(2) + '°'));
+
+      g.append('g')
+        .call(d3.axisLeft(latAxis).ticks(5).tickFormat(d => d.toFixed(3) + '°'));
+
+      // Axis labels
+      svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height - 10)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .attr('fill', '#666')
+        .text('Longitude');
+
+      svg.append('text')
+        .attr('transform', 'rotate(-90)')
+        .attr('x', -height / 2)
+        .attr('y', 15)
+        .attr('text-anchor', 'middle')
+        .attr('font-size', '12px')
+        .attr('fill', '#666')
+        .text('Latitude');
+
+      // Build legend
+      buildLegend();
+
+      // Initialize algorithm state
+      resetState();
+
+      // Click to set starting position
+      svg.on('click', function(event) {
+        if (animationId) return; // Don't allow during animation
+        const [mx, my] = d3.pointer(event);
+        const px = mx - margin.left;
+        const py = my - margin.top;
+        if (px >= 0 && px <= plotWidth && py >= 0 && py <= plotHeight) {
+          const x = px / plotWidth;
+          const y = 1 - py / plotHeight;
+          setStartPosition(x, y);
+        }
+      });
+    }
+
+    function buildLegend() {
+      const legend = d3.select('#legend');
+      legend.html('');
+
+      const levels = [30, 80, 130, 180, 230, 260];
+      levels.forEach(level => {
+        const item = legend.append('div').attr('class', 'legend-item');
+        item.append('div')
+          .attr('class', 'legend-swatch')
+          .style('background-color', colorScale(level));
+        item.append('span').text(`${level}m`);
+      });
+
+      // Add markers legend
+      const markerLegend = [
+        { color: '#c0392b', label: 'Peak' },
+        { color: '#e67e22', label: 'Soldier path' },
+        { color: '#1abc9c', label: 'Scout path' }
+      ];
+      markerLegend.forEach(m => {
+        const item = legend.append('div').attr('class', 'legend-item');
+        item.append('div')
+          .attr('class', 'legend-marker')
+          .style('background-color', m.color);
+        item.append('span').text(m.label);
+      });
+    }
+
+    function getElevation(x, y) {
+      // x, y are normalized 0-1
+      if (!elevationData) return 0;
+      const col = Math.floor(x * (elevationData.grid.cols - 1));
+      const row = Math.floor(y * (elevationData.grid.rows - 1));
+      const clampedRow = Math.max(0, Math.min(row, elevationData.grid.rows - 1));
+      const clampedCol = Math.max(0, Math.min(col, elevationData.grid.cols - 1));
+      return elevationData.elevations[clampedRow][clampedCol];
+    }
+
+    function getGradient(x, y, h = 0.01) {
+      const dx = (getElevation(x + h, y) - getElevation(x - h, y)) / (2 * h);
+      const dy = (getElevation(x, y + h) - getElevation(x, y - h)) / (2 * h);
+      return { dx, dy };
+    }
+
+    function resetState() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      // Random starting position (biased toward lower areas to make it interesting)
+      const startX = 0.15 + Math.random() * 0.3;
+      const startY = 0.2 + Math.random() * 0.3;
+
+      currentState = {
+        x: startX,
+        y: startY,
+        elevation: getElevation(startX, startY),
+        iteration: 0,
+        bestElevation: getElevation(startX, startY),
+        bestX: startX,
+        bestY: startY,
+        path: [{ x: startX, y: startY }],
+        temperature: 1.0, // For simulated annealing
+        restarts: 0,
+        converged: false,
+        algorithm: document.getElementById('algorithm-select').value
+      };
+
+      traceLog = [];
+      addTrace(`Starting at elevation ${currentState.elevation.toFixed(1)}m`, 'info');
+
+      updateDisplay();
+      drawState();
+    }
+
+    function setStartPosition(x, y) {
+      currentState.x = x;
+      currentState.y = y;
+      currentState.elevation = getElevation(x, y);
+      currentState.path = [{ x, y }];
+      currentState.bestElevation = currentState.elevation;
+      currentState.bestX = x;
+      currentState.bestY = y;
+      currentState.iteration = 0;
+      currentState.converged = false;
+
+      traceLog = [];
+      addTrace(`New start: elevation ${currentState.elevation.toFixed(1)}m`, 'info');
+
+      updateDisplay();
+      drawState();
+    }
+
+    function step() {
+      if (!currentState || currentState.converged) return;
+
+      const algo = currentState.algorithm;
+      const isSoldier = algo === 'gradient' || algo === 'newton';
+
+      if (algo === 'gradient') {
+        stepGradient();
+      } else if (algo === 'newton') {
+        stepNewton();
+      } else if (algo === 'random-restart') {
+        stepRandomRestart();
+      } else if (algo === 'annealing') {
+        stepAnnealing();
+      }
+
+      currentState.iteration++;
+
+      // Update best
+      if (currentState.elevation > currentState.bestElevation) {
+        currentState.bestElevation = currentState.elevation;
+        currentState.bestX = currentState.x;
+        currentState.bestY = currentState.y;
+      }
+
+      updateDisplay();
+      drawState();
+    }
+
+    function stepGradient() {
+      const stepSize = 0.008; // Fixed step size in normalised coordinates
+      const grad = getGradient(currentState.x, currentState.y);
+      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+
+      if (magnitude < 0.5) {
+        currentState.converged = true;
+        const foundGlobal = currentState.elevation > 255;
+        addTrace(
+          `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
+          foundGlobal ? 'success' : 'stuck',
+          'soldier'
+        );
+        return;
+      }
+
+      // Normalise step to have consistent speed regardless of gradient magnitude
+      const stepX = (grad.dx / magnitude) * stepSize;
+      const stepY = (grad.dy / magnitude) * stepSize;
+
+      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
+      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
+
+      currentState.x = newX;
+      currentState.y = newY;
+      currentState.elevation = getElevation(newX, newY);
+      currentState.path.push({ x: newX, y: newY });
+
+      if (currentState.iteration % 10 === 0) {
+        addTrace(`Step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m`, 'info', 'soldier');
+      }
+    }
+
+    function stepNewton() {
+      // Newton-Raphson uses second derivatives for faster convergence
+      const h = 0.01;
+      const grad = getGradient(currentState.x, currentState.y, h);
+      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+
+      if (magnitude < 0.5) {
+        currentState.converged = true;
+        const foundGlobal = currentState.elevation > 255;
+        addTrace(
+          `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
+          foundGlobal ? 'success' : 'stuck',
+          'soldier'
+        );
+        return;
+      }
+
+      // Approximate Hessian (second derivatives)
+      const f_xx = (getElevation(currentState.x + h, currentState.y) - 2 * currentState.elevation + getElevation(currentState.x - h, currentState.y)) / (h * h);
+      const f_yy = (getElevation(currentState.x, currentState.y + h) - 2 * currentState.elevation + getElevation(currentState.x, currentState.y - h)) / (h * h);
+
+      // Newton step for MAXIMISATION: step = -H^{-1} * grad
+      // For a maximum, Hessian is negative definite, so -1/f_xx is positive
+      // We move in the direction of the gradient, scaled by curvature
+      // Using abs() and checking sign to ensure we ascend
+      let stepX, stepY;
+      if (f_xx < 0 && Math.abs(f_xx) > 0.01) {
+        // Near a maximum - use Newton step (negative Hessian -> positive step direction)
+        stepX = -grad.dx / f_xx * 0.5;
+      } else {
+        // Flat or convex region - fall back to gradient ascent
+        stepX = grad.dx * 0.003;
+      }
+      if (f_yy < 0 && Math.abs(f_yy) > 0.01) {
+        stepY = -grad.dy / f_yy * 0.5;
+      } else {
+        stepY = grad.dy * 0.003;
+      }
+
+      // Limit step size to prevent overshooting
+      const maxStep = 0.05;
+      stepX = Math.max(-maxStep, Math.min(maxStep, stepX));
+      stepY = Math.max(-maxStep, Math.min(maxStep, stepY));
+
+      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
+      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
+
+      currentState.x = newX;
+      currentState.y = newY;
+      currentState.elevation = getElevation(newX, newY);
+      currentState.path.push({ x: newX, y: newY });
+
+      addTrace(`Newton step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m`, 'info', 'soldier');
+    }
+
+    function stepRandomRestart() {
+      const maxIterPerRestart = 50;
+      const maxRestarts = 5;
+
+      // Check if current restart has converged
+      const grad = getGradient(currentState.x, currentState.y);
+      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+      const localIteration = currentState.iteration - currentState.restarts * maxIterPerRestart;
+
+      if (magnitude < 0.5 || localIteration >= maxIterPerRestart) {
+        // Current restart done
+        addTrace(`Restart ${currentState.restarts + 1}: found ${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
+
+        currentState.restarts++;
+
+        if (currentState.restarts >= maxRestarts) {
+          currentState.converged = true;
+          const foundGlobal = currentState.bestElevation > 255;
+          addTrace(
+            `Best of ${maxRestarts} restarts: ${currentState.bestElevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
+            foundGlobal ? 'success' : 'stuck',
+            'scout'
+          );
+          // Move to best position
+          currentState.x = currentState.bestX;
+          currentState.y = currentState.bestY;
+          currentState.elevation = currentState.bestElevation;
+          return;
+        }
+
+        // New random start
+        const newX = Math.random();
+        const newY = Math.random();
+        currentState.x = newX;
+        currentState.y = newY;
+        currentState.elevation = getElevation(newX, newY);
+        currentState.path.push({ x: newX, y: newY, restart: true });
+        addTrace(`New start at ${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
+        return;
+      }
+
+      // Gradient step within current restart (normalised for consistent speed)
+      const stepSize = 0.008;
+      const stepX = (grad.dx / magnitude) * stepSize;
+      const stepY = (grad.dy / magnitude) * stepSize;
+      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
+      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
+
+      currentState.x = newX;
+      currentState.y = newY;
+      currentState.elevation = getElevation(newX, newY);
+      currentState.path.push({ x: newX, y: newY });
+    }
+
+    function stepAnnealing() {
+      const coolingRate = 0.995;
+      const minTemp = 0.01;
+
+      if (currentState.temperature < minTemp) {
+        currentState.converged = true;
+        const foundGlobal = currentState.bestElevation > 255;
+        addTrace(
+          `Cooled to ${currentState.bestElevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
+          foundGlobal ? 'success' : 'stuck',
+          'scout'
+        );
+        currentState.x = currentState.bestX;
+        currentState.y = currentState.bestY;
+        currentState.elevation = currentState.bestElevation;
+        return;
+      }
+
+      // Propose random move (larger at high temp)
+      const stepSize = 0.05 * currentState.temperature;
+      const proposedX = Math.max(0, Math.min(1, currentState.x + (Math.random() - 0.5) * stepSize));
+      const proposedY = Math.max(0, Math.min(1, currentState.y + (Math.random() - 0.5) * stepSize));
+      const proposedElev = getElevation(proposedX, proposedY);
+
+      // Accept if better, or with probability based on temperature
+      const delta = proposedElev - currentState.elevation;
+      const acceptProb = delta > 0 ? 1 : Math.exp(delta / (currentState.temperature * 50));
+
+      if (Math.random() < acceptProb) {
+        currentState.x = proposedX;
+        currentState.y = proposedY;
+        currentState.elevation = proposedElev;
+        currentState.path.push({ x: proposedX, y: proposedY });
+
+        if (delta < 0 && currentState.iteration % 20 === 0) {
+          addTrace(`Accepted downhill move (T=${currentState.temperature.toFixed(3)})`, 'info', 'scout');
+        }
+      }
+
+      currentState.temperature *= coolingRate;
+
+      if (currentState.iteration % 50 === 0) {
+        addTrace(`T=${currentState.temperature.toFixed(3)}, elev=${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
+      }
+    }
+
+    function runAnimation() {
+      if (currentState.converged) {
+        animationId = null;
+        return;
+      }
+
+      step();
+
+      const delay = currentState.algorithm === 'annealing' ? 20 : 50;
+      animationId = setTimeout(runAnimation, delay);
+    }
+
+    function updateDisplay() {
+      if (!currentState) return;
+
+      document.getElementById('current-pos').textContent =
+        `(${currentState.x.toFixed(2)}, ${currentState.y.toFixed(2)})`;
+      document.getElementById('current-elev').textContent =
+        currentState.elevation.toFixed(1) + 'm';
+      document.getElementById('iterations').textContent = currentState.iteration;
+      document.getElementById('best-found').textContent =
+        currentState.bestElevation.toFixed(1) + 'm';
+
+      // Update trace display
+      const traceEl = document.getElementById('trace');
+      traceEl.innerHTML = traceLog.slice(-15).map(t =>
+        `<div class="trace-line ${t.type} ${t.mindset || ''}">${t.text}</div>`
+      ).join('');
+      traceEl.scrollTop = traceEl.scrollHeight;
+    }
+
+    function drawState() {
+      if (!currentState || !elevationData) return;
+
+      // Remove old markers
+      g.selectAll('.current-marker').remove();
+      g.selectAll('.path-line').remove();
+      g.selectAll('.gradient-arrow').remove();
+
+      const algo = currentState.algorithm;
+      const isSoldier = algo === 'gradient' || algo === 'newton';
+      const pathColor = isSoldier ? '#e67e22' : '#1abc9c';
+
+      // Draw path
+      if (currentState.path.length > 1) {
+        const lineGenerator = d3.line()
+          .x(d => d.x * plotWidth)
+          .y(d => (1 - d.y) * plotHeight);
+
+        // Split path at restarts
+        let segments = [];
+        let currentSegment = [];
+        currentState.path.forEach(p => {
+          if (p.restart && currentSegment.length > 0) {
+            segments.push(currentSegment);
+            currentSegment = [];
+          }
+          currentSegment.push(p);
+        });
+        if (currentSegment.length > 0) segments.push(currentSegment);
+
+        segments.forEach((segment, i) => {
+          g.append('path')
+            .attr('class', 'path-line')
+            .attr('d', lineGenerator(segment))
+            .attr('fill', 'none')
+            .attr('stroke', pathColor)
+            .attr('stroke-width', 2)
+            .attr('stroke-opacity', 0.7)
+            .attr('stroke-dasharray', i > 0 ? '5,5' : 'none');
+        });
+      }
+
+      // Draw gradient arrow if enabled
+      if (document.getElementById('show-gradient').checked && !currentState.converged) {
+        const grad = getGradient(currentState.x, currentState.y);
+        const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+        if (magnitude > 0.1) {
+          const scale = 30 / magnitude;
+          const x1 = currentState.x * plotWidth;
+          const y1 = (1 - currentState.y) * plotHeight;
+          const x2 = x1 + grad.dx * scale;
+          const y2 = y1 - grad.dy * scale;
+
+          g.append('line')
+            .attr('class', 'gradient-arrow')
+            .attr('x1', x1)
+            .attr('y1', y1)
+            .attr('x2', x2)
+            .attr('y2', y2)
+            .attr('stroke', '#333')
+            .attr('stroke-width', 2)
+            .attr('marker-end', 'url(#arrowhead)');
+        }
+      }
+
+      // Draw current position
+      g.append('circle')
+        .attr('class', 'current-marker')
+        .attr('cx', currentState.x * plotWidth)
+        .attr('cy', (1 - currentState.y) * plotHeight)
+        .attr('r', 8)
+        .attr('fill', pathColor)
+        .attr('stroke', 'white')
+        .attr('stroke-width', 3);
+
+      // Draw best position if different (for scout algorithms)
+      if (!isSoldier && (currentState.bestX !== currentState.x || currentState.bestY !== currentState.y)) {
+        g.append('circle')
+          .attr('class', 'current-marker')
+          .attr('cx', currentState.bestX * plotWidth)
+          .attr('cy', (1 - currentState.bestY) * plotHeight)
+          .attr('r', 6)
+          .attr('fill', 'gold')
+          .attr('stroke', '#333')
+          .attr('stroke-width', 2);
+      }
+    }
+
+    function addTrace(text, type, mindset) {
+      traceLog.push({ text, type, mindset });
+    }
+
+    // Arrow marker for gradient
+    svg.append('defs').append('marker')
+      .attr('id', 'arrowhead')
+      .attr('viewBox', '-0 -5 10 10')
+      .attr('refX', 8)
+      .attr('refY', 0)
+      .attr('orient', 'auto')
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .append('path')
+      .attr('d', 'M0,-5L10,0L0,5')
+      .attr('fill', '#333');
+
+    // Event listeners
+    document.getElementById('run-btn').addEventListener('click', () => {
+      if (animationId) {
+        clearTimeout(animationId);
+        animationId = null;
+        document.getElementById('run-btn').textContent = 'Run Algorithm';
+      } else {
+        document.getElementById('run-btn').textContent = 'Stop';
+        runAnimation();
+      }
+    });
+
+    document.getElementById('step-btn').addEventListener('click', step);
+
+    document.getElementById('reset-btn').addEventListener('click', resetState);
+
+    document.getElementById('algorithm-select').addEventListener('change', (e) => {
+      currentState.algorithm = e.target.value;
+      resetState();
+    });
+
+    // Initialize KaTeX
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+
+    // Ant easter egg modal
+    const antTrigger = document.getElementById('ant-trigger');
+    const antModal = document.getElementById('ant-modal');
+    const antClose = document.getElementById('ant-close');
+
+    antTrigger.addEventListener('click', () => {
+      antModal.classList.add('visible');
+    });
+
+    antClose.addEventListener('click', () => {
+      antModal.classList.remove('visible');
+    });
+
+    antModal.addEventListener('click', (e) => {
+      if (e.target === antModal) {
+        antModal.classList.remove('visible');
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && antModal.classList.contains('visible')) {
+        antModal.classList.remove('visible');
+      }
+    });
+  </script>
+</body>
+</html>
