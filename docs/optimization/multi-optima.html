@@ -437,14 +437,12 @@
       text-decoration: none;
     }
 
-    /* Hidden ant easter egg */
+    /* Hidden ant easter egg - position set randomly by JS */
     .ant-easter-egg {
       position: fixed;
-      bottom: 20px;
-      right: 25px;
       font-size: 16px;
       cursor: pointer;
-      opacity: 0.3;
+      opacity: 0.25;
       transition: opacity 0.3s, transform 0.3s;
       z-index: 100;
       user-select: none;
@@ -1478,6 +1476,55 @@
     const antTrigger = document.getElementById('ant-trigger');
     const antModal = document.getElementById('ant-modal');
     const antClose = document.getElementById('ant-close');
+
+    // Randomly position the ant on page load
+    // Uses viewport dimensions to ensure ant stays visible on all screen sizes
+    function positionAnt() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const margin = 20; // Keep away from edges
+      const antSize = 20; // Approximate ant size
+
+      // On mobile (narrow screens), stick to bottom/corners
+      // On desktop, can use sides too
+      const isMobile = vw < 768;
+
+      let positions;
+      if (isMobile) {
+        // Mobile: bottom area only, using pixels for precision
+        positions = [
+          { bottom: `${margin}px`, right: `${margin + Math.random() * 80}px` },
+          { bottom: `${margin}px`, left: `${margin + Math.random() * 80}px` },
+          { bottom: `${margin + 40 + Math.random() * 60}px`, right: `${margin}px` },
+        ];
+      } else {
+        // Desktop: more options around the edges
+        positions = [
+          // Bottom edge
+          { bottom: `${margin}px`, right: `${margin + Math.random() * (vw * 0.4)}px` },
+          { bottom: `${margin}px`, left: `${margin + Math.random() * (vw * 0.3)}px` },
+          // Right edge (middle-lower)
+          { right: `${margin}px`, top: `${vh * 0.4 + Math.random() * (vh * 0.4)}px` },
+          // Left edge (lower half)
+          { left: `${margin}px`, top: `${vh * 0.5 + Math.random() * (vh * 0.3)}px` },
+          // Bottom-right corner area
+          { bottom: `${margin + Math.random() * 100}px`, right: `${margin + Math.random() * 100}px` },
+        ];
+      }
+
+      const pos = positions[Math.floor(Math.random() * positions.length)];
+      // Reset all position properties first
+      antTrigger.style.top = 'auto';
+      antTrigger.style.bottom = 'auto';
+      antTrigger.style.left = 'auto';
+      antTrigger.style.right = 'auto';
+      // Apply chosen position
+      Object.assign(antTrigger.style, pos);
+    }
+    positionAnt();
+
+    // Reposition on window resize (in case orientation changes)
+    window.addEventListener('resize', positionAnt);
 
     antTrigger.addEventListener('click', () => {
       antModal.classList.add('visible');
