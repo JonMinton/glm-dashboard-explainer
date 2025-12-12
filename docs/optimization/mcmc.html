@@ -529,10 +529,10 @@
 
         <!-- Traceplots -->
         <div class="viz-card">
-          <h3>Traceplots (Elevation)</h3>
+          <h3>Traceplots (Log-posterior)</h3>
           <canvas id="traceplot-canvas"></canvas>
           <p style="font-size: 0.8em; color: #888; margin-top: 8px; text-align: center;">
-            Chains should mix well and converge to similar elevation ranges
+            Watch for burn-in (initial climb) then stable mixing around high-probability regions
           </p>
         </div>
 
@@ -546,8 +546,9 @@
               which parameter values are plausible given our data.
             </p>
             <p>
-              Think of elevation as log-posterior density: higher = more plausible parameters.
-              MCMC chains wander the landscape, spending more time in high-probability regions.
+              We use log(elevation) as the log-posterior density: higher = more plausible parameters.
+              This creates more realistic traceplot behaviour &mdash; watch for the initial "burn-in"
+              climb as chains find high-probability regions, then stable mixing once they've converged.
             </p>
           </div>
         </div>
@@ -699,7 +700,8 @@
         };
 
         chains.push(pos);
-        chainHistories.push([{ ...pos, elevation: getElevation(pos.x, pos.y) }]);
+        const initialElevation = getElevation(pos.x, pos.y);
+        chainHistories.push([{ ...pos, elevation: Math.log(Math.max(1, initialElevation)) }]);
       }
 
       // Reset visit counts
@@ -743,10 +745,12 @@
         const proposalElevation = getElevation(proposal.x, proposal.y);
         proposedCount++;
 
-        // Accept/reject (treating elevation as log-posterior)
-        // log(acceptance ratio) = proposalElevation - currentElevation
-        // (since we're treating elevation directly as log-posterior)
-        const logAcceptRatio = (proposalElevation - currentElevation) / 50; // Scale factor
+        // Accept/reject using log(elevation) as log-posterior
+        // This creates more realistic MCMC behaviour with clearer burn-in
+        // and convergence patterns in traceplots
+        const logProposalPosterior = Math.log(Math.max(1, proposalElevation));
+        const logCurrentPosterior = Math.log(Math.max(1, currentElevation));
+        const logAcceptRatio = (logProposalPosterior - logCurrentPosterior) * 5; // Scale factor for log
 
         if (Math.log(Math.random()) < logAcceptRatio) {
           // Accept
@@ -754,11 +758,12 @@
           acceptedCount++;
         }
 
-        // Record history
+        // Record history (store log-elevation for traceplots)
         const finalPos = chains[i];
+        const finalElevation = getElevation(finalPos.x, finalPos.y);
         chainHistories[i].push({
           ...finalPos,
-          elevation: getElevation(finalPos.x, finalPos.y)
+          elevation: Math.log(Math.max(1, finalElevation))
         });
 
         // Update visit counts
