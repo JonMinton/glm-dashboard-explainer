@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bayesian MCMC: Multiple Chains on Arthur's Seat</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #f0f0f0;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #a0a0a0;
+      font-size: 1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #64b5f6;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9em;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #ffcc80;
+      font-weight: 600;
+    }
+
+    /* Main layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 20px;
+    }
+
+    @media (max-width: 1100px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .viz-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      padding: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .viz-card h3 {
+      color: #f0f0f0;
+      margin-bottom: 15px;
+      font-size: 1.1em;
+    }
+
+    /* Terrain canvas */
+    #terrain-canvas {
+      width: 100%;
+      height: 500px;
+      background: #1a1a2e;
+      border-radius: 8px;
+      cursor: crosshair;
+    }
+
+    /* Controls panel */
+    .controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .control-group {
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .control-group h4 {
+      color: #ffcc80;
+      margin-bottom: 10px;
+      font-size: 0.95em;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .control-row label {
+      font-size: 0.85em;
+      color: #b0b0b0;
+      min-width: 100px;
+    }
+
+    .control-row input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.1);
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .control-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #64b5f6;
+      cursor: pointer;
+    }
+
+    .control-row .value {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.85em;
+      color: #64b5f6;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* Buttons */
+    .button-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    button.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    button.secondary {
+      background: rgba(255,255,255,0.1);
+      color: #e0e0e0;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    button.secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Chain legend */
+    .chain-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .chain-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85em;
+    }
+
+    .chain-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    /* Traceplots */
+    .traceplots-container {
+      margin-top: 15px;
+    }
+
+    #traceplot-canvas {
+      width: 100%;
+      height: 180px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+    }
+
+    /* Stats display */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 6px;
+    }
+
+    .stat-item .label {
+      font-size: 0.75em;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .stat-item .value {
+      font-size: 1.1em;
+      font-weight: 600;
+      color: #64b5f6;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .stat-item .value.good {
+      color: #4caf50;
+    }
+
+    .stat-item .value.warning {
+      color: #ff9800;
+    }
+
+    .stat-item .value.bad {
+      color: #f44336;
+    }
+
+    /* Posterior heatmap */
+    #posterior-canvas {
+      width: 100%;
+      height: 150px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+
+    /* Explanation */
+    .explanation {
+      background: rgba(100, 181, 246, 0.1);
+      border-left: 3px solid #64b5f6;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .explanation h4 {
+      color: #64b5f6;
+      margin-bottom: 8px;
+      font-size: 0.95em;
+    }
+
+    .explanation p {
+      color: #b0b0b0;
+      font-size: 0.9em;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .explanation ul {
+      color: #b0b0b0;
+      font-size: 0.85em;
+      margin-left: 20px;
+      line-height: 1.8;
+    }
+
+    /* Prior ellipse instructions */
+    .prior-instructions {
+      background: rgba(255, 204, 128, 0.1);
+      border: 1px dashed rgba(255, 204, 128, 0.3);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 0.85em;
+      color: #ffcc80;
+      text-align: center;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      margin-top: 20px;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    footer a {
+      color: #64b5f6;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bayesian MCMC: Where Chains Spend Their Time</h1>
+      <p>Watch multiple chains explore the posterior landscape from a prior starting region</p>
+      <div class="nav-links">
+        <a href="index.html">1D (Mean Only)</a>
+        <a href="2d.html">2D (Line Fit)</a>
+        <a href="3d.html">3D (Multiple Regression)</a>
+        <a href="4d.html">4D+ (Beyond Visualisation)</a>
+        <a href="multi-optima.html">Multi-Optima</a>
+        <a href="mcmc.html" class="current">Bayesian MCMC</a>
+      </div>
+    </header>
+
+    <div class="main-grid">
+      <!-- Left: Terrain visualization -->
+      <div class="viz-card">
+        <h3>Posterior Landscape (Arthur's Seat)</h3>
+        <canvas id="terrain-canvas"></canvas>
+
+        <div class="chain-legend" id="chain-legend"></div>
+
+        <div class="explanation">
+          <h4>The Bayesian Perspective</h4>
+          <p>
+            In Bayesian inference, we don't just find the <em>best</em> parameter values &mdash;
+            we explore the full <strong>posterior distribution</strong>. The posterior tells us
+            which parameter values are plausible given our data.
+          </p>
+          <p>
+            Think of elevation as log-posterior density: higher = more plausible parameters.
+            MCMC chains wander the landscape, spending more time in high-probability regions.
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Controls and diagnostics -->
+      <div class="controls-panel">
+        <!-- Prior control -->
+        <div class="viz-card">
+          <h3>Prior Distribution</h3>
+          <p class="prior-instructions">Click and drag on the terrain to position the prior ellipse</p>
+
+          <div class="control-group">
+            <h4>Prior Shape</h4>
+            <div class="control-row">
+              <label>Spread (SD):</label>
+              <input type="range" id="prior-spread" min="0.02" max="0.15" step="0.01" value="0.06">
+              <span class="value" id="prior-spread-val">0.06</span>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <h4>MCMC Settings</h4>
+            <div class="control-row">
+              <label>Proposal SD:</label>
+              <input type="range" id="proposal-sd" min="0.005" max="0.05" step="0.002" value="0.015">
+              <span class="value" id="proposal-sd-val">0.015</span>
+            </div>
+            <div class="control-row">
+              <label>Speed:</label>
+              <input type="range" id="speed" min="1" max="50" step="1" value="10">
+              <span class="value" id="speed-val">10</span>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button id="start-btn" class="primary">Start Chains</button>
+            <button id="step-btn" class="secondary">Step</button>
+            <button id="reset-btn" class="secondary">Reset</button>
+          </div>
+        </div>
+
+        <!-- Traceplots -->
+        <div class="viz-card">
+          <h3>Traceplots (Elevation)</h3>
+          <canvas id="traceplot-canvas"></canvas>
+          <p style="font-size: 0.8em; color: #888; margin-top: 8px; text-align: center;">
+            Chains should mix well and converge to similar elevation ranges
+          </p>
+        </div>
+
+        <!-- Convergence diagnostics -->
+        <div class="viz-card">
+          <h3>Convergence Diagnostics</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="label">Iteration</div>
+              <div class="value" id="iteration">0</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">R-hat</div>
+              <div class="value" id="rhat">--</div>
+            </div>
+            <div class="stat-item">
+              <div class="label">Acceptance</div>
+              <div class="value" id="acceptance">--</div>
+            </div>
+          </div>
+
+          <div class="explanation" style="margin-top: 15px;">
+            <h4>What is R-hat?</h4>
+            <p>
+              R-hat (Gelman-Rubin statistic) compares variance <em>within</em> chains to variance
+              <em>between</em> chains. When chains converge to the same distribution:
+            </p>
+            <ul>
+              <li><strong style="color: #4caf50;">R-hat &lt; 1.1</strong> &mdash; Chains have converged</li>
+              <li><strong style="color: #ff9800;">1.1 &le; R-hat &lt; 1.2</strong> &mdash; Nearly converged</li>
+              <li><strong style="color: #f44336;">R-hat &ge; 1.2</strong> &mdash; Chains haven't converged yet</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Posterior density -->
+        <div class="viz-card">
+          <h3>Posterior Density (Emerging)</h3>
+          <canvas id="posterior-canvas"></canvas>
+          <p style="font-size: 0.8em; color: #888; margin-top: 8px; text-align: center;">
+            Heatmap showing where chains have visited
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <a href="multi-optima.html">&larr; Multi-Optima</a> |
+      <a href="../index.html">Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script>
+    // ========================================
+    // Initialize KaTeX
+    // ========================================
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+
+    // ========================================
+    // Configuration
+    // ========================================
+    const NUM_CHAINS = 5;
+    const CHAIN_COLORS = [
+      '#e74c3c', // Red
+      '#3498db', // Blue
+      '#2ecc71', // Green
+      '#9b59b6', // Purple
+      '#f39c12'  // Orange
+    ];
+    const CHAIN_NAMES = ['Chain 1', 'Chain 2', 'Chain 3', 'Chain 4', 'Chain 5'];
+
+    // ========================================
+    // State
+    // ========================================
+    let terrainData = null;
+    let chains = [];
+    let chainHistories = [];
+    let visitCounts = null; // 2D grid for posterior heatmap
+    let iteration = 0;
+    let isRunning = false;
+    let animationId = null;
+    let acceptedCount = 0;
+    let proposedCount = 0;
+
+    // Prior center (in normalized 0-1 coordinates)
+    let priorCenter = { x: 0.25, y: 0.6 }; // Start near Salisbury Crags (local optimum)
+    let priorSpread = 0.06;
+    let proposalSD = 0.015;
+    let speed = 10;
+
+    // Canvas contexts
+    const terrainCanvas = document.getElementById('terrain-canvas');
+    const terrainCtx = terrainCanvas.getContext('2d');
+    const traceCanvas = document.getElementById('traceplot-canvas');
+    const traceCtx = traceCanvas.getContext('2d');
+    const posteriorCanvas = document.getElementById('posterior-canvas');
+    const posteriorCtx = posteriorCanvas.getContext('2d');
+
+    // Layout storage
+    let terrainLayout = { margin: {}, plotWidth: 0, plotHeight: 0 };
+
+    // ========================================
+    // Setup canvases
+    // ========================================
+    function setupCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+
+      // Terrain canvas
+      const tRect = terrainCanvas.getBoundingClientRect();
+      terrainCanvas.width = tRect.width * dpr;
+      terrainCanvas.height = tRect.height * dpr;
+      terrainCtx.scale(dpr, dpr);
+
+      // Trace canvas
+      const trRect = traceCanvas.getBoundingClientRect();
+      traceCanvas.width = trRect.width * dpr;
+      traceCanvas.height = trRect.height * dpr;
+      traceCtx.scale(dpr, dpr);
+
+      // Posterior canvas
+      const pRect = posteriorCanvas.getBoundingClientRect();
+      posteriorCanvas.width = pRect.width * dpr;
+      posteriorCanvas.height = pRect.height * dpr;
+      posteriorCtx.scale(dpr, dpr);
+    }
+
+    // ========================================
+    // Load terrain data
+    // ========================================
+    async function loadTerrain() {
+      try {
+        const response = await fetch('../data/arthurs_seat_elevation.json');
+        terrainData = await response.json();
+
+        // Initialize visit counts grid
+        visitCounts = Array(terrainData.grid.rows).fill(null)
+          .map(() => Array(terrainData.grid.cols).fill(0));
+
+        initializeChains();
+        drawAll();
+      } catch (err) {
+        console.error('Failed to load terrain:', err);
+      }
+    }
+
+    // ========================================
+    // Get elevation at normalized coordinates
+    // ========================================
+    function getElevation(x, y) {
+      if (!terrainData) return 0;
+
+      const col = Math.floor(x * (terrainData.grid.cols - 1));
+      const row = Math.floor(y * (terrainData.grid.rows - 1));
+
+      if (row < 0 || row >= terrainData.grid.rows ||
+          col < 0 || col >= terrainData.grid.cols) {
+        return 0;
+      }
+
+      return terrainData.elevations[row][col];
+    }
+
+    // ========================================
+    // Initialize chains from prior
+    // ========================================
+    function initializeChains() {
+      chains = [];
+      chainHistories = [];
+
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        // Sample from prior (Gaussian centered at priorCenter)
+        const x = priorCenter.x + randn() * priorSpread;
+        const y = priorCenter.y + randn() * priorSpread;
+
+        // Clamp to valid range
+        const pos = {
+          x: Math.max(0.01, Math.min(0.99, x)),
+          y: Math.max(0.01, Math.min(0.99, y))
+        };
+
+        chains.push(pos);
+        chainHistories.push([{ ...pos, elevation: getElevation(pos.x, pos.y) }]);
+      }
+
+      // Reset visit counts
+      if (terrainData) {
+        visitCounts = Array(terrainData.grid.rows).fill(null)
+          .map(() => Array(terrainData.grid.cols).fill(0));
+      }
+
+      iteration = 0;
+      acceptedCount = 0;
+      proposedCount = 0;
+    }
+
+    // ========================================
+    // Box-Muller for normal random
+    // ========================================
+    function randn() {
+      const u1 = Math.random();
+      const u2 = Math.random();
+      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    }
+
+    // ========================================
+    // Metropolis-Hastings step
+    // ========================================
+    function mcmcStep() {
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        const current = chains[i];
+        const currentElevation = getElevation(current.x, current.y);
+
+        // Propose new position
+        const proposal = {
+          x: current.x + randn() * proposalSD,
+          y: current.y + randn() * proposalSD
+        };
+
+        // Clamp proposal
+        proposal.x = Math.max(0.01, Math.min(0.99, proposal.x));
+        proposal.y = Math.max(0.01, Math.min(0.99, proposal.y));
+
+        const proposalElevation = getElevation(proposal.x, proposal.y);
+        proposedCount++;
+
+        // Accept/reject (treating elevation as log-posterior)
+        // log(acceptance ratio) = proposalElevation - currentElevation
+        // (since we're treating elevation directly as log-posterior)
+        const logAcceptRatio = (proposalElevation - currentElevation) / 50; // Scale factor
+
+        if (Math.log(Math.random()) < logAcceptRatio) {
+          // Accept
+          chains[i] = proposal;
+          acceptedCount++;
+        }
+
+        // Record history
+        const finalPos = chains[i];
+        chainHistories[i].push({
+          ...finalPos,
+          elevation: getElevation(finalPos.x, finalPos.y)
+        });
+
+        // Update visit counts
+        const col = Math.floor(finalPos.x * (terrainData.grid.cols - 1));
+        const row = Math.floor(finalPos.y * (terrainData.grid.rows - 1));
+        if (row >= 0 && row < terrainData.grid.rows &&
+            col >= 0 && col < terrainData.grid.cols) {
+          visitCounts[row][col]++;
+        }
+      }
+
+      iteration++;
+    }
+
+    // ========================================
+    // Calculate R-hat (Gelman-Rubin statistic)
+    // ========================================
+    function calculateRhat() {
+      if (iteration < 20) return null;
+
+      const n = Math.floor(chainHistories[0].length / 2); // Use second half
+      if (n < 10) return null;
+
+      // Get elevation traces for each chain (second half only)
+      const traces = chainHistories.map(history =>
+        history.slice(-n).map(h => h.elevation)
+      );
+
+      // Chain means
+      const chainMeans = traces.map(trace =>
+        trace.reduce((a, b) => a + b, 0) / trace.length
+      );
+
+      // Overall mean
+      const overallMean = chainMeans.reduce((a, b) => a + b, 0) / chainMeans.length;
+
+      // Between-chain variance
+      const B = n * chainMeans.reduce((sum, m) =>
+        sum + Math.pow(m - overallMean, 2), 0
+      ) / (NUM_CHAINS - 1);
+
+      // Within-chain variance
+      const W = traces.reduce((sum, trace, i) => {
+        const chainVar = trace.reduce((s, v) =>
+          s + Math.pow(v - chainMeans[i], 2), 0
+        ) / (n - 1);
+        return sum + chainVar;
+      }, 0) / NUM_CHAINS;
+
+      // R-hat
+      const varPlus = ((n - 1) / n) * W + (1 / n) * B;
+      const rhat = Math.sqrt(varPlus / W);
+
+      return isFinite(rhat) ? rhat : null;
+    }
+
+    // ========================================
+    // Draw terrain with contours and chains
+    // ========================================
+    function drawTerrain() {
+      if (!terrainData) return;
+
+      const rect = terrainCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      terrainCtx.clearRect(0, 0, width, height);
+
+      const margin = { top: 30, right: 30, bottom: 40, left: 50 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      terrainLayout = { margin, plotWidth, plotHeight };
+
+      // Draw filled terrain
+      const rows = terrainData.grid.rows;
+      const cols = terrainData.grid.cols;
+      const cellW = plotWidth / cols;
+      const cellH = plotHeight / rows;
+
+      // Color scale
+      const colorScale = d3.scaleSequential()
+        .domain([terrainData.stats.min, terrainData.stats.max])
+        .interpolator(d3.interpolateRgbBasis([
+          '#1a1a2e', // Dark (low)
+          '#2d5016', // Dark green
+          '#4a7c23', // Green
+          '#8fbc8f', // Light green
+          '#c4a35a', // Tan
+          '#a0522d', // Brown
+          '#d2b48c', // Tan high
+          '#f5f5dc', // Beige
+          '#ffffff'  // White (summit)
+        ]));
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const elev = terrainData.elevations[r][c];
+          terrainCtx.fillStyle = colorScale(elev);
+          terrainCtx.fillRect(
+            margin.left + c * cellW,
+            margin.top + (rows - 1 - r) * cellH,
+            cellW + 1,
+            cellH + 1
+          );
+        }
+      }
+
+      // Draw contour lines
+      terrainCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+      terrainCtx.lineWidth = 0.5;
+      const contourLevels = d3.range(50, 260, 30);
+
+      for (const level of contourLevels) {
+        for (let r = 0; r < rows - 1; r++) {
+          for (let c = 0; c < cols - 1; c++) {
+            const e00 = terrainData.elevations[r][c];
+            const e01 = terrainData.elevations[r][c + 1];
+            const e10 = terrainData.elevations[r + 1][c];
+
+            // Simple contour check
+            if ((e00 < level && e01 >= level) || (e00 >= level && e01 < level)) {
+              const t = (level - e00) / (e01 - e00);
+              const x = margin.left + (c + t) * cellW;
+              const y = margin.top + (rows - 1 - r) * cellH;
+              terrainCtx.beginPath();
+              terrainCtx.arc(x, y, 1, 0, Math.PI * 2);
+              terrainCtx.stroke();
+            }
+            if ((e00 < level && e10 >= level) || (e00 >= level && e10 < level)) {
+              const t = (level - e00) / (e10 - e00);
+              const x = margin.left + c * cellW;
+              const y = margin.top + (rows - 1 - r - t) * cellH;
+              terrainCtx.beginPath();
+              terrainCtx.arc(x, y, 1, 0, Math.PI * 2);
+              terrainCtx.stroke();
+            }
+          }
+        }
+      }
+
+      // Draw prior ellipse
+      const priorX = margin.left + priorCenter.x * plotWidth;
+      const priorY = margin.top + (1 - priorCenter.y) * plotHeight;
+      const priorRadiusX = priorSpread * plotWidth * 2;
+      const priorRadiusY = priorSpread * plotHeight * 2;
+
+      terrainCtx.beginPath();
+      terrainCtx.ellipse(priorX, priorY, priorRadiusX, priorRadiusY, 0, 0, Math.PI * 2);
+      terrainCtx.strokeStyle = 'rgba(255, 204, 128, 0.8)';
+      terrainCtx.lineWidth = 2;
+      terrainCtx.setLineDash([5, 5]);
+      terrainCtx.stroke();
+      terrainCtx.setLineDash([]);
+
+      terrainCtx.fillStyle = 'rgba(255, 204, 128, 0.15)';
+      terrainCtx.fill();
+
+      // Label
+      terrainCtx.fillStyle = '#ffcc80';
+      terrainCtx.font = 'bold 11px -apple-system, sans-serif';
+      terrainCtx.textAlign = 'center';
+      terrainCtx.fillText('PRIOR', priorX, priorY - priorRadiusY - 8);
+
+      // Draw chain trails
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        const history = chainHistories[i];
+        if (history.length < 2) continue;
+
+        // Draw fading trail
+        const trailLength = Math.min(100, history.length);
+        terrainCtx.beginPath();
+        terrainCtx.strokeStyle = CHAIN_COLORS[i];
+        terrainCtx.lineWidth = 1.5;
+        terrainCtx.globalAlpha = 0.4;
+
+        for (let j = Math.max(0, history.length - trailLength); j < history.length; j++) {
+          const pos = history[j];
+          const x = margin.left + pos.x * plotWidth;
+          const y = margin.top + (1 - pos.y) * plotHeight;
+
+          if (j === Math.max(0, history.length - trailLength)) {
+            terrainCtx.moveTo(x, y);
+          } else {
+            terrainCtx.lineTo(x, y);
+          }
+        }
+        terrainCtx.stroke();
+        terrainCtx.globalAlpha = 1;
+      }
+
+      // Draw current chain positions
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        const pos = chains[i];
+        const x = margin.left + pos.x * plotWidth;
+        const y = margin.top + (1 - pos.y) * plotHeight;
+
+        // Outer glow
+        terrainCtx.beginPath();
+        terrainCtx.arc(x, y, 10, 0, Math.PI * 2);
+        terrainCtx.fillStyle = CHAIN_COLORS[i] + '40';
+        terrainCtx.fill();
+
+        // Main dot
+        terrainCtx.beginPath();
+        terrainCtx.arc(x, y, 6, 0, Math.PI * 2);
+        terrainCtx.fillStyle = CHAIN_COLORS[i];
+        terrainCtx.fill();
+        terrainCtx.strokeStyle = 'white';
+        terrainCtx.lineWidth = 2;
+        terrainCtx.stroke();
+      }
+
+      // Axis labels
+      terrainCtx.fillStyle = '#888';
+      terrainCtx.font = '11px -apple-system, sans-serif';
+      terrainCtx.textAlign = 'center';
+      terrainCtx.fillText('Parameter 1 (x)', margin.left + plotWidth / 2, height - 8);
+
+      terrainCtx.save();
+      terrainCtx.translate(12, margin.top + plotHeight / 2);
+      terrainCtx.rotate(-Math.PI / 2);
+      terrainCtx.fillText('Parameter 2 (y)', 0, 0);
+      terrainCtx.restore();
+    }
+
+    // ========================================
+    // Draw traceplots
+    // ========================================
+    function drawTraceplots() {
+      const rect = traceCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      traceCtx.clearRect(0, 0, width, height);
+      traceCtx.fillStyle = 'rgba(0,0,0,0.2)';
+      traceCtx.fillRect(0, 0, width, height);
+
+      if (chainHistories[0].length < 2) return;
+
+      const margin = { top: 15, right: 10, bottom: 25, left: 40 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      // Find elevation range across all chains
+      let minElev = Infinity, maxElev = -Infinity;
+      for (const history of chainHistories) {
+        for (const h of history) {
+          minElev = Math.min(minElev, h.elevation);
+          maxElev = Math.max(maxElev, h.elevation);
+        }
+      }
+
+      const elevPadding = (maxElev - minElev) * 0.1;
+      minElev -= elevPadding;
+      maxElev += elevPadding;
+
+      // X scale (iterations)
+      const maxIter = chainHistories[0].length;
+      const xScale = (i) => margin.left + (i / maxIter) * plotWidth;
+      const yScale = (e) => margin.top + (1 - (e - minElev) / (maxElev - minElev)) * plotHeight;
+
+      // Draw axes
+      traceCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+      traceCtx.lineWidth = 1;
+      traceCtx.beginPath();
+      traceCtx.moveTo(margin.left, margin.top + plotHeight);
+      traceCtx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      traceCtx.moveTo(margin.left, margin.top);
+      traceCtx.lineTo(margin.left, margin.top + plotHeight);
+      traceCtx.stroke();
+
+      // Y-axis label
+      traceCtx.fillStyle = '#888';
+      traceCtx.font = '9px -apple-system, sans-serif';
+      traceCtx.textAlign = 'right';
+      traceCtx.fillText(maxElev.toFixed(0), margin.left - 5, margin.top + 8);
+      traceCtx.fillText(minElev.toFixed(0), margin.left - 5, margin.top + plotHeight);
+
+      // X-axis label
+      traceCtx.textAlign = 'center';
+      traceCtx.fillText('Iteration', margin.left + plotWidth / 2, height - 5);
+
+      // Draw each chain
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        const history = chainHistories[i];
+
+        traceCtx.beginPath();
+        traceCtx.strokeStyle = CHAIN_COLORS[i];
+        traceCtx.lineWidth = 1;
+        traceCtx.globalAlpha = 0.8;
+
+        for (let j = 0; j < history.length; j++) {
+          const x = xScale(j);
+          const y = yScale(history[j].elevation);
+
+          if (j === 0) {
+            traceCtx.moveTo(x, y);
+          } else {
+            traceCtx.lineTo(x, y);
+          }
+        }
+        traceCtx.stroke();
+        traceCtx.globalAlpha = 1;
+      }
+    }
+
+    // ========================================
+    // Draw posterior heatmap
+    // ========================================
+    function drawPosterior() {
+      const rect = posteriorCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      posteriorCtx.clearRect(0, 0, width, height);
+      posteriorCtx.fillStyle = 'rgba(0,0,0,0.3)';
+      posteriorCtx.fillRect(0, 0, width, height);
+
+      if (!terrainData || iteration < 10) {
+        posteriorCtx.fillStyle = '#666';
+        posteriorCtx.font = '12px -apple-system, sans-serif';
+        posteriorCtx.textAlign = 'center';
+        posteriorCtx.fillText('Run chains to see posterior emerge...', width / 2, height / 2);
+        return;
+      }
+
+      const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      const rows = terrainData.grid.rows;
+      const cols = terrainData.grid.cols;
+      const cellW = plotWidth / cols;
+      const cellH = plotHeight / rows;
+
+      // Find max visits
+      let maxVisits = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          maxVisits = Math.max(maxVisits, visitCounts[r][c]);
+        }
+      }
+
+      if (maxVisits === 0) return;
+
+      // Color scale for density
+      const colorScale = d3.scaleSequential()
+        .domain([0, Math.log(maxVisits + 1)])
+        .interpolator(d3.interpolateInferno);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const visits = visitCounts[r][c];
+          if (visits > 0) {
+            posteriorCtx.fillStyle = colorScale(Math.log(visits + 1));
+            posteriorCtx.fillRect(
+              margin.left + c * cellW,
+              margin.top + (rows - 1 - r) * cellH,
+              cellW + 1,
+              cellH + 1
+            );
+          }
+        }
+      }
+    }
+
+    // ========================================
+    // Update statistics display
+    // ========================================
+    function updateStats() {
+      document.getElementById('iteration').textContent = iteration;
+
+      // R-hat
+      const rhat = calculateRhat();
+      const rhatEl = document.getElementById('rhat');
+      if (rhat !== null) {
+        rhatEl.textContent = rhat.toFixed(3);
+        rhatEl.className = 'value ' + (rhat < 1.1 ? 'good' : rhat < 1.2 ? 'warning' : 'bad');
+      } else {
+        rhatEl.textContent = '--';
+        rhatEl.className = 'value';
+      }
+
+      // Acceptance rate
+      const acceptance = proposedCount > 0 ? acceptedCount / proposedCount : 0;
+      const accEl = document.getElementById('acceptance');
+      accEl.textContent = (acceptance * 100).toFixed(1) + '%';
+      accEl.className = 'value ' + (acceptance > 0.15 && acceptance < 0.5 ? 'good' : 'warning');
+    }
+
+    // ========================================
+    // Draw all
+    // ========================================
+    function drawAll() {
+      drawTerrain();
+      drawTraceplots();
+      drawPosterior();
+      updateStats();
+    }
+
+    // ========================================
+    // Animation loop
+    // ========================================
+    function animate() {
+      if (!isRunning) return;
+
+      for (let i = 0; i < speed; i++) {
+        mcmcStep();
+      }
+
+      drawAll();
+      animationId = requestAnimationFrame(animate);
+    }
+
+    // ========================================
+    // Event handlers
+    // ========================================
+
+    // Start/stop
+    document.getElementById('start-btn').addEventListener('click', () => {
+      if (isRunning) {
+        isRunning = false;
+        document.getElementById('start-btn').textContent = 'Start Chains';
+      } else {
+        isRunning = true;
+        document.getElementById('start-btn').textContent = 'Pause';
+        animate();
+      }
+    });
+
+    // Step
+    document.getElementById('step-btn').addEventListener('click', () => {
+      if (!isRunning) {
+        mcmcStep();
+        drawAll();
+      }
+    });
+
+    // Reset
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      isRunning = false;
+      if (animationId) cancelAnimationFrame(animationId);
+      document.getElementById('start-btn').textContent = 'Start Chains';
+      initializeChains();
+      drawAll();
+    });
+
+    // Prior spread slider
+    document.getElementById('prior-spread').addEventListener('input', (e) => {
+      priorSpread = parseFloat(e.target.value);
+      document.getElementById('prior-spread-val').textContent = priorSpread.toFixed(2);
+      if (!isRunning) {
+        initializeChains();
+        drawAll();
+      }
+    });
+
+    // Proposal SD slider
+    document.getElementById('proposal-sd').addEventListener('input', (e) => {
+      proposalSD = parseFloat(e.target.value);
+      document.getElementById('proposal-sd-val').textContent = proposalSD.toFixed(3);
+    });
+
+    // Speed slider
+    document.getElementById('speed').addEventListener('input', (e) => {
+      speed = parseInt(e.target.value);
+      document.getElementById('speed-val').textContent = speed;
+    });
+
+    // Click on terrain to move prior
+    terrainCanvas.addEventListener('click', (e) => {
+      const rect = terrainCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const { margin, plotWidth, plotHeight } = terrainLayout;
+
+      // Check if within plot area
+      if (x < margin.left || x > margin.left + plotWidth ||
+          y < margin.top || y > margin.top + plotHeight) {
+        return;
+      }
+
+      // Convert to normalized coordinates
+      priorCenter.x = (x - margin.left) / plotWidth;
+      priorCenter.y = 1 - (y - margin.top) / plotHeight;
+
+      // Reinitialize chains at new prior location
+      initializeChains();
+      drawAll();
+    });
+
+    // Build chain legend
+    function buildLegend() {
+      const legend = document.getElementById('chain-legend');
+      legend.innerHTML = '';
+
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        const item = document.createElement('div');
+        item.className = 'chain-item';
+        item.innerHTML = `
+          <div class="chain-swatch" style="background: ${CHAIN_COLORS[i]}"></div>
+          <span>${CHAIN_NAMES[i]}</span>
+        `;
+        legend.appendChild(item);
+      }
+    }
+
+    // Window resize
+    window.addEventListener('resize', () => {
+      setupCanvases();
+      drawAll();
+    });
+
+    // ========================================
+    // Initialize
+    // ========================================
+    setupCanvases();
+    buildLegend();
+    loadTerrain();
+  </script>
+</body>
+</html>

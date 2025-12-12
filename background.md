@@ -6,7 +6,7 @@ The main starting resource is an earlier (incomplete) correspondence with claude
 
 https://claude.ai/share/4797ead7-ed2e-4e08-a432-95f307ecc39d
 
-(If the above is not accessible to you, let me know the best way to share it with you.
+(If the above is not accessible to you, let me know the best way to share it with you.)
 
 The other main resource is my stats website, and in particular the main course materials: 
 
