@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Optimization: Intercept + Slope | GLM Explainer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .visualization-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .viz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .viz-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    /* Dual canvas layout */
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 15px;
+    }
+
+    @media (max-width: 800px) {
+      .canvas-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .canvas-panel {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .canvas-panel h4 {
+      margin: 0 0 10px 0;
+      font-size: 0.95em;
+      color: #666;
+      text-align: center;
+    }
+
+    /* Canvas styling */
+    #data-canvas, #likelihood-canvas {
+      width: 100%;
+      height: 350px;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex;
+      background: #e0e0e0;
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .mode-btn:hover:not(.active) {
+      color: #2c3e50;
+    }
+
+    /* Manual controls */
+    .manual-controls {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 15px;
+    }
+
+    .manual-controls.hidden {
+      display: none;
+    }
+
+    .manual-controls h4 {
+      color: #856404;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .manual-controls h4::before {
+      content: '👆';
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 12px;
+    }
+
+    .slider-row label {
+      font-weight: 500;
+      color: #666;
+      min-width: 100px;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: #ddd;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #e74c3c;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .slider-value {
+      font-family: 'SF Mono', Monaco, monospace;
+      font-weight: 600;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .manual-hint {
+      font-size: 0.9em;
+      color: #856404;
+      margin-top: 15px;
+      font-style: italic;
+    }
+
+    .attempts-counter {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #ffc107;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .attempts-counter span {
+      color: #856404;
+    }
+
+    .attempts-counter .count {
+      font-weight: 600;
+      font-size: 1.2em;
+    }
+
+    /* Algorithm controls */
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    .controls.hidden {
+      display: none;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .control-group label {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      font-size: 0.9em;
+      cursor: pointer;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button.primary {
+      background: #667eea;
+      color: white;
+    }
+
+    button.primary:hover {
+      background: #5a6fd6;
+    }
+
+    button.secondary {
+      background: #95a5a6;
+      color: white;
+    }
+
+    button.secondary:hover {
+      background: #7f8c8d;
+    }
+
+    /* Canvas cursor */
+    #likelihood-canvas.manual-mode {
+      cursor: crosshair;
+    }
+
+    /* Stats display */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-item .label {
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .stat-item .value {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #2c3e50;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    /* Algorithm info */
+    .algorithm-info {
+      background: #e8f4fd;
+      border: 1px solid #bee5eb;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+
+    .algorithm-info.hidden {
+      display: none;
+    }
+
+    .algorithm-info h4 {
+      color: #0c5460;
+      margin-bottom: 8px;
+    }
+
+    .algorithm-info p {
+      color: #0c5460;
+      font-size: 0.9em;
+    }
+
+    /* Explanation section */
+    .explanation {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .explanation h3 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    .explanation p {
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .explanation ul {
+      color: #666;
+      margin-left: 20px;
+    }
+
+    .explanation li {
+      margin-bottom: 5px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>2D Optimization: Finding the Best Line</h1>
+      <p>Now with two parameters: intercept (β₀) and slope (β₁)</p>
+      <div class="nav-links">
+        <a href="index.html">1D (Mean Only)</a>
+        <a href="2d.html" class="current">2D (Line Fit)</a>
+        <a href="3d.html">3D (Multiple Regression)</a>
+      </div>
+    </header>
+
+    <div class="visualization-card">
+      <div class="viz-header">
+        <span class="viz-title">Linear Regression: y = β₀ + β₁x</span>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="manual">Try It Yourself</button>
+        <button class="mode-btn" data-mode="algorithm">Watch Algorithm</button>
+      </div>
+
+      <!-- Dual canvas view -->
+      <div class="canvas-grid">
+        <div class="canvas-panel">
+          <h4>Data + Current Fit</h4>
+          <canvas id="data-canvas"></canvas>
+        </div>
+        <div class="canvas-panel">
+          <h4>Log-Likelihood Contour Surface</h4>
+          <canvas id="likelihood-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- Manual mode controls -->
+      <div class="manual-controls" id="manual-controls">
+        <h4>Find the Peak!</h4>
+        <p>Adjust both sliders to find the maximum likelihood. Or click directly on the contour plot.</p>
+
+        <div class="slider-row">
+          <label>Intercept (β₀):</label>
+          <input type="range" id="intercept-slider" min="-50" max="50" value="0" step="0.5">
+          <span class="slider-value" id="intercept-value">0.0</span>
+        </div>
+
+        <div class="slider-row">
+          <label>Slope (β₁):</label>
+          <input type="range" id="slope-slider" min="-5" max="5" value="0" step="0.05">
+          <span class="slider-value" id="slope-value">0.00</span>
+        </div>
+
+        <p class="manual-hint">Tip: Watch both the regression line and the likelihood surface. The red dot should climb toward the peak!</p>
+
+        <div class="attempts-counter">
+          <span>Adjustments made:</span>
+          <span class="count" id="attempt-count">0</span>
+        </div>
+      </div>
+
+      <!-- Algorithm mode controls -->
+      <div class="controls hidden" id="algorithm-controls">
+        <div class="control-group">
+          <label for="algorithm-select">Algorithm:</label>
+          <select id="algorithm-select">
+            <option value="analytic">Analytic (OLS)</option>
+            <option value="gradient">Gradient Descent</option>
+            <option value="newton">Newton-Raphson</option>
+          </select>
+        </div>
+
+        <button class="primary" id="start-btn">Start</button>
+        <button class="secondary" id="reset-btn">Reset</button>
+      </div>
+
+      <!-- Algorithm info -->
+      <div class="algorithm-info hidden" id="algorithm-info">
+        <h4 id="algo-name">Analytic Solution</h4>
+        <p id="algo-desc">Computes the exact MLE using matrix algebra: β = (X'X)⁻¹X'y</p>
+      </div>
+
+      <!-- Stats display -->
+      <div class="stats">
+        <div class="stat-item">
+          <div class="label">Intercept (β₀)</div>
+          <div class="value" id="current-intercept">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Slope (β₁)</div>
+          <div class="value" id="current-slope">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Log-Likelihood</div>
+          <div class="value" id="current-ll">--</div>
+        </div>
+        <div class="stat-item">
+          <div class="label">Iterations</div>
+          <div class="value" id="iteration-count">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div class="explanation">
+      <h3>What's Different in 2D?</h3>
+      <p>With two parameters, the likelihood surface becomes a 2D landscape shown as contour lines:</p>
+      <ul>
+        <li><strong>Contour lines</strong> connect points with equal log-likelihood (like elevation lines on a map)</li>
+        <li><strong>The peak</strong> (MLE) is at the center of the elliptical contours</li>
+        <li><strong>Ellipse shape</strong> shows how intercept and slope estimates are correlated</li>
+        <li><strong>Gradient descent</strong> follows the steepest uphill path to the peak</li>
+      </ul>
+      <p style="margin-top: 15px;">
+        Notice how the regression line changes as you move across the likelihood surface.
+        Finding the best fit means climbing to the highest point!
+      </p>
+    </div>
+
+    <footer>
+      <a href="../index.html">← Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script>
+    // ========================================
+    // 2D Likelihood Visualization
+    // ========================================
+
+    const canvas = document.getElementById('likelihood-canvas');
+    const ctx = canvas.getContext('2d');
+    const dataCanvas = document.getElementById('data-canvas');
+    const dataCtx = dataCanvas.getContext('2d');
+
+    // High DPI support
+    function setupCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+
+      // Likelihood canvas
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+
+      // Data canvas
+      const dataRect = dataCanvas.getBoundingClientRect();
+      dataCanvas.width = dataRect.width * dpr;
+      dataCanvas.height = dataRect.height * dpr;
+      dataCtx.scale(dpr, dpr);
+      dataCanvas.style.width = dataRect.width + 'px';
+      dataCanvas.style.height = dataRect.height + 'px';
+    }
+
+    // State
+    let currentMode = 'manual';
+    let currentAlgorithm = 'analytic';
+    let currentIntercept = 0;
+    let currentSlope = 0;
+    let iteration = 0;
+    let isRunning = false;
+    let animationId = null;
+    let history = [];
+    let manualAttempts = 0;
+
+    // Parameter ranges for visualization
+    const interceptRange = { min: -50, max: 50 };
+    const slopeRange = { min: -5, max: 5 };
+
+    // Generate sample data: y = 10 + 2x + noise
+    const trueIntercept = 10;
+    const trueSlope = 2;
+    const n = 30;
+    let data = [];
+
+    function generateData() {
+      data = [];
+      for (let i = 0; i < n; i++) {
+        const x = -10 + 20 * Math.random(); // x in [-10, 10]
+        const noise = (Math.random() - 0.5) * 20; // noise ~ N(0, 10^2)
+        const y = trueIntercept + trueSlope * x + noise;
+        data.push({ x, y });
+      }
+
+      // Compute MLE (OLS estimates)
+      computeMLE();
+    }
+
+    // MLE estimates
+    let mleIntercept = 0;
+    let mleSlope = 0;
+
+    function computeMLE() {
+      // OLS: β = (X'X)^(-1) X'y
+      const xMean = data.reduce((s, d) => s + d.x, 0) / n;
+      const yMean = data.reduce((s, d) => s + d.y, 0) / n;
+
+      let ssxy = 0, ssxx = 0;
+      for (const d of data) {
+        ssxy += (d.x - xMean) * (d.y - yMean);
+        ssxx += (d.x - xMean) * (d.x - xMean);
+      }
+
+      mleSlope = ssxy / ssxx;
+      mleIntercept = yMean - mleSlope * xMean;
+
+      // Update slider ranges to center around MLE
+      interceptRange.min = mleIntercept - 40;
+      interceptRange.max = mleIntercept + 40;
+      slopeRange.min = mleSlope - 4;
+      slopeRange.max = mleSlope + 4;
+    }
+
+    // Log-likelihood for Gaussian regression
+    function logLikelihood(b0, b1) {
+      let ss = 0;
+      for (const d of data) {
+        const pred = b0 + b1 * d.x;
+        const resid = d.y - pred;
+        ss += resid * resid;
+      }
+      // Assuming sigma^2 = 100 (known)
+      const sigma2 = 100;
+      return -n/2 * Math.log(2 * Math.PI * sigma2) - ss / (2 * sigma2);
+    }
+
+    // Gradient of log-likelihood
+    function gradient(b0, b1) {
+      let grad0 = 0, grad1 = 0;
+      const sigma2 = 100;
+      for (const d of data) {
+        const resid = d.y - (b0 + b1 * d.x);
+        grad0 += resid;
+        grad1 += resid * d.x;
+      }
+      return [grad0 / sigma2, grad1 / sigma2];
+    }
+
+    // Canvas layout
+    let canvasLayout = {
+      margin: { top: 40, right: 30, bottom: 50, left: 60 },
+      plotWidth: 0,
+      plotHeight: 0
+    };
+
+    // Draw the data panel (left side)
+    function drawData() {
+      const rect = dataCanvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      dataCtx.clearRect(0, 0, width, height);
+
+      const margin = { top: 30, right: 20, bottom: 50, left: 60 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      // Data ranges
+      const xMin = Math.min(...data.map(d => d.x)) - 2;
+      const xMax = Math.max(...data.map(d => d.x)) + 2;
+      const yMin = Math.min(...data.map(d => d.y)) - 10;
+      const yMax = Math.max(...data.map(d => d.y)) + 10;
+
+      // Scale functions
+      const xScale = (x) => margin.left + (x - xMin) / (xMax - xMin) * plotWidth;
+      const yScale = (y) => margin.top + plotHeight - (y - yMin) / (yMax - yMin) * plotHeight;
+
+      // Draw axes
+      dataCtx.strokeStyle = '#ccc';
+      dataCtx.lineWidth = 1;
+
+      // X-axis
+      dataCtx.beginPath();
+      dataCtx.moveTo(margin.left, margin.top + plotHeight);
+      dataCtx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      dataCtx.stroke();
+
+      // Y-axis
+      dataCtx.beginPath();
+      dataCtx.moveTo(margin.left, margin.top);
+      dataCtx.lineTo(margin.left, margin.top + plotHeight);
+      dataCtx.stroke();
+
+      // Axis labels
+      dataCtx.fillStyle = '#666';
+      dataCtx.font = '12px -apple-system, sans-serif';
+      dataCtx.textAlign = 'center';
+      dataCtx.fillText('x', margin.left + plotWidth / 2, height - 10);
+
+      dataCtx.save();
+      dataCtx.translate(15, margin.top + plotHeight / 2);
+      dataCtx.rotate(-Math.PI / 2);
+      dataCtx.fillText('y', 0, 0);
+      dataCtx.restore();
+
+      // Draw true regression line (green dashed)
+      dataCtx.beginPath();
+      dataCtx.strokeStyle = '#27ae60';
+      dataCtx.lineWidth = 2;
+      dataCtx.setLineDash([4, 4]);
+      const trueY1 = mleIntercept + mleSlope * xMin;
+      const trueY2 = mleIntercept + mleSlope * xMax;
+      dataCtx.moveTo(xScale(xMin), yScale(trueY1));
+      dataCtx.lineTo(xScale(xMax), yScale(trueY2));
+      dataCtx.stroke();
+      dataCtx.setLineDash([]);
+
+      // MLE label
+      dataCtx.fillStyle = '#27ae60';
+      dataCtx.font = '11px -apple-system, sans-serif';
+      dataCtx.textAlign = 'left';
+      dataCtx.fillText('MLE', xScale(xMax) - 30, yScale(trueY2) - 8);
+
+      // Draw current fit line (red)
+      dataCtx.beginPath();
+      dataCtx.strokeStyle = '#e74c3c';
+      dataCtx.lineWidth = 2.5;
+      const curY1 = currentIntercept + currentSlope * xMin;
+      const curY2 = currentIntercept + currentSlope * xMax;
+      dataCtx.moveTo(xScale(xMin), yScale(curY1));
+      dataCtx.lineTo(xScale(xMax), yScale(curY2));
+      dataCtx.stroke();
+
+      // Current fit label
+      dataCtx.fillStyle = '#e74c3c';
+      dataCtx.font = 'bold 11px -apple-system, sans-serif';
+      dataCtx.textAlign = 'right';
+      dataCtx.fillText('Current', xScale(xMin) + 50, yScale(curY1) - 8);
+
+      // Draw data points
+      dataCtx.fillStyle = '#667eea';
+      for (const d of data) {
+        dataCtx.beginPath();
+        dataCtx.arc(xScale(d.x), yScale(d.y), 5, 0, Math.PI * 2);
+        dataCtx.fill();
+      }
+
+      // Draw residuals
+      dataCtx.strokeStyle = 'rgba(231, 76, 60, 0.3)';
+      dataCtx.lineWidth = 1;
+      for (const d of data) {
+        const pred = currentIntercept + currentSlope * d.x;
+        dataCtx.beginPath();
+        dataCtx.moveTo(xScale(d.x), yScale(d.y));
+        dataCtx.lineTo(xScale(d.x), yScale(pred));
+        dataCtx.stroke();
+      }
+    }
+
+    // Draw the likelihood contour panel (right side)
+    function draw() {
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const margin = { top: 40, right: 30, bottom: 50, left: 60 };
+      const plotWidth = width - margin.left - margin.right;
+      const plotHeight = height - margin.top - margin.bottom;
+
+      canvasLayout = { margin, plotWidth, plotHeight };
+
+      // Compute likelihood surface
+      const gridSize = 50;
+      const llGrid = [];
+      let minLL = Infinity, maxLL = -Infinity;
+
+      for (let i = 0; i < gridSize; i++) {
+        llGrid[i] = [];
+        const b0 = interceptRange.min + (interceptRange.max - interceptRange.min) * i / (gridSize - 1);
+        for (let j = 0; j < gridSize; j++) {
+          const b1 = slopeRange.min + (slopeRange.max - slopeRange.min) * j / (gridSize - 1);
+          const ll = logLikelihood(b0, b1);
+          llGrid[i][j] = ll;
+          if (isFinite(ll)) {
+            minLL = Math.min(minLL, ll);
+            maxLL = Math.max(maxLL, ll);
+          }
+        }
+      }
+
+      // Scale functions
+      const xScale = (b0) => margin.left + (b0 - interceptRange.min) / (interceptRange.max - interceptRange.min) * plotWidth;
+      const yScale = (b1) => margin.top + plotHeight - (b1 - slopeRange.min) / (slopeRange.max - slopeRange.min) * plotHeight;
+
+      // Draw filled contours (heat map)
+      const cellWidth = plotWidth / (gridSize - 1);
+      const cellHeight = plotHeight / (gridSize - 1);
+
+      for (let i = 0; i < gridSize - 1; i++) {
+        for (let j = 0; j < gridSize - 1; j++) {
+          const ll = (llGrid[i][j] + llGrid[i+1][j] + llGrid[i][j+1] + llGrid[i+1][j+1]) / 4;
+          const normalized = (ll - minLL) / (maxLL - minLL);
+
+          // Color gradient: dark blue (low) to yellow (high)
+          const r = Math.round(255 * normalized);
+          const g = Math.round(255 * normalized);
+          const b = Math.round(255 * (1 - normalized * 0.5));
+
+          ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+          const b0 = interceptRange.min + (interceptRange.max - interceptRange.min) * i / (gridSize - 1);
+          const b1 = slopeRange.min + (slopeRange.max - slopeRange.min) * j / (gridSize - 1);
+
+          ctx.fillRect(xScale(b0), yScale(b1) - cellHeight, cellWidth + 1, cellHeight + 1);
+        }
+      }
+
+      // Draw contour lines
+      const nContours = 10;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.lineWidth = 1;
+
+      for (let c = 1; c < nContours; c++) {
+        const level = minLL + (maxLL - minLL) * c / nContours;
+        drawContourLine(llGrid, level, gridSize, xScale, yScale);
+      }
+
+      // Draw axes
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+
+      // X-axis
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top + plotHeight);
+      ctx.lineTo(margin.left + plotWidth, margin.top + plotHeight);
+      ctx.stroke();
+
+      // Y-axis
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotHeight);
+      ctx.stroke();
+
+      // Axis labels
+      ctx.fillStyle = '#333';
+      ctx.font = '14px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Intercept (β₀)', margin.left + plotWidth / 2, height - 10);
+
+      ctx.save();
+      ctx.translate(15, margin.top + plotHeight / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Slope (β₁)', 0, 0);
+      ctx.restore();
+
+      // Axis ticks
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.fillStyle = '#666';
+
+      // X ticks
+      for (let i = 0; i <= 4; i++) {
+        const b0 = interceptRange.min + (interceptRange.max - interceptRange.min) * i / 4;
+        const x = xScale(b0);
+        ctx.fillText(b0.toFixed(0), x, margin.top + plotHeight + 18);
+      }
+
+      // Y ticks
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const b1 = slopeRange.min + (slopeRange.max - slopeRange.min) * i / 4;
+        const y = yScale(b1);
+        ctx.fillText(b1.toFixed(1), margin.left - 8, y + 4);
+      }
+
+      // Draw history path
+      if (history.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+
+        for (let i = 0; i < history.length; i++) {
+          const x = xScale(history[i].b0);
+          const y = yScale(history[i].b1);
+          if (i === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+
+        // Draw path points
+        ctx.fillStyle = '#e74c3c';
+        for (let i = 0; i < history.length - 1; i++) {
+          const x = xScale(history[i].b0);
+          const y = yScale(history[i].b1);
+          ctx.beginPath();
+          ctx.arc(x, y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // Draw MLE point (green)
+      const mleX = xScale(mleIntercept);
+      const mleY = yScale(mleSlope);
+      ctx.beginPath();
+      ctx.fillStyle = '#27ae60';
+      ctx.arc(mleX, mleY, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = 'white';
+      ctx.arc(mleX, mleY, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // MLE label
+      ctx.fillStyle = '#27ae60';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('MLE', mleX + 15, mleY + 4);
+
+      // Draw current estimate (red)
+      const curX = xScale(currentIntercept);
+      const curY = yScale(currentSlope);
+      ctx.beginPath();
+      ctx.fillStyle = '#e74c3c';
+      ctx.arc(curX, curY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = 'white';
+      ctx.arc(curX, curY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Simple contour line drawing (marching squares approximation)
+    function drawContourLine(grid, level, size, xScale, yScale) {
+      for (let i = 0; i < size - 1; i++) {
+        for (let j = 0; j < size - 1; j++) {
+          const v00 = grid[i][j];
+          const v10 = grid[i+1][j];
+          const v01 = grid[i][j+1];
+          const v11 = grid[i+1][j+1];
+
+          // Check if contour crosses this cell
+          const min = Math.min(v00, v10, v01, v11);
+          const max = Math.max(v00, v10, v01, v11);
+
+          if (level >= min && level <= max) {
+            const b0_0 = interceptRange.min + (interceptRange.max - interceptRange.min) * i / (size - 1);
+            const b0_1 = interceptRange.min + (interceptRange.max - interceptRange.min) * (i + 1) / (size - 1);
+            const b1_0 = slopeRange.min + (slopeRange.max - slopeRange.min) * j / (size - 1);
+            const b1_1 = slopeRange.min + (slopeRange.max - slopeRange.min) * (j + 1) / (size - 1);
+
+            // Interpolate crossing points on edges
+            const points = [];
+
+            // Bottom edge
+            if ((v00 - level) * (v10 - level) < 0) {
+              const t = (level - v00) / (v10 - v00);
+              points.push({ x: xScale(b0_0 + t * (b0_1 - b0_0)), y: yScale(b1_0) });
+            }
+            // Top edge
+            if ((v01 - level) * (v11 - level) < 0) {
+              const t = (level - v01) / (v11 - v01);
+              points.push({ x: xScale(b0_0 + t * (b0_1 - b0_0)), y: yScale(b1_1) });
+            }
+            // Left edge
+            if ((v00 - level) * (v01 - level) < 0) {
+              const t = (level - v00) / (v01 - v00);
+              points.push({ x: xScale(b0_0), y: yScale(b1_0 + t * (b1_1 - b1_0)) });
+            }
+            // Right edge
+            if ((v10 - level) * (v11 - level) < 0) {
+              const t = (level - v10) / (v11 - v10);
+              points.push({ x: xScale(b0_1), y: yScale(b1_0 + t * (b1_1 - b1_0)) });
+            }
+
+            if (points.length >= 2) {
+              ctx.beginPath();
+              ctx.moveTo(points[0].x, points[0].y);
+              ctx.lineTo(points[1].x, points[1].y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    // Update stats display
+    function updateStats() {
+      document.getElementById('current-intercept').textContent = currentIntercept.toFixed(2);
+      document.getElementById('current-slope').textContent = currentSlope.toFixed(3);
+      document.getElementById('current-ll').textContent = logLikelihood(currentIntercept, currentSlope).toFixed(2);
+      document.getElementById('iteration-count').textContent = iteration;
+    }
+
+    // Algorithm step
+    function algorithmStep() {
+      switch (currentAlgorithm) {
+        case 'analytic':
+          currentIntercept = mleIntercept;
+          currentSlope = mleSlope;
+          iteration = 1;
+          history.push({ b0: currentIntercept, b1: currentSlope });
+          isRunning = false;
+          break;
+
+        case 'gradient':
+          const [g0, g1] = gradient(currentIntercept, currentSlope);
+
+          // Use smaller, adaptive learning rates
+          // The intercept gradient scales with n, slope gradient scales with n * x^2
+          // So we need different learning rates for each
+          const lr0 = 0.1;  // learning rate for intercept
+          const lr1 = 0.02; // smaller learning rate for slope (x values are larger)
+
+          currentIntercept += lr0 * g0;
+          currentSlope += lr1 * g1;
+          iteration++;
+          history.push({ b0: currentIntercept, b1: currentSlope });
+
+          // Check convergence (use relative tolerance)
+          const gradMag = Math.sqrt(g0*g0 + g1*g1);
+          if (gradMag < 0.01 || iteration > 200) {
+            isRunning = false;
+          }
+          break;
+
+        case 'newton':
+          // Newton-Raphson for linear regression
+          // Hessian is constant, so this converges in one step
+          const [gn0, gn1] = gradient(currentIntercept, currentSlope);
+
+          // For Gaussian regression, Hessian is -X'X/sigma^2
+          const sigma2 = 100;
+          let h00 = 0, h01 = 0, h11 = 0;
+          for (const d of data) {
+            h00 += 1;
+            h01 += d.x;
+            h11 += d.x * d.x;
+          }
+          h00 /= sigma2;
+          h01 /= sigma2;
+          h11 /= sigma2;
+
+          // Invert 2x2 Hessian
+          const det = h00 * h11 - h01 * h01;
+          const invH00 = h11 / det;
+          const invH01 = -h01 / det;
+          const invH11 = h00 / det;
+
+          // Newton step: x_new = x - H^{-1} * grad
+          currentIntercept -= invH00 * (-gn0) + invH01 * (-gn1);
+          currentSlope -= invH01 * (-gn0) + invH11 * (-gn1);
+          iteration++;
+          history.push({ b0: currentIntercept, b1: currentSlope });
+
+          // Newton converges in 1 step for quadratic
+          if (iteration >= 1) {
+            isRunning = false;
+          }
+          break;
+      }
+
+      updateStats();
+      drawData();
+      draw();
+    }
+
+    // Animation loop
+    function animate() {
+      if (!isRunning) return;
+
+      algorithmStep();
+
+      if (isRunning) {
+        animationId = setTimeout(animate, 300);
+      }
+    }
+
+    // Reset
+    function reset() {
+      isRunning = false;
+      if (animationId) clearTimeout(animationId);
+
+      // Start from a random point
+      currentIntercept = interceptRange.min + Math.random() * (interceptRange.max - interceptRange.min);
+      currentSlope = slopeRange.min + Math.random() * (slopeRange.max - slopeRange.min);
+
+      iteration = 0;
+      history = [{ b0: currentIntercept, b1: currentSlope }];
+      manualAttempts = 0;
+      document.getElementById('attempt-count').textContent = '0';
+      document.getElementById('start-btn').textContent = 'Start';
+
+      updateSliders();
+      updateStats();
+      drawData();
+      draw();
+    }
+
+    // Mode switching
+    function setMode(mode) {
+      currentMode = mode;
+
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      document.getElementById('manual-controls').classList.toggle('hidden', mode !== 'manual');
+      document.getElementById('algorithm-controls').classList.toggle('hidden', mode !== 'algorithm');
+      document.getElementById('algorithm-info').classList.toggle('hidden', mode !== 'algorithm');
+
+      canvas.classList.toggle('manual-mode', mode === 'manual');
+
+      reset();
+
+      if (mode === 'manual') {
+        // Start in center for manual mode
+        currentIntercept = (interceptRange.min + interceptRange.max) / 2;
+        currentSlope = (slopeRange.min + slopeRange.max) / 2;
+        updateSliders();
+        updateFromSliders();
+      }
+    }
+
+    // Update sliders to match current values
+    function updateSliders() {
+      document.getElementById('intercept-slider').min = interceptRange.min;
+      document.getElementById('intercept-slider').max = interceptRange.max;
+      document.getElementById('intercept-slider').value = currentIntercept;
+      document.getElementById('intercept-value').textContent = currentIntercept.toFixed(1);
+
+      document.getElementById('slope-slider').min = slopeRange.min;
+      document.getElementById('slope-slider').max = slopeRange.max;
+      document.getElementById('slope-slider').value = currentSlope;
+      document.getElementById('slope-value').textContent = currentSlope.toFixed(2);
+    }
+
+    // Update from sliders
+    function updateFromSliders() {
+      currentIntercept = parseFloat(document.getElementById('intercept-slider').value);
+      currentSlope = parseFloat(document.getElementById('slope-slider').value);
+
+      document.getElementById('intercept-value').textContent = currentIntercept.toFixed(1);
+      document.getElementById('slope-value').textContent = currentSlope.toFixed(2);
+
+      updateStats();
+      drawData();
+      draw();
+    }
+
+    // Event listeners
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => setMode(btn.dataset.mode));
+    });
+
+    document.getElementById('intercept-slider').addEventListener('input', () => {
+      manualAttempts++;
+      document.getElementById('attempt-count').textContent = manualAttempts;
+      updateFromSliders();
+    });
+
+    document.getElementById('slope-slider').addEventListener('input', () => {
+      manualAttempts++;
+      document.getElementById('attempt-count').textContent = manualAttempts;
+      updateFromSliders();
+    });
+
+    document.getElementById('algorithm-select').addEventListener('change', (e) => {
+      currentAlgorithm = e.target.value;
+      updateAlgorithmInfo();
+      reset();
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      if (isRunning) {
+        isRunning = false;
+        document.getElementById('start-btn').textContent = 'Continue';
+      } else {
+        isRunning = true;
+        document.getElementById('start-btn').textContent = 'Pause';
+        animate();
+      }
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', reset);
+
+    // Click on likelihood canvas to set estimate
+    canvas.addEventListener('click', (e) => {
+      if (currentMode !== 'manual') return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const { margin, plotWidth, plotHeight } = canvasLayout;
+
+      if (x < margin.left || x > margin.left + plotWidth) return;
+      if (y < margin.top || y > margin.top + plotHeight) return;
+
+      currentIntercept = interceptRange.min + (x - margin.left) / plotWidth * (interceptRange.max - interceptRange.min);
+      currentSlope = slopeRange.max - (y - margin.top) / plotHeight * (slopeRange.max - slopeRange.min);
+
+      manualAttempts++;
+      document.getElementById('attempt-count').textContent = manualAttempts;
+
+      updateSliders();
+      updateStats();
+      drawData();
+      draw();
+    });
+
+    // Update algorithm info
+    function updateAlgorithmInfo() {
+      const info = {
+        analytic: {
+          name: 'Analytic Solution (OLS)',
+          desc: 'Computes the exact MLE using matrix algebra: β = (X\'X)⁻¹X\'y. One-shot solution!'
+        },
+        gradient: {
+          name: 'Gradient Descent',
+          desc: 'Iteratively climbs uphill by following the gradient. Needs careful tuning of step size to avoid overshooting. Watch it zigzag toward the peak!'
+        },
+        newton: {
+          name: 'Newton-Raphson',
+          desc: 'Uses second derivatives (Hessian) for faster convergence. For Gaussian regression, converges in 1 step.'
+        }
+      };
+
+      document.getElementById('algo-name').textContent = info[currentAlgorithm].name;
+      document.getElementById('algo-desc').textContent = info[currentAlgorithm].desc;
+    }
+
+    // Initialize
+    window.addEventListener('resize', () => {
+      setupCanvas();
+      drawData();
+      draw();
+    });
+
+    setupCanvas();
+    generateData();
+    updateSliders();
+    updateAlgorithmInfo();
+
+    // Start in manual mode
+    canvas.classList.add('manual-mode');
+    currentIntercept = (interceptRange.min + interceptRange.max) / 2;
+    currentSlope = (slopeRange.min + slopeRange.max) / 2;
+    updateSliders();
+    updateFromSliders();
+  </script>
+</body>
+</html>
