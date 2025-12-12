@@ -125,5 +125,5 @@ Based on the JonStats pedagogical approach (GLMs as the unifying framework, simu
 
 ---
 
-*Last updated: December 2024*
+*Last updated: December 2025*
 *Current state: 5 tutorials complete (Gaussian, Binomial, Poisson, NegBin, Gamma), optimisation section complete (1D-4D)*
