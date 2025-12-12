@@ -1107,10 +1107,11 @@
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // MLE label
+      // MLE label (positioned above the curve at the peak)
       ctx.fillStyle = '#27ae60';
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.fillText('MLE', mleX, margin.top + plotHeight + 35);
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('MLE', mleX, mleY - 12);
     }
 
     function getParamLabel() {
