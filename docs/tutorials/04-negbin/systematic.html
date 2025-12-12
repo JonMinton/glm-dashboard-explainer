@@ -235,6 +235,49 @@
       filter: grayscale(50%);
     }
 
+    /* Mobile: Selected state for tap-to-select */
+    .variable-card.selected {
+      border-color: #9b59b6;
+      background: #f5eef8;
+      box-shadow: 0 0 0 3px rgba(155, 89, 182, 0.3);
+    }
+
+    /* Mobile hint toast */
+    .mobile-picker-hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #2c3e50;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9em;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .mobile-picker-hint.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Touch device: change cursor and add tap hint */
+    .touch-device .variable-card:not(.dimmed) {
+      cursor: pointer;
+    }
+
+    .touch-device .variable-card .target-badge {
+      content: 'Tap me!';
+    }
+
+    .touch-device .target-badge::after {
+      content: ' (tap)';
+    }
+
+
     @keyframes pulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(211, 84, 0, 0.4); }
       50% { box-shadow: 0 0 0 8px rgba(211, 84, 0, 0); }
@@ -590,6 +633,9 @@
     </div>
   </div>
 
+  <!-- Load variable picker before main script -->
+  <script src="../../js/variable-picker.js"></script>
+
   <script>
     // Dataset variables - UCI Bike Sharing (daily) - same as Tutorial 3
     const variables = [
@@ -888,39 +934,27 @@
     }
 
     function setupDropZones() {
-      [predictorZone, responseZone].forEach(zone => {
-        zone.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          zone.classList.add('drag-over');
-        });
+      // Initialize the variable picker with mobile support
+      initVariablePicker({
+        variablePool: variablePool,
+        predictorZone: predictorZone,
+        responseZone: responseZone,
 
-        zone.addEventListener('dragleave', () => {
-          zone.classList.remove('drag-over');
-        });
-
-        zone.addEventListener('drop', (e) => {
-          e.preventDefault();
-          zone.classList.remove('drag-over');
-
+        // Validate if this drop is allowed for the current step
+        validateDrop: function(varName, zoneType) {
           const step = steps[currentStep];
-          const isPredictor = zone === predictorZone;
           const expectedZone = step.target?.zone;
           const expectedVar = step.target?.variable;
 
-          // Check if this is the correct action
-          if (draggedVariable !== expectedVar ||
-              (isPredictor && expectedZone !== 'predictor') ||
-              (!isPredictor && expectedZone !== 'response')) {
-            zone.classList.add('wrong');
-            setTimeout(() => zone.classList.remove('wrong'), 300);
-            return;
-          }
+          return varName === expectedVar && zoneType === expectedZone;
+        },
 
-          // Correct action!
-          if (isPredictor) {
-            selectedPredictors.push(draggedVariable);
+        // Handle successful drop
+        onDrop: function(varName, zoneType) {
+          if (zoneType === 'predictor') {
+            selectedPredictors.push(varName);
           } else {
-            selectedResponse = draggedVariable;
+            selectedResponse = varName;
           }
 
           renderAssigned();
@@ -930,7 +964,7 @@
             currentStep++;
             updateStep();
           }, 400);
-        });
+        }
       });
     }
 
