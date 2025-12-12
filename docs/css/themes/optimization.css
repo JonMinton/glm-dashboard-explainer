@@ -1,0 +1,283 @@
+/* Optimization Section Theme
+ * Shared CSS custom properties for consistent styling across optimization pages
+ * Supports dark/light mode via prefers-color-scheme and manual toggle
+ *
+ * Usage: Link this file in optimization pages, then use var(--property-name)
+ * Pages can override specific variables by redefining them after this import
+ */
+
+/* ============================================
+   Light Mode (Default)
+   ============================================ */
+:root {
+  /* Background colours */
+  --opt-bg-primary: #f8f9fa;
+  --opt-bg-card: #ffffff;
+  --opt-bg-code: #f4f4f4;
+  --opt-bg-highlight: #f0f7ff;
+
+  /* Text colours */
+  --opt-text-primary: #2c3e50;
+  --opt-text-secondary: #666666;
+  --opt-text-muted: #888888;
+  --opt-text-inverse: #ffffff;
+
+  /* Accent colours - purple theme for optimization */
+  --opt-accent-primary: #9b59b6;
+  --opt-accent-secondary: #8e44ad;
+  --opt-accent-light: #d4a5e8;
+
+  /* Status colours */
+  --opt-success: #27ae60;
+  --opt-warning: #f39c12;
+  --opt-error: #e74c3c;
+  --opt-info: #3498db;
+
+  /* Borders and shadows */
+  --opt-border-color: #dee2e6;
+  --opt-border-light: #e9ecef;
+  --opt-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --opt-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+
+  /* Visualization-specific */
+  --opt-canvas-bg: #ffffff;
+  --opt-grid-color: #e0e0e0;
+  --opt-axis-color: #333333;
+
+  /* Navigation */
+  --opt-nav-bg: #ffffff;
+  --opt-nav-border: #dee2e6;
+  --opt-nav-link: #9b59b6;
+  --opt-nav-link-hover: #8e44ad;
+
+  /* Controls */
+  --opt-button-bg: #9b59b6;
+  --opt-button-text: #ffffff;
+  --opt-button-hover: #8e44ad;
+  --opt-input-bg: #ffffff;
+  --opt-input-border: #dee2e6;
+  --opt-slider-track: #dee2e6;
+  --opt-slider-thumb: #9b59b6;
+}
+
+/* ============================================
+   Dark Mode (System Preference)
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Background colours */
+    --opt-bg-primary: #1a1a2e;
+    --opt-bg-card: #16213e;
+    --opt-bg-code: #0f0f1a;
+    --opt-bg-highlight: #1f2940;
+
+    /* Text colours */
+    --opt-text-primary: #e8e8e8;
+    --opt-text-secondary: #a0a0a0;
+    --opt-text-muted: #707070;
+    --opt-text-inverse: #1a1a2e;
+
+    /* Accent colours - lighter purple for dark mode */
+    --opt-accent-primary: #bb86fc;
+    --opt-accent-secondary: #9b59b6;
+    --opt-accent-light: #d4a5e8;
+
+    /* Status colours - adjusted for dark bg */
+    --opt-success: #2ecc71;
+    --opt-warning: #f1c40f;
+    --opt-error: #e74c3c;
+    --opt-info: #5dade2;
+
+    /* Borders and shadows */
+    --opt-border-color: #333333;
+    --opt-border-light: #2a2a2a;
+    --opt-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    --opt-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+
+    /* Visualization-specific */
+    --opt-canvas-bg: #1a1a2e;
+    --opt-grid-color: #333333;
+    --opt-axis-color: #a0a0a0;
+
+    /* Navigation */
+    --opt-nav-bg: #16213e;
+    --opt-nav-border: #333333;
+    --opt-nav-link: #bb86fc;
+    --opt-nav-link-hover: #d4a5e8;
+
+    /* Controls */
+    --opt-button-bg: #bb86fc;
+    --opt-button-text: #1a1a2e;
+    --opt-button-hover: #9b59b6;
+    --opt-input-bg: #16213e;
+    --opt-input-border: #333333;
+    --opt-slider-track: #333333;
+    --opt-slider-thumb: #bb86fc;
+  }
+}
+
+/* ============================================
+   Manual Theme Override via data-theme attribute
+   Set <html data-theme="dark"> or <html data-theme="light">
+   ============================================ */
+:root[data-theme="dark"] {
+  /* Background colours */
+  --opt-bg-primary: #1a1a2e;
+  --opt-bg-card: #16213e;
+  --opt-bg-code: #0f0f1a;
+  --opt-bg-highlight: #1f2940;
+
+  /* Text colours */
+  --opt-text-primary: #e8e8e8;
+  --opt-text-secondary: #a0a0a0;
+  --opt-text-muted: #707070;
+  --opt-text-inverse: #1a1a2e;
+
+  /* Accent colours */
+  --opt-accent-primary: #bb86fc;
+  --opt-accent-secondary: #9b59b6;
+  --opt-accent-light: #d4a5e8;
+
+  /* Status colours */
+  --opt-success: #2ecc71;
+  --opt-warning: #f1c40f;
+  --opt-error: #e74c3c;
+  --opt-info: #5dade2;
+
+  /* Borders and shadows */
+  --opt-border-color: #333333;
+  --opt-border-light: #2a2a2a;
+  --opt-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --opt-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.4);
+
+  /* Visualization-specific */
+  --opt-canvas-bg: #1a1a2e;
+  --opt-grid-color: #333333;
+  --opt-axis-color: #a0a0a0;
+
+  /* Navigation */
+  --opt-nav-bg: #16213e;
+  --opt-nav-border: #333333;
+  --opt-nav-link: #bb86fc;
+  --opt-nav-link-hover: #d4a5e8;
+
+  /* Controls */
+  --opt-button-bg: #bb86fc;
+  --opt-button-text: #1a1a2e;
+  --opt-button-hover: #9b59b6;
+  --opt-input-bg: #16213e;
+  --opt-input-border: #333333;
+  --opt-slider-track: #333333;
+  --opt-slider-thumb: #bb86fc;
+}
+
+/* ============================================
+   Theme Toggle Component (optional)
+   Add this HTML: <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+   ============================================ */
+.theme-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--opt-border-color);
+  background: var(--opt-bg-card);
+  color: var(--opt-text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  background: var(--opt-accent-primary);
+  color: var(--opt-text-inverse);
+  border-color: var(--opt-accent-primary);
+}
+
+/* ============================================
+   Common Component Styles Using Theme Variables
+   ============================================ */
+
+/* Card component */
+.opt-card {
+  background: var(--opt-bg-card);
+  border-radius: 12px;
+  box-shadow: var(--opt-shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Navigation bar */
+.opt-nav {
+  background: var(--opt-nav-bg);
+  border-bottom: 1px solid var(--opt-nav-border);
+  padding: 10px 20px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.opt-nav a {
+  color: var(--opt-nav-link);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.opt-nav a:hover {
+  color: var(--opt-nav-link-hover);
+}
+
+/* Button */
+.opt-button {
+  background: var(--opt-button-bg);
+  color: var(--opt-button-text);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.opt-button:hover {
+  background: var(--opt-button-hover);
+}
+
+/* Input fields */
+.opt-input {
+  background: var(--opt-input-bg);
+  border: 1px solid var(--opt-input-border);
+  color: var(--opt-text-primary);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+/* ============================================
+   JavaScript Helper for Theme Toggle
+   Include this script in pages that need manual toggle:
+
+   <script>
+   function toggleTheme() {
+     const html = document.documentElement;
+     const current = html.getAttribute('data-theme');
+     const next = current === 'dark' ? 'light' : 'dark';
+     html.setAttribute('data-theme', next);
+     localStorage.setItem('opt-theme', next);
+   }
+
+   // On page load, restore saved preference
+   (function() {
+     const saved = localStorage.getItem('opt-theme');
+     if (saved) {
+       document.documentElement.setAttribute('data-theme', saved);
+     }
+   })();
+   </script>
+   ============================================ */

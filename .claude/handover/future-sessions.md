@@ -112,6 +112,55 @@ Based on the JonStats pedagogical approach (GLMs as the unifying framework, simu
 
 ---
 
+## 6. Unified Theming System (Dark/Light Mode)
+
+**Concept**: Consistent visual styling across all pages with user-respecting dark/light mode toggle.
+
+**Current State**:
+- Tutorial pages use light themes with CSS custom properties in `/docs/css/`
+- Optimisation pages (index, multi-optima, N-R) use light backgrounds
+- MCMC page uses dark background (better for inferno heatmap visualisation)
+- **Inconsistency identified**: Different styling between pages
+
+**Proposed Solution**:
+- Create shared theme CSS file (`/docs/css/themes/optimization.css`)
+- Define CSS custom properties for both light and dark modes
+- Use `prefers-color-scheme` media query to respect user system preferences
+- Add optional toggle switch for manual override
+- Default to light mode if no preference detected
+
+**Key CSS Properties to Standardise**:
+```css
+:root {
+  --bg-primary: #f8f9fa;      /* Page background */
+  --bg-card: #ffffff;          /* Card/panel background */
+  --text-primary: #2c3e50;     /* Main text */
+  --text-secondary: #666;      /* Subtle text */
+  --accent-purple: #9b59b6;    /* Optimisation accent */
+  --border-color: #dee2e6;     /* Borders */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #1a1a2e;
+    --bg-card: #16213e;
+    --text-primary: #e8e8e8;
+    --text-secondary: #a0a0a0;
+    --accent-purple: #bb86fc;
+    --border-color: #333;
+  }
+}
+```
+
+**Implementation Notes**:
+- MCMC page may need special handling - dark theme suits the posterior heatmap
+- Consider page-specific overrides for visualisation-heavy content
+- Groundwork CSS file created at `/docs/css/themes/optimization.css`
+
+**Priority**: Medium - visual polish, not functionality-blocking
+
+---
+
 ## Technical Notes for Future Claude
 
 - All visualisations use standalone HTML with inline CSS/JS (no build step)
@@ -122,6 +171,7 @@ Based on the JonStats pedagogical approach (GLMs as the unifying framework, simu
 - Purple (#9b59b6) is the accent colour for optimisation-related content
 - Tutorial pages link to optimisation section from fitting.html
 - The optimization/ folder contains the progressive 1D → 2D → 3D → 4D visualisations
+- **Theming**: Groundwork for dark/light mode in `/docs/css/themes/optimization.css`
 
 ---
 
