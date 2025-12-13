@@ -384,7 +384,143 @@ export function getStepFunction(algorithm) {
       return stepSimulatedAnnealing;
     case 'random-restart':
       return stepRandomRestarts;
+    case 'mcmc':
+      return stepMCMC;
     default:
       throw new Error(`Unknown algorithm: ${algorithm}`);
   }
+}
+
+// ========================================
+// MCMC (Metropolis-Hastings) Algorithm
+// ========================================
+
+/**
+ * Configuration defaults for MCMC.
+ */
+export const MCMC_DEFAULTS = {
+  proposalSD: 0.03,      // Standard deviation of Gaussian proposal
+  logScale: 5,           // Scale factor for log-posterior
+  useLogPosterior: true, // Whether to use log(elevation) as log-posterior
+};
+
+/**
+ * Box-Muller transform for generating standard normal random variates.
+ * @returns {number} A sample from N(0,1)
+ */
+export function randn() {
+  const u1 = Math.random();
+  const u2 = Math.random();
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+}
+
+/**
+ * Single Metropolis-Hastings MCMC step.
+ * Proposes a new position from a Gaussian centered on current position,
+ * then accepts/rejects based on the Metropolis criterion.
+ *
+ * @param {Object} state - Current chain state {x, y, elevation, ...}
+ * @param {Object} terrainData - Terrain data (unused, kept for interface consistency)
+ * @param {Function} getElev - Function to get elevation at (x, y)
+ * @param {Object} config - Algorithm configuration
+ * @returns {Object} Updated state with acceptance info
+ */
+export function stepMCMC(state, terrainData, getElev, config = {}) {
+  const opts = { ...MCMC_DEFAULTS, ...config };
+
+  const currentElevation = state.elevation;
+
+  // Propose new position using Gaussian random walk
+  const proposedX = state.x + randn() * opts.proposalSD;
+  const proposedY = state.y + randn() * opts.proposalSD;
+
+  // Clamp to valid bounds (slightly inside to avoid edge effects)
+  const clampedX = Math.max(0.01, Math.min(0.99, proposedX));
+  const clampedY = Math.max(0.01, Math.min(0.99, proposedY));
+
+  const proposedElevation = getElev(clampedX, clampedY);
+
+  // Compute acceptance ratio
+  let logAcceptRatio;
+  if (opts.useLogPosterior) {
+    // Use log(elevation) as log-posterior for more realistic MCMC behavior
+    const logProposalPosterior = Math.log(Math.max(1, proposedElevation));
+    const logCurrentPosterior = Math.log(Math.max(1, currentElevation));
+    logAcceptRatio = (logProposalPosterior - logCurrentPosterior) * opts.logScale;
+  } else {
+    // Direct elevation comparison
+    logAcceptRatio = proposedElevation - currentElevation;
+  }
+
+  // Metropolis acceptance criterion
+  const accepted = Math.log(Math.random()) < logAcceptRatio;
+
+  if (accepted) {
+    return {
+      ...state,
+      x: clampedX,
+      y: clampedY,
+      elevation: proposedElevation,
+      iteration: state.iteration + 1,
+      accepted: true,
+      proposedX: clampedX,
+      proposedY: clampedY,
+      proposedElevation,
+      logAcceptRatio,
+    };
+  } else {
+    return {
+      ...state,
+      iteration: state.iteration + 1,
+      accepted: false,
+      proposedX: clampedX,
+      proposedY: clampedY,
+      proposedElevation,
+      logAcceptRatio,
+    };
+  }
+}
+
+/**
+ * Create initial state for an MCMC chain.
+ *
+ * @param {number} x - Starting x coordinate (0-1)
+ * @param {number} y - Starting y coordinate (0-1)
+ * @param {Function} getElev - Function to get elevation
+ * @returns {Object} Initial chain state
+ */
+export function createMCMCChainState(x, y, getElev) {
+  const elevation = getElev(x, y);
+  return {
+    x,
+    y,
+    elevation,
+    iteration: 0,
+    accepted: null,
+  };
+}
+
+/**
+ * Run multiple MCMC chains in parallel for one step.
+ *
+ * @param {Array} chains - Array of chain states
+ * @param {Object} terrainData - Terrain data
+ * @param {Function} getElev - Function to get elevation
+ * @param {Object} config - MCMC configuration
+ * @returns {Object} Updated chains and summary statistics
+ */
+export function stepMCMCChains(chains, terrainData, getElev, config = {}) {
+  let acceptedCount = 0;
+  const newChains = chains.map(chain => {
+    const newState = stepMCMC(chain, terrainData, getElev, config);
+    if (newState.accepted) acceptedCount++;
+    return newState;
+  });
+
+  return {
+    chains: newChains,
+    acceptedCount,
+    proposedCount: chains.length,
+    acceptanceRate: acceptedCount / chains.length,
+  };
 }

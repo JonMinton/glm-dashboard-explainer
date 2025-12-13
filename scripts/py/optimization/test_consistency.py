@@ -12,6 +12,7 @@ from pathlib import Path
 from algorithms import (
     load_terrain,
     run_optimization,
+    run_mcmc_chains,
     OptimizationConfig,
     OptimizationState,
     TerrainFunction,
@@ -168,6 +169,48 @@ def test_random_restarts_finds_better():
     print("  ✓ Random restarts explores effectively")
 
 
+def test_mcmc_acceptance_rate():
+    """Test that MCMC chains have reasonable acceptance rates."""
+    script_dir = Path(__file__).parent
+    terrain_path = script_dir.parent.parent.parent / 'docs' / 'data' / 'arthurs_seat_elevation.json'
+
+    terrain = load_terrain(str(terrain_path))
+
+    print("\nMCMC acceptance rate test:")
+
+    histories, summary = run_mcmc_chains(
+        n_chains=4,
+        terrain=terrain,
+        n_iterations=500,
+        seed=42
+    )
+
+    acceptance_rate = summary['acceptance_rate']
+    print(f"  Chains: {summary['n_chains']}")
+    print(f"  Iterations: {summary['n_iterations']}")
+    print(f"  Acceptance rate: {acceptance_rate:.1%}")
+
+    # Acceptance rate should be reasonable (not too high or too low)
+    # With default proposal SD, typically expect 20-60%
+    assert 0.1 < acceptance_rate < 0.8, f"Acceptance rate {acceptance_rate:.1%} outside expected range"
+    print("  ✓ Acceptance rate in expected range")
+
+    # Check that chains explore different elevations
+    final_elevations = [h[-1]['elevation'] for h in histories]
+    print(f"  Final elevations: {[f'{e:.1f}' for e in final_elevations]}")
+
+    # Chains should have moved from their starting positions
+    for i, history in enumerate(histories):
+        start_x = history[0]['x']
+        start_y = history[0]['y']
+        end_x = history[-1]['x']
+        end_y = history[-1]['y']
+        distance = ((end_x - start_x)**2 + (end_y - start_y)**2)**0.5
+        assert distance > 0.01, f"Chain {i} didn't move enough"
+
+    print("  ✓ Chains explore the space")
+
+
 def generate_test_trajectory_json():
     """Generate test trajectory for JS validation."""
     script_dir = Path(__file__).parent
@@ -221,6 +264,7 @@ if __name__ == '__main__':
     test_algorithm_convergence()
     test_newton_faster_than_gradient()
     test_random_restarts_finds_better()
+    test_mcmc_acceptance_rate()
     generate_test_trajectory_json()
 
     print("\n" + "=" * 50)

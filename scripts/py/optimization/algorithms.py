@@ -38,6 +38,11 @@ class OptimizationConfig:
     rr_max_restarts: int = 5
     rr_max_iter_per_restart: int = 50
 
+    # MCMC (Metropolis-Hastings)
+    mcmc_proposal_sd: float = 0.03
+    mcmc_log_scale: float = 5.0
+    mcmc_use_log_posterior: bool = True
+
 
 @dataclass
 class OptimizationState:
@@ -55,6 +60,7 @@ class OptimizationState:
     restarts: int = 0  # For RR
     step_size: float = 0.0
     gradient_magnitude: float = 0.0
+    accepted: Optional[bool] = None  # For MCMC
 
     def __post_init__(self):
         if self.best_x is None:
@@ -367,6 +373,142 @@ def step_random_restarts(
         state.best_elevation = state.elevation
 
     return state
+
+
+def step_mcmc(
+    state: OptimizationState,
+    terrain: TerrainFunction,
+    config: OptimizationConfig = None,
+    rng: np.random.Generator = None
+) -> OptimizationState:
+    """
+    Single Metropolis-Hastings MCMC step.
+    Proposes a new position from a Gaussian centered on current position,
+    then accepts/rejects based on the Metropolis criterion.
+
+    Unlike optimization algorithms, MCMC doesn't converge to a point -
+    it samples from the posterior distribution proportional to elevation.
+
+    Args:
+        state: Current chain state
+        terrain: Objective function (elevation as posterior)
+        config: Algorithm configuration
+        rng: Random number generator
+
+    Returns:
+        Updated state with acceptance info
+    """
+    if config is None:
+        config = OptimizationConfig()
+    if rng is None:
+        rng = np.random.default_rng()
+
+    current_elevation = state.elevation
+
+    # Propose new position using Gaussian random walk
+    proposed_x = state.x + rng.standard_normal() * config.mcmc_proposal_sd
+    proposed_y = state.y + rng.standard_normal() * config.mcmc_proposal_sd
+
+    # Clamp to valid bounds (slightly inside to avoid edge effects)
+    proposed_x = max(0.01, min(0.99, proposed_x))
+    proposed_y = max(0.01, min(0.99, proposed_y))
+
+    proposed_elevation = terrain(proposed_x, proposed_y)
+
+    # Compute log acceptance ratio
+    if config.mcmc_use_log_posterior:
+        # Use log(elevation) as log-posterior for more realistic MCMC behavior
+        log_proposal_posterior = math.log(max(1, proposed_elevation))
+        log_current_posterior = math.log(max(1, current_elevation))
+        log_accept_ratio = (log_proposal_posterior - log_current_posterior) * config.mcmc_log_scale
+    else:
+        # Direct elevation comparison
+        log_accept_ratio = proposed_elevation - current_elevation
+
+    # Metropolis acceptance criterion
+    accepted = math.log(rng.random()) < log_accept_ratio
+
+    if accepted:
+        state.x = proposed_x
+        state.y = proposed_y
+        state.elevation = proposed_elevation
+
+    state.iteration += 1
+    state.accepted = accepted
+
+    return state
+
+
+def run_mcmc_chains(
+    n_chains: int,
+    terrain: TerrainFunction,
+    n_iterations: int,
+    config: OptimizationConfig = None,
+    seed: int = None,
+    initial_region: Tuple[float, float, float, float] = (0.1, 0.4, 0.1, 0.4)
+) -> Tuple[list, dict]:
+    """
+    Run multiple MCMC chains from random starting points.
+
+    Args:
+        n_chains: Number of parallel chains
+        terrain: Objective function
+        n_iterations: Number of iterations per chain
+        config: Algorithm configuration
+        seed: Random seed for reproducibility
+        initial_region: (x_min, x_max, y_min, y_max) for starting positions
+
+    Returns:
+        Tuple of (chain_histories, summary_stats)
+    """
+    if config is None:
+        config = OptimizationConfig()
+
+    rng = np.random.default_rng(seed)
+
+    x_min, x_max, y_min, y_max = initial_region
+
+    # Initialize chains
+    chains = []
+    for _ in range(n_chains):
+        x0 = x_min + rng.random() * (x_max - x_min)
+        y0 = y_min + rng.random() * (y_max - y_min)
+        state = OptimizationState(
+            x=x0,
+            y=y0,
+            elevation=terrain(x0, y0)
+        )
+        chains.append(state)
+
+    # Run chains
+    histories = [[] for _ in range(n_chains)]
+    total_accepted = 0
+    total_proposed = 0
+
+    for _ in range(n_iterations):
+        for i, chain in enumerate(chains):
+            import copy
+            chains[i] = copy.deepcopy(chain)
+            chains[i] = step_mcmc(chains[i], terrain, config, rng)
+            histories[i].append({
+                'x': chains[i].x,
+                'y': chains[i].y,
+                'elevation': chains[i].elevation,
+                'accepted': chains[i].accepted
+            })
+            if chains[i].accepted:
+                total_accepted += 1
+            total_proposed += 1
+
+    summary = {
+        'n_chains': n_chains,
+        'n_iterations': n_iterations,
+        'total_accepted': total_accepted,
+        'total_proposed': total_proposed,
+        'acceptance_rate': total_accepted / total_proposed if total_proposed > 0 else 0,
+    }
+
+    return histories, summary
 
 
 def run_optimization(
