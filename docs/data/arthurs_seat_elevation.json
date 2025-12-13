@@ -2625,5 +2625,25 @@
     "min": 14.8,
     "max": 239.3,
     "mean": 61.3
-  }
+  },
+  "peaks": [
+    {
+      "name": "Arthur's Seat",
+      "lat": 55.949358,
+      "lon": -3.160468,
+      "elevation": 239.3
+    },
+    {
+      "name": "Crow Hill",
+      "lat": 55.94508,
+      "lon": -3.155551,
+      "elevation": 175.2
+    },
+    {
+      "name": "Whinny Hill",
+      "lat": 55.947457,
+      "lon": -3.149816,
+      "elevation": 139.9
+    }
+  ]
 }

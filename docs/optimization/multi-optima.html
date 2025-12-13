@@ -437,6 +437,37 @@
       text-decoration: none;
     }
 
+    /* Tutorial labels */
+    .tutorial-label {
+      font-size: 12px;
+      font-weight: 600;
+      pointer-events: none;
+    }
+
+    .tutorial-label-bg {
+      fill: white;
+      opacity: 0.9;
+      rx: 4;
+    }
+
+    .tutorial-label.position-label text {
+      fill: #2c3e50;
+    }
+
+    .tutorial-label.false-peak-label text {
+      fill: #c0392b;
+    }
+
+    .tutorial-label.true-peak-label text {
+      fill: #27ae60;
+    }
+
+    .tutorial-connector {
+      stroke-dasharray: 3,3;
+      stroke-width: 1.5;
+      fill: none;
+    }
+
     /* Hidden ant easter egg - position set randomly by JS */
     .ant-easter-egg {
       position: fixed;
@@ -644,6 +675,11 @@
         <div class="control-group" style="margin-left: auto;">
           <label>
             <input type="checkbox" id="show-gradient" checked> Show gradient
+          </label>
+        </div>
+        <div class="control-group">
+          <label>
+            <input type="checkbox" id="tutorial-mode"> Tutorial labels
           </label>
         </div>
       </div>
@@ -872,10 +908,16 @@
       lonScale = d3.scaleLinear().domain([data.bounds.west, data.bounds.east]).range([0, plotWidth]);
       latScale = d3.scaleLinear().domain([data.bounds.south, data.bounds.north]).range([plotHeight, 0]);
 
-      // Contours
+      // Contours - use actual data range
+      const minElev = data.stats.min;
+      const maxElev = data.stats.max;
+      const contourStep = 15;
+      const contourStart = Math.floor(minElev / contourStep) * contourStep;
+      const contourEnd = Math.ceil(maxElev / contourStep) * contourStep + contourStep;
+
       const contours = d3.contours()
         .size([cols, rows])
-        .thresholds(d3.range(30, 280, 15));
+        .thresholds(d3.range(contourStart, contourEnd, contourStep));
 
       const contourData = contours(elevations);
 
@@ -899,9 +941,12 @@
         .attr('stroke-opacity', 0.3);
 
       // Major contour lines
+      const majorStep = 50;
+      const majorStart = Math.ceil(minElev / majorStep) * majorStep;
+      const majorEnd = Math.ceil(maxElev / majorStep) * majorStep + majorStep;
       const majorContours = d3.contours()
         .size([cols, rows])
-        .thresholds(d3.range(50, 280, 50))(elevations);
+        .thresholds(d3.range(majorStart, majorEnd, majorStep))(elevations);
 
       g.selectAll('path.contour-line')
         .data(majorContours)
@@ -997,27 +1042,29 @@
       const legend = d3.select('#legend');
       legend.html('');
 
-      const levels = [30, 80, 130, 180, 230, 260];
+      // Use actual data range for legend
+      if (!elevationData) return;
+      const minElev = elevationData.stats.min;
+      const maxElev = elevationData.stats.max;
+
+      // Generate ~6 evenly spaced levels within the actual range
+      const step = 50;
+      const start = Math.floor(minElev / step) * step;
+      const levels = [];
+      for (let level = start; level <= maxElev; level += step) {
+        levels.push(level);
+      }
+      // Ensure we include max
+      if (levels[levels.length - 1] < maxElev - 10) {
+        levels.push(Math.round(maxElev));
+      }
+
       levels.forEach(level => {
         const item = legend.append('div').attr('class', 'legend-item');
         item.append('div')
           .attr('class', 'legend-swatch')
           .style('background-color', colorScale(level));
         item.append('span').text(`${level}m`);
-      });
-
-      // Add markers legend
-      const markerLegend = [
-        { color: '#c0392b', label: 'Peak' },
-        { color: '#e67e22', label: 'Soldier path' },
-        { color: '#1abc9c', label: 'Scout path' }
-      ];
-      markerLegend.forEach(m => {
-        const item = legend.append('div').attr('class', 'legend-item');
-        item.append('div')
-          .attr('class', 'legend-marker')
-          .style('background-color', m.color);
-        item.append('span').text(m.label);
       });
     }
 
@@ -1123,7 +1170,7 @@
 
       if (magnitude < 0.5) {
         currentState.converged = true;
-        const foundGlobal = currentState.elevation > 255;
+        const foundGlobal = currentState.elevation > elevationData.stats.max - 5;
         addTrace(
           `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
           foundGlobal ? 'success' : 'stuck',
@@ -1151,13 +1198,15 @@
 
     function stepNewton() {
       // Newton-Raphson uses second derivatives for faster convergence
+      // Step size naturally decreases as gradient -> 0 near optimum
       const h = 0.01;
       const grad = getGradient(currentState.x, currentState.y, h);
       const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
 
-      if (magnitude < 0.5) {
+      // Convergence check - gradient near zero
+      if (magnitude < 0.3) {
         currentState.converged = true;
-        const foundGlobal = currentState.elevation > 255;
+        const foundGlobal = currentState.elevation > elevationData.stats.max - 5;
         addTrace(
           `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
           foundGlobal ? 'success' : 'stuck',
@@ -1171,37 +1220,47 @@
       const f_yy = (getElevation(currentState.x, currentState.y + h) - 2 * currentState.elevation + getElevation(currentState.x, currentState.y - h)) / (h * h);
 
       // Newton step for MAXIMISATION: step = -H^{-1} * grad
-      // For a maximum, Hessian is negative definite, so -1/f_xx is positive
-      // We move in the direction of the gradient, scaled by curvature
-      // Using abs() and checking sign to ensure we ascend
+      // For a maximum, Hessian is negative definite
+      // The step naturally shrinks as grad -> 0 near optimum
       let stepX, stepY;
-      if (f_xx < 0 && Math.abs(f_xx) > 0.01) {
-        // Near a maximum - use Newton step (negative Hessian -> positive step direction)
-        stepX = -grad.dx / f_xx * 0.5;
+
+      // Use Newton step when Hessian is well-conditioned (negative definite for max)
+      if (f_xx < -0.1) {
+        // Newton step: -grad/H (H is negative, so this moves uphill)
+        stepX = -grad.dx / f_xx;
       } else {
-        // Flat or convex region - fall back to gradient ascent
-        stepX = grad.dx * 0.003;
-      }
-      if (f_yy < 0 && Math.abs(f_yy) > 0.01) {
-        stepY = -grad.dy / f_yy * 0.5;
-      } else {
-        stepY = grad.dy * 0.003;
+        // Ill-conditioned: fall back to gradient ascent with adaptive step
+        stepX = grad.dx * 0.005;
       }
 
-      // Limit step size to prevent overshooting
-      const maxStep = 0.05;
+      if (f_yy < -0.1) {
+        stepY = -grad.dy / f_yy;
+      } else {
+        stepY = grad.dy * 0.005;
+      }
+
+      // Damping factor to prevent overshooting (line search approximation)
+      const damping = 0.5;
+      stepX *= damping;
+      stepY *= damping;
+
+      // Safety clamp for extreme steps
+      const maxStep = 0.08;
       stepX = Math.max(-maxStep, Math.min(maxStep, stepX));
       stepY = Math.max(-maxStep, Math.min(maxStep, stepY));
 
       const newX = Math.max(0, Math.min(1, currentState.x + stepX));
       const newY = Math.max(0, Math.min(1, currentState.y + stepY));
 
+      // Compute actual step size for logging
+      const actualStep = Math.sqrt(stepX*stepX + stepY*stepY);
+
       currentState.x = newX;
       currentState.y = newY;
       currentState.elevation = getElevation(newX, newY);
       currentState.path.push({ x: newX, y: newY });
 
-      addTrace(`Newton step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m`, 'info', 'soldier');
+      addTrace(`Newton step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m (step=${actualStep.toFixed(4)})`, 'info', 'soldier');
     }
 
     function stepRandomRestart() {
@@ -1221,7 +1280,7 @@
 
         if (currentState.restarts >= maxRestarts) {
           currentState.converged = true;
-          const foundGlobal = currentState.bestElevation > 255;
+          const foundGlobal = currentState.bestElevation > elevationData.stats.max - 5;
           addTrace(
             `Best of ${maxRestarts} restarts: ${currentState.bestElevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
             foundGlobal ? 'success' : 'stuck',
@@ -1421,10 +1480,137 @@
           .attr('stroke', '#333')
           .attr('stroke-width', 2);
       }
+
+      // Draw tutorial labels if enabled
+      drawTutorialLabels();
     }
 
     function addTrace(text, type, mindset) {
       traceLog.push({ text, type, mindset });
+    }
+
+    function drawTutorialLabels() {
+      // Remove existing tutorial labels
+      g.selectAll('.tutorial-label').remove();
+      g.selectAll('.tutorial-connector').remove();
+
+      if (!document.getElementById('tutorial-mode').checked) return;
+      if (!elevationData || !elevationData.peaks) return;
+
+      const peaks = elevationData.peaks;
+      const globalMax = Math.max(...peaks.map(p => p.elevation));
+
+      // A) Algorithm current position
+      if (currentState) {
+        const posX = currentState.x * plotWidth;
+        const posY = (1 - currentState.y) * plotHeight;
+
+        // Position label above and to the right
+        const labelX = Math.min(posX + 15, plotWidth - 100);
+        const labelY = Math.max(posY - 25, 25);
+
+        const posGroup = g.append('g')
+          .attr('class', 'tutorial-label position-label');
+
+        // Connector line
+        g.append('path')
+          .attr('class', 'tutorial-connector')
+          .attr('d', `M${posX},${posY} L${labelX},${labelY + 8}`)
+          .attr('stroke', '#2c3e50');
+
+        // Background
+        posGroup.append('rect')
+          .attr('class', 'tutorial-label-bg')
+          .attr('x', labelX - 4)
+          .attr('y', labelY - 12)
+          .attr('width', 135)
+          .attr('height', 20);
+
+        // Text
+        posGroup.append('text')
+          .attr('x', labelX)
+          .attr('y', labelY)
+          .text('A) Algorithm position');
+      }
+
+      // Separate peaks into global max and false peaks
+      const globalPeak = peaks.find(p => p.elevation === globalMax);
+      const falsePeaks = peaks.filter(p => p.elevation !== globalMax);
+
+      // B) False Peaks - single label with arrows to all local optima
+      if (falsePeaks.length > 0) {
+        // Position label to the right and below the false peaks
+        const avgX = falsePeaks.reduce((sum, p) => sum + lonScale(p.lon), 0) / falsePeaks.length;
+        const maxY = Math.max(...falsePeaks.map(p => latScale(p.lat)));
+
+        const labelX = Math.min(avgX + 60, plotWidth - 140);
+        const labelY = Math.min(maxY + 50, plotHeight - 15);
+        const labelWidth = 138;
+
+        // Draw connector lines to each false peak
+        falsePeaks.forEach(peak => {
+          const peakX = lonScale(peak.lon);
+          const peakY = latScale(peak.lat);
+
+          g.append('path')
+            .attr('class', 'tutorial-connector')
+            .attr('d', `M${peakX},${peakY} L${labelX + labelWidth/2},${labelY - 8}`)
+            .attr('stroke', '#c0392b');
+        });
+
+        const falsePeakGroup = g.append('g')
+          .attr('class', 'tutorial-label false-peak-label');
+
+        // Background
+        falsePeakGroup.append('rect')
+          .attr('class', 'tutorial-label-bg')
+          .attr('x', labelX - 4)
+          .attr('y', labelY - 12)
+          .attr('width', labelWidth)
+          .attr('height', 20);
+
+        // Text
+        falsePeakGroup.append('text')
+          .attr('x', labelX)
+          .attr('y', labelY)
+          .attr('fill', '#c0392b')
+          .text('B) False Peaks (local)');
+      }
+
+      // C) True Peak (global optimum)
+      if (globalPeak) {
+        const peakX = lonScale(globalPeak.lon);
+        const peakY = latScale(globalPeak.lat);
+
+        // Label to the left of the peak
+        const labelX = Math.max(peakX - 125, 5);
+        const labelY = Math.max(peakY - 20, 25);
+        const labelWidth = 145;
+
+        // Connector line
+        g.append('path')
+          .attr('class', 'tutorial-connector')
+          .attr('d', `M${peakX},${peakY} L${labelX + labelWidth - 5},${labelY + 5}`)
+          .attr('stroke', '#27ae60');
+
+        const truePeakGroup = g.append('g')
+          .attr('class', 'tutorial-label true-peak-label');
+
+        // Background
+        truePeakGroup.append('rect')
+          .attr('class', 'tutorial-label-bg')
+          .attr('x', labelX - 4)
+          .attr('y', labelY - 12)
+          .attr('width', labelWidth)
+          .attr('height', 20);
+
+        // Text
+        truePeakGroup.append('text')
+          .attr('x', labelX)
+          .attr('y', labelY)
+          .attr('fill', '#27ae60')
+          .text('C) True Peak (global)');
+      }
     }
 
     // Arrow marker for gradient
@@ -1459,6 +1645,10 @@
     document.getElementById('algorithm-select').addEventListener('change', (e) => {
       currentState.algorithm = e.target.value;
       resetState();
+    });
+
+    document.getElementById('tutorial-mode').addEventListener('change', () => {
+      drawTutorialLabels();
     });
 
     // Initialize KaTeX
