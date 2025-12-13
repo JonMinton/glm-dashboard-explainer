@@ -1,1 +1,4 @@
 /.quarto/
+data/raw-geo/
+__pycache__/
+*.pyc

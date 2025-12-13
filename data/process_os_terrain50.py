@@ -117,16 +117,29 @@ def parse_asc_file(filepath):
         dict with keys: ncols, nrows, xllcorner, yllcorner, cellsize, nodata_value, data
     """
     with open(filepath, 'r') as f:
-        # Read header
+        # Read header - variable number of lines (5 or 6 typically)
         header = {}
-        for _ in range(6):
+        while True:
+            pos = f.tell()
             line = f.readline().strip()
-            key, value = line.split()
-            key = key.lower()
-            if key in ('ncols', 'nrows'):
-                header[key] = int(value)
+            parts = line.split()
+
+            # Check if this looks like a header line (key value pair)
+            if len(parts) == 2 and parts[0].replace('_', '').isalpha():
+                key = parts[0].lower()
+                value = parts[1]
+                if key in ('ncols', 'nrows'):
+                    header[key] = int(value)
+                else:
+                    header[key] = float(value)
             else:
-                header[key] = float(value)
+                # Not a header line, seek back and break
+                f.seek(pos)
+                break
+
+        # Set default nodata if not present
+        if 'nodata_value' not in header:
+            header['nodata_value'] = -9999
 
         # Read elevation data
         data = []
