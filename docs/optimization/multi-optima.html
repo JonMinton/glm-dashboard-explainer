@@ -851,7 +851,22 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    // Import shared optimization modules
+    import {
+      getElevation as getElevationShared,
+      getGradient as getGradientShared,
+      gradientMagnitude
+    } from '../js/optimization/terrain.js';
+    import {
+      stepGradientAscent,
+      stepNewtonRaphson,
+      stepSimulatedAnnealing,
+      stepRandomRestarts,
+      createInitialState,
+      getStepFunction
+    } from '../js/optimization/algorithms.js';
+
     // Load elevation data and render
     let elevationData = null;
     let currentState = null;
@@ -1068,46 +1083,30 @@
       });
     }
 
+    // Wrapper functions using shared modules
     function getElevation(x, y) {
-      // x, y are normalized 0-1
-      if (!elevationData) return 0;
-      const col = Math.floor(x * (elevationData.grid.cols - 1));
-      const row = Math.floor(y * (elevationData.grid.rows - 1));
-      const clampedRow = Math.max(0, Math.min(row, elevationData.grid.rows - 1));
-      const clampedCol = Math.max(0, Math.min(col, elevationData.grid.cols - 1));
-      return elevationData.elevations[clampedRow][clampedCol];
+      return getElevationShared(elevationData, x, y);
     }
 
     function getGradient(x, y, h = 0.01) {
-      const dx = (getElevation(x + h, y) - getElevation(x - h, y)) / (2 * h);
-      const dy = (getElevation(x, y + h) - getElevation(x, y - h)) / (2 * h);
-      return { dx, dy };
+      return getGradientShared(elevationData, x, y, h);
     }
 
     function resetState() {
       if (animationId) {
-        cancelAnimationFrame(animationId);
+        clearTimeout(animationId);
         animationId = null;
       }
 
       // Random starting position (biased toward lower areas to make it interesting)
       const startX = 0.15 + Math.random() * 0.3;
       const startY = 0.2 + Math.random() * 0.3;
+      const algorithm = document.getElementById('algorithm-select').value;
 
-      currentState = {
-        x: startX,
-        y: startY,
-        elevation: getElevation(startX, startY),
-        iteration: 0,
-        bestElevation: getElevation(startX, startY),
-        bestX: startX,
-        bestY: startY,
-        path: [{ x: startX, y: startY }],
-        temperature: 1.0, // For simulated annealing
-        restarts: 0,
-        converged: false,
-        algorithm: document.getElementById('algorithm-select').value
-      };
+      // Use shared module to create initial state
+      currentState = createInitialState(startX, startY, getElevation, algorithm);
+      // Add path tracking (UI-specific, not in shared module)
+      currentState.path = [{ x: startX, y: startY }];
 
       traceLog = [];
       addTrace(`Starting at elevation ${currentState.elevation.toFixed(1)}m`, 'info');
@@ -1117,15 +1116,11 @@
     }
 
     function setStartPosition(x, y) {
-      currentState.x = x;
-      currentState.y = y;
-      currentState.elevation = getElevation(x, y);
+      const algorithm = currentState.algorithm;
+
+      // Use shared module to create initial state at new position
+      currentState = createInitialState(x, y, getElevation, algorithm);
       currentState.path = [{ x, y }];
-      currentState.bestElevation = currentState.elevation;
-      currentState.bestX = x;
-      currentState.bestY = y;
-      currentState.iteration = 0;
-      currentState.converged = false;
 
       traceLog = [];
       addTrace(`New start: elevation ${currentState.elevation.toFixed(1)}m`, 'info');
@@ -1139,227 +1134,80 @@
 
       const algo = currentState.algorithm;
       const isSoldier = algo === 'gradient' || algo === 'newton';
+      const mindset = isSoldier ? 'soldier' : 'scout';
 
-      if (algo === 'gradient') {
-        stepGradient();
-      } else if (algo === 'newton') {
-        stepNewton();
-      } else if (algo === 'random-restart') {
-        stepRandomRestart();
-      } else if (algo === 'annealing') {
-        stepAnnealing();
+      // Store previous position for path tracking
+      const prevX = currentState.x;
+      const prevY = currentState.y;
+      const prevRestarts = currentState.restarts || 0;
+
+      // Get the step function and execute
+      const stepFn = getStepFunction(algo);
+      const newState = stepFn(currentState, elevationData, getElevation);
+
+      // Update current state
+      Object.assign(currentState, newState);
+
+      // Track path (detect restarts for random restart algorithm)
+      if (currentState.newRestart) {
+        currentState.path.push({ x: currentState.x, y: currentState.y, restart: true });
+      } else if (currentState.x !== prevX || currentState.y !== prevY) {
+        currentState.path.push({ x: currentState.x, y: currentState.y });
       }
 
-      currentState.iteration++;
-
-      // Update best
-      if (currentState.elevation > currentState.bestElevation) {
-        currentState.bestElevation = currentState.elevation;
-        currentState.bestX = currentState.x;
-        currentState.bestY = currentState.y;
-      }
+      // Generate trace messages based on algorithm and state
+      generateTraceMessage(algo, mindset, prevRestarts);
 
       updateDisplay();
       drawState();
     }
 
-    function stepGradient() {
-      const stepSize = 0.008; // Fixed step size in normalised coordinates
-      const grad = getGradient(currentState.x, currentState.y);
-      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+    // Generate appropriate trace messages for the algorithm trace display
+    function generateTraceMessage(algo, mindset, prevRestarts) {
+      const foundGlobal = currentState.elevation > elevationData.stats.max - 5;
+      const bestFoundGlobal = currentState.bestElevation > elevationData.stats.max - 5;
 
-      if (magnitude < 0.5) {
-        currentState.converged = true;
-        const foundGlobal = currentState.elevation > elevationData.stats.max - 5;
-        addTrace(
-          `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
-          foundGlobal ? 'success' : 'stuck',
-          'soldier'
-        );
-        return;
-      }
-
-      // Normalise step to have consistent speed regardless of gradient magnitude
-      const stepX = (grad.dx / magnitude) * stepSize;
-      const stepY = (grad.dy / magnitude) * stepSize;
-
-      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
-      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
-
-      currentState.x = newX;
-      currentState.y = newY;
-      currentState.elevation = getElevation(newX, newY);
-      currentState.path.push({ x: newX, y: newY });
-
-      if (currentState.iteration % 10 === 0) {
-        addTrace(`Step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m`, 'info', 'soldier');
-      }
-    }
-
-    function stepNewton() {
-      // Newton-Raphson uses second derivatives for faster convergence
-      // Step size naturally decreases as gradient -> 0 near optimum
-      const h = 0.01;
-      const grad = getGradient(currentState.x, currentState.y, h);
-      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
-
-      // Convergence check - gradient near zero
-      if (magnitude < 0.3) {
-        currentState.converged = true;
-        const foundGlobal = currentState.elevation > elevationData.stats.max - 5;
-        addTrace(
-          `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
-          foundGlobal ? 'success' : 'stuck',
-          'soldier'
-        );
-        return;
-      }
-
-      // Approximate Hessian (second derivatives)
-      const f_xx = (getElevation(currentState.x + h, currentState.y) - 2 * currentState.elevation + getElevation(currentState.x - h, currentState.y)) / (h * h);
-      const f_yy = (getElevation(currentState.x, currentState.y + h) - 2 * currentState.elevation + getElevation(currentState.x, currentState.y - h)) / (h * h);
-
-      // Newton step for MAXIMISATION: step = -H^{-1} * grad
-      // For a maximum, Hessian is negative definite
-      // The step naturally shrinks as grad -> 0 near optimum
-      let stepX, stepY;
-
-      // Use Newton step when Hessian is well-conditioned (negative definite for max)
-      if (f_xx < -0.1) {
-        // Newton step: -grad/H (H is negative, so this moves uphill)
-        stepX = -grad.dx / f_xx;
-      } else {
-        // Ill-conditioned: fall back to gradient ascent with adaptive step
-        stepX = grad.dx * 0.005;
-      }
-
-      if (f_yy < -0.1) {
-        stepY = -grad.dy / f_yy;
-      } else {
-        stepY = grad.dy * 0.005;
-      }
-
-      // Damping factor to prevent overshooting (line search approximation)
-      const damping = 0.5;
-      stepX *= damping;
-      stepY *= damping;
-
-      // Safety clamp for extreme steps
-      const maxStep = 0.08;
-      stepX = Math.max(-maxStep, Math.min(maxStep, stepX));
-      stepY = Math.max(-maxStep, Math.min(maxStep, stepY));
-
-      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
-      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
-
-      // Compute actual step size for logging
-      const actualStep = Math.sqrt(stepX*stepX + stepY*stepY);
-
-      currentState.x = newX;
-      currentState.y = newY;
-      currentState.elevation = getElevation(newX, newY);
-      currentState.path.push({ x: newX, y: newY });
-
-      addTrace(`Newton step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m (step=${actualStep.toFixed(4)})`, 'info', 'soldier');
-    }
-
-    function stepRandomRestart() {
-      const maxIterPerRestart = 50;
-      const maxRestarts = 5;
-
-      // Check if current restart has converged
-      const grad = getGradient(currentState.x, currentState.y);
-      const magnitude = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
-      const localIteration = currentState.iteration - currentState.restarts * maxIterPerRestart;
-
-      if (magnitude < 0.5 || localIteration >= maxIterPerRestart) {
-        // Current restart done
-        addTrace(`Restart ${currentState.restarts + 1}: found ${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
-
-        currentState.restarts++;
-
-        if (currentState.restarts >= maxRestarts) {
-          currentState.converged = true;
-          const foundGlobal = currentState.bestElevation > elevationData.stats.max - 5;
+      if (currentState.converged) {
+        if (algo === 'random-restart') {
           addTrace(
-            `Best of ${maxRestarts} restarts: ${currentState.bestElevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
-            foundGlobal ? 'success' : 'stuck',
-            'scout'
+            `Best of 5 restarts: ${currentState.bestElevation.toFixed(1)}m ${bestFoundGlobal ? '(Global!)' : '(Local)'}`,
+            bestFoundGlobal ? 'success' : 'stuck',
+            mindset
           );
-          // Move to best position
-          currentState.x = currentState.bestX;
-          currentState.y = currentState.bestY;
-          currentState.elevation = currentState.bestElevation;
-          return;
+        } else if (algo === 'annealing') {
+          addTrace(
+            `Cooled to ${currentState.bestElevation.toFixed(1)}m ${bestFoundGlobal ? '(Global!)' : '(Local)'}`,
+            bestFoundGlobal ? 'success' : 'stuck',
+            mindset
+          );
+        } else {
+          addTrace(
+            `Converged at ${currentState.elevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
+            foundGlobal ? 'success' : 'stuck',
+            mindset
+          );
         }
-
-        // New random start
-        const newX = Math.random();
-        const newY = Math.random();
-        currentState.x = newX;
-        currentState.y = newY;
-        currentState.elevation = getElevation(newX, newY);
-        currentState.path.push({ x: newX, y: newY, restart: true });
-        addTrace(`New start at ${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
         return;
       }
 
-      // Gradient step within current restart (normalised for consistent speed)
-      const stepSize = 0.008;
-      const stepX = (grad.dx / magnitude) * stepSize;
-      const stepY = (grad.dy / magnitude) * stepSize;
-      const newX = Math.max(0, Math.min(1, currentState.x + stepX));
-      const newY = Math.max(0, Math.min(1, currentState.y + stepY));
-
-      currentState.x = newX;
-      currentState.y = newY;
-      currentState.elevation = getElevation(newX, newY);
-      currentState.path.push({ x: newX, y: newY });
-    }
-
-    function stepAnnealing() {
-      const coolingRate = 0.995;
-      const minTemp = 0.01;
-
-      if (currentState.temperature < minTemp) {
-        currentState.converged = true;
-        const foundGlobal = currentState.bestElevation > 255;
-        addTrace(
-          `Cooled to ${currentState.bestElevation.toFixed(1)}m ${foundGlobal ? '(Global!)' : '(Local)'}`,
-          foundGlobal ? 'success' : 'stuck',
-          'scout'
-        );
-        currentState.x = currentState.bestX;
-        currentState.y = currentState.bestY;
-        currentState.elevation = currentState.bestElevation;
-        return;
-      }
-
-      // Propose random move (larger at high temp)
-      const stepSize = 0.05 * currentState.temperature;
-      const proposedX = Math.max(0, Math.min(1, currentState.x + (Math.random() - 0.5) * stepSize));
-      const proposedY = Math.max(0, Math.min(1, currentState.y + (Math.random() - 0.5) * stepSize));
-      const proposedElev = getElevation(proposedX, proposedY);
-
-      // Accept if better, or with probability based on temperature
-      const delta = proposedElev - currentState.elevation;
-      const acceptProb = delta > 0 ? 1 : Math.exp(delta / (currentState.temperature * 50));
-
-      if (Math.random() < acceptProb) {
-        currentState.x = proposedX;
-        currentState.y = proposedY;
-        currentState.elevation = proposedElev;
-        currentState.path.push({ x: proposedX, y: proposedY });
-
-        if (delta < 0 && currentState.iteration % 20 === 0) {
-          addTrace(`Accepted downhill move (T=${currentState.temperature.toFixed(3)})`, 'info', 'scout');
+      // Algorithm-specific progress messages
+      if (algo === 'gradient' && currentState.iteration % 10 === 0) {
+        addTrace(`Step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m`, 'info', mindset);
+      } else if (algo === 'newton') {
+        const stepSize = currentState.stepSize || 0;
+        addTrace(`Newton step ${currentState.iteration}: ${currentState.elevation.toFixed(1)}m (step=${stepSize.toFixed(4)})`, 'info', mindset);
+      } else if (algo === 'random-restart') {
+        if (currentState.newRestart) {
+          addTrace(`New start at ${currentState.elevation.toFixed(1)}m`, 'info', mindset);
+        } else if (currentState.restarts > prevRestarts) {
+          addTrace(`Restart ${currentState.restarts}: found ${currentState.elevation.toFixed(1)}m`, 'info', mindset);
         }
-      }
-
-      currentState.temperature *= coolingRate;
-
-      if (currentState.iteration % 50 === 0) {
-        addTrace(`T=${currentState.temperature.toFixed(3)}, elev=${currentState.elevation.toFixed(1)}m`, 'info', 'scout');
+      } else if (algo === 'annealing') {
+        if (currentState.delta < 0 && currentState.accepted && currentState.iteration % 20 === 0) {
+          addTrace(`Accepted downhill move (T=${currentState.temperature.toFixed(3)})`, 'info', mindset);
+        } else if (currentState.iteration % 50 === 0) {
+          addTrace(`T=${currentState.temperature.toFixed(3)}, elev=${currentState.elevation.toFixed(1)}m`, 'info', mindset);
+        }
       }
     }
 
