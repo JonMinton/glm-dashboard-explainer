@@ -561,7 +561,18 @@
     </footer>
   </div>
 
-  <script>
+  <script type="module">
+    // Import shared optimization modules
+    import {
+      getElevation as getElevationShared
+    } from '../js/optimization/terrain.js';
+    import {
+      stepMCMC,
+      createMCMCChainState,
+      randn,
+      MCMC_DEFAULTS
+    } from '../js/optimization/algorithms.js';
+
     // ========================================
     // Initialize KaTeX
     // ========================================
@@ -665,20 +676,10 @@
     }
 
     // ========================================
-    // Get elevation at normalized coordinates
+    // Get elevation at normalized coordinates (wrapper for shared module)
     // ========================================
     function getElevation(x, y) {
-      if (!terrainData) return 0;
-
-      const col = Math.floor(x * (terrainData.grid.cols - 1));
-      const row = Math.floor(y * (terrainData.grid.rows - 1));
-
-      if (row < 0 || row >= terrainData.grid.rows ||
-          col < 0 || col >= terrainData.grid.cols) {
-        return 0;
-      }
-
-      return terrainData.elevations[row][col];
+      return getElevationShared(terrainData, x, y);
     }
 
     // ========================================
@@ -715,60 +716,50 @@
       proposedCount = 0;
     }
 
-    // ========================================
-    // Box-Muller for normal random
-    // ========================================
-    function randn() {
-      const u1 = Math.random();
-      const u2 = Math.random();
-      return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-    }
+    // randn() is imported from shared algorithms.js module
 
     // ========================================
-    // Metropolis-Hastings step
+    // Metropolis-Hastings step (using shared module)
     // ========================================
     function mcmcStep() {
-      for (let i = 0; i < NUM_CHAINS; i++) {
-        const current = chains[i];
-        const currentElevation = getElevation(current.x, current.y);
+      // Configure MCMC with current proposalSD
+      const mcmcConfig = {
+        proposalSD: proposalSD,
+        logScale: MCMC_DEFAULTS.logScale,
+        useLogPosterior: MCMC_DEFAULTS.useLogPosterior
+      };
 
-        // Propose new position
-        const proposal = {
-          x: current.x + randn() * proposalSD,
-          y: current.y + randn() * proposalSD
+      for (let i = 0; i < NUM_CHAINS; i++) {
+        // Convert chain position to state format expected by shared module
+        const currentState = {
+          x: chains[i].x,
+          y: chains[i].y,
+          elevation: getElevation(chains[i].x, chains[i].y),
+          iteration: iteration
         };
 
-        // Clamp proposal
-        proposal.x = Math.max(0.01, Math.min(0.99, proposal.x));
-        proposal.y = Math.max(0.01, Math.min(0.99, proposal.y));
-
-        const proposalElevation = getElevation(proposal.x, proposal.y);
+        // Use shared stepMCMC function
+        const newState = stepMCMC(currentState, terrainData, getElevation, mcmcConfig);
         proposedCount++;
 
-        // Accept/reject using log(elevation) as log-posterior
-        // This creates more realistic MCMC behaviour with clearer burn-in
-        // and convergence patterns in traceplots
-        const logProposalPosterior = Math.log(Math.max(1, proposalElevation));
-        const logCurrentPosterior = Math.log(Math.max(1, currentElevation));
-        const logAcceptRatio = (logProposalPosterior - logCurrentPosterior) * 5; // Scale factor for log
+        // Update chain position
+        chains[i] = { x: newState.x, y: newState.y };
 
-        if (Math.log(Math.random()) < logAcceptRatio) {
-          // Accept
-          chains[i] = proposal;
+        if (newState.accepted) {
           acceptedCount++;
         }
 
         // Record history (store log-elevation for traceplots)
-        const finalPos = chains[i];
-        const finalElevation = getElevation(finalPos.x, finalPos.y);
+        const finalElevation = getElevation(chains[i].x, chains[i].y);
         chainHistories[i].push({
-          ...finalPos,
+          x: chains[i].x,
+          y: chains[i].y,
           elevation: Math.log(Math.max(1, finalElevation))
         });
 
         // Update visit counts
-        const col = Math.floor(finalPos.x * (terrainData.grid.cols - 1));
-        const row = Math.floor(finalPos.y * (terrainData.grid.rows - 1));
+        const col = Math.floor(chains[i].x * (terrainData.grid.cols - 1));
+        const row = Math.floor(chains[i].y * (terrainData.grid.rows - 1));
         if (row >= 0 && row < terrainData.grid.rows &&
             col >= 0 && col < terrainData.grid.cols) {
           visitCounts[row][col]++;
