@@ -47,13 +47,16 @@ Where:
 
 ## Tech Stack
 
-**Primary**: Quarto site (consistent with JonStats workflow)
+**Primary**: Standalone HTML files with vanilla JavaScript
 
-- **Structure**: Quarto pages with guided navigation
-- **Code examples**: R and Python for follow-along exercises
-- **Interactive visualizations**: Observable JS for simpler interactions, React/custom JS for complex components (flow diagram, parameter sliders)
-- **Hosting**: GitHub Pages (static site)
-- **GLM fitting**: Pre-computed in R during build, or WebR for in-browser computation where needed
+- **Structure**: Static HTML pages served from `docs/` directory
+- **Code examples**: R and Python for follow-along exercises (tabbed display)
+- **Interactive visualisations**: Canvas API, D3.js, Plotly.js - all vanilla JS (no build step)
+- **Math rendering**: KaTeX (CDN-based)
+- **Hosting**: GitHub Pages (static site from `docs/` folder)
+- **No build step**: All HTML files are self-contained with inline CSS/JS
+
+*Note: The project originally planned to use Quarto but moved to standalone HTML for simplicity and faster iteration. Quarto files have been removed.*
 
 ## Tutorial Series (Current Focus)
 
@@ -99,9 +102,10 @@ Each tutorial follows a 6-page flow:
 
 ### Key Technical Decisions
 - **KaTeX** for LaTeX math rendering (CDN-based)
-- **Standalone HTML** prototypes (no Quarto yet)
+- **Standalone HTML** files (no build step required)
 - **Tabbed R/Python** code panels
 - **Validated outputs** against actual R/Python sessions
+- **ES6 modules** for shared JavaScript code (`docs/js/optimization/`)
 
 ## Development Principles
 
@@ -154,7 +158,6 @@ python3 scripts/build/add-feedback-widget.py
 ```
 glm-dashboard-explainer/
 ├── CLAUDE.md                 # This file - project overview
-├── _quarto.yml               # Quarto project configuration
 ├── .github/
 │   └── ISSUE_TEMPLATE/       # GitHub issue templates
 │       ├── bug_report.md
@@ -165,26 +168,33 @@ glm-dashboard-explainer/
 │   ├── handover/             # Session handover documents
 │   ├── architecture.md       # Architectural decisions (ADRs)
 │   └── commands/             # Custom slash commands
-├── docs/                     # Main tutorial site (GitHub Pages source)
+├── docs/                     # Main site (GitHub Pages source)
 │   ├── index.html            # Tutorial index page
+│   ├── data/                 # JSON datasets (terrain, heart data, etc.)
 │   ├── js/
-│   │   └── feedback.js       # Feedback widget (runtime JS)
-│   ├── css/                  # Shared CSS (for future use)
-│   └── tutorials/
-│       ├── 01-gaussian/      # 6 HTML files per tutorial
-│       ├── 02-logistic/
-│       ├── 03-poisson/
-│       ├── 04-negbin/
-│       └── 05-gamma/
+│   │   ├── feedback.js       # Feedback widget
+│   │   └── optimization/     # Shared ES6 modules
+│   │       ├── algorithms.js # Optimization algorithms (gradient, Newton, MCMC)
+│   │       ├── terrain.js    # Elevation lookup, Hessian, ellipse functions
+│   │       └── synthetic-terrain.js  # Gaussian bump terrain generators
+│   ├── css/                  # Shared CSS
+│   ├── tutorials/            # GLM tutorial pages (5 complete)
+│   │   ├── 01-gaussian/      # 6 HTML files per tutorial
+│   │   ├── 02-logistic/
+│   │   ├── 03-poisson/
+│   │   ├── 04-negbin/
+│   │   └── 05-gamma/
+│   └── optimization/         # Optimisation visualisation pages
+│       ├── index.html        # 1D mean-only
+│       ├── 2d.html           # 2D line fitting
+│       ├── 3d.html           # 3D multiple regression
+│       ├── 4d.html           # 4D+ beyond visualisation
+│       ├── multi-optima.html # Speed/Accuracy/Representativeness comparison
+│       └── mcmc.html         # Bayesian MCMC exploration
 ├── scripts/
 │   ├── build/                # Site processing scripts (Python)
-│   │   ├── extract-css.py
-│   │   └── add-feedback-widget.py
 │   ├── R/                    # R validation scripts
-│   │   └── validate-*.R
-│   └── py/                   # Python validation scripts
-│       └── validate_*.py
-├── data/                     # Sample datasets (JSON)
-│   └── heart.json
-└── _site/                    # Quarto build output (git-ignored)
+│   └── py/                   # Python validation/algorithm scripts
+│       └── optimization/     # Python implementations (mirror JS)
+└── support/                  # Background documentation
 ```

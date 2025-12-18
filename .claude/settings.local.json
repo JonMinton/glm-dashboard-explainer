@@ -8,7 +8,8 @@
       "Bash(Rscript:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nSwitch to KaTeX for proper LaTeX math rendering\n\nReplace verbose HTML fraction markup with clean LaTeX syntax using\nKaTeX library (loaded from CDN). This makes the mathematical notation\nmuch more readable and maintainable.\n\nChanges:\n- Added KaTeX CSS and JS from jsDelivr CDN\n- Converted all math expressions to LaTeX ($...$ for inline, $$..$$for display)\n- Removed custom .frac CSS classes (no longer needed)\n- Proper fractions, subscripts, superscripts, and Greek letters\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(unzip:*)"
+      "Bash(unzip:*)",
+      "Bash(gh issue list:*)"
     ]
   }
 }
