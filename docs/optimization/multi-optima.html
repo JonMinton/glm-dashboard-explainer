@@ -720,6 +720,249 @@
       </div>
     </div>
 
+    <!-- Section 1: Speed -->
+    <div class="visualization-card" id="section-speed">
+      <div class="viz-header">
+        <span class="viz-title">Section 1: Speed — How Fast to Reach the Peak?</span>
+      </div>
+
+      <p style="color: #666; margin-bottom: 20px;">
+        On a simple, unimodal landscape, soldier algorithms excel. Watch how Newton-Raphson uses
+        curvature information to take larger, smarter steps compared to gradient ascent's cautious approach.
+      </p>
+
+      <div class="controls">
+        <button id="speed-run-btn" class="primary">Compare Algorithms</button>
+        <button id="speed-reset-btn" class="secondary">Reset</button>
+        <span style="margin-left: auto; color: #666; font-size: 0.9em;" id="speed-status">Click to compare...</span>
+      </div>
+
+      <div class="map-container" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <div style="font-weight: 600; color: #e67e22; margin-bottom: 8px;">⚔️ Gradient Ascent</div>
+          <canvas id="speed-canvas-gradient" width="300" height="300" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
+          <div style="margin-top: 8px; font-family: monospace; font-size: 0.9em;">
+            Steps: <span id="speed-gradient-steps">0</span> |
+            Elevation: <span id="speed-gradient-elev">--</span>
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-weight: 600; color: #9b59b6; margin-bottom: 8px;">🔬 Newton-Raphson</div>
+          <canvas id="speed-canvas-newton" width="300" height="300" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
+          <div style="margin-top: 8px; font-family: monospace; font-size: 0.9em;">
+            Steps: <span id="speed-newton-steps">0</span> |
+            Elevation: <span id="speed-newton-elev">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-insight" style="margin-top: 20px;">
+        <h4>Why Newton is Faster</h4>
+        <p>
+          Gradient ascent only uses <strong>first derivatives</strong> (slope) — it knows which direction is uphill but not how steep it stays.
+          Newton-Raphson uses <strong>second derivatives</strong> (curvature) too — it can estimate <em>how far</em> to go before the slope flattens.
+          On smooth, bowl-shaped landscapes, this makes Newton dramatically faster.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 2: Accuracy -->
+    <div class="visualization-card" id="section-accuracy">
+      <div class="viz-header">
+        <span class="viz-title">Section 2: Accuracy — How Often Find the Global Peak?</span>
+      </div>
+
+      <p style="color: #666; margin-bottom: 20px;">
+        Speed means nothing if you climb the wrong mountain. On multi-modal landscapes like Arthur's Seat,
+        where you start determines where you end up. Scout algorithms trade speed for better global exploration.
+      </p>
+
+      <div class="controls">
+        <button id="accuracy-run-btn" class="primary">Run 20 Trials</button>
+        <button id="accuracy-reset-btn" class="secondary">Reset</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
+        <div style="text-align: center; padding: 15px; background: #fef3e2; border-radius: 8px; border: 2px solid #e67e22;">
+          <div style="font-weight: 600; color: #d35400;">⚔️ Gradient Ascent</div>
+          <div style="font-size: 2em; font-weight: bold; color: #e67e22; margin: 10px 0;">
+            <span id="accuracy-gradient-success">0</span>/20
+          </div>
+          <div style="font-size: 0.85em; color: #666;">found global peak</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #f3e8fd; border-radius: 8px; border: 2px solid #9b59b6;">
+          <div style="font-weight: 600; color: #8e44ad;">🔬 Newton-Raphson</div>
+          <div style="font-size: 2em; font-weight: bold; color: #9b59b6; margin: 10px 0;">
+            <span id="accuracy-newton-success">0</span>/20
+          </div>
+          <div style="font-size: 0.85em; color: #666;">found global peak</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #e8f6f3; border-radius: 8px; border: 2px solid #1abc9c;">
+          <div style="font-weight: 600; color: #16a085;">🔍 Random Restarts (×5)</div>
+          <div style="font-size: 2em; font-weight: bold; color: #1abc9c; margin: 10px 0;">
+            <span id="accuracy-restart-success">0</span>/20
+          </div>
+          <div style="font-size: 0.85em; color: #666;">found global peak</div>
+        </div>
+        <div style="text-align: center; padding: 15px; background: #e8f4fc; border-radius: 8px; border: 2px solid #3498db;">
+          <div style="font-weight: 600; color: #2980b9;">🌡️ Simulated Annealing</div>
+          <div style="font-size: 2em; font-weight: bold; color: #3498db; margin: 10px 0;">
+            <span id="accuracy-annealing-success">0</span>/20
+          </div>
+          <div style="font-size: 0.85em; color: #666;">found global peak</div>
+        </div>
+      </div>
+
+      <div style="text-align: center; color: #666; font-size: 0.9em; margin-bottom: 15px;" id="accuracy-status">
+        Click to run trials with random starting positions...
+      </div>
+
+      <div class="key-insight">
+        <h4>The Local Optimum Trap</h4>
+        <p>
+          Soldier algorithms always find <em>a</em> peak — but often not the highest one.
+          Scout algorithms invest extra computation to escape local optima. The payoff depends on how
+          much you value finding the global versus <em>any</em> reasonable solution.
+        </p>
+      </div>
+    </div>
+
+    <!-- Section 3: Representativeness -->
+    <div class="visualization-card" id="section-representativeness">
+      <div class="viz-header">
+        <span class="viz-title">Section 3: Representativeness — How Well Describe the Landscape?</span>
+      </div>
+
+      <p style="color: #666; margin-bottom: 20px;">
+        Finding a peak is just part of the story. How confident should we be in that answer?
+        The Hessian-based approximation assumes the landscape is a smooth bowl near the peak —
+        but what if it isn't?
+      </p>
+
+      <div class="controls">
+        <div class="control-group">
+          <label>Terrain:</label>
+          <select id="repr-terrain-select">
+            <option value="simple-peak">Simple Peak (Hessian works well)</option>
+            <option value="asymmetric-peak">Asymmetric Peak (moderate)</option>
+            <option value="sharp-ridge">Sharp Ridge (Hessian fails)</option>
+            <option value="arthurs-seat">Arthur's Seat (real terrain)</option>
+          </select>
+        </div>
+        <button id="repr-run-btn" class="primary">Compare Methods</button>
+        <button id="repr-reset-btn" class="secondary">Reset</button>
+      </div>
+
+      <div class="map-container" style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+        <div style="text-align: center;">
+          <div style="font-weight: 600; color: #9b59b6; margin-bottom: 8px;">MLE + Hessian Ellipse</div>
+          <canvas id="repr-canvas-hessian" width="350" height="350" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
+          <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
+            95% confidence region based on curvature at the peak
+          </div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-weight: 600; color: #1abc9c; margin-bottom: 8px;">MCMC Posterior Samples</div>
+          <canvas id="repr-canvas-mcmc" width="350" height="350" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
+          <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
+            Actual samples from the probability landscape
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+        <div class="key-insight" style="margin: 0; background: #f3e8fd; border-color: #9b59b6;">
+          <h4 style="color: #8e44ad;">MLE + Hessian Approximation</h4>
+          <p style="color: #5a3d6a;">
+            <strong>Fast</strong>: One optimisation run + one matrix inversion.<br>
+            <strong>Assumes</strong>: Landscape is roughly quadratic (bowl-shaped) near the peak.<br>
+            <strong>Fails when</strong>: Ridges, multiple modes, or heavy tails.
+          </p>
+        </div>
+        <div class="key-insight" style="margin: 0; background: #e8f6f3; border-color: #1abc9c;">
+          <h4 style="color: #16a085;">MCMC Sampling</h4>
+          <p style="color: #0e6655;">
+            <strong>Slow</strong>: Thousands of iterations to explore.<br>
+            <strong>Assumes</strong>: Very little — just needs to be able to evaluate likelihood.<br>
+            <strong>Reveals</strong>: True shape of uncertainty, including asymmetries and multiple modes.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conclusion: The Trade-off Table -->
+    <div class="visualization-card" id="section-conclusion">
+      <div class="viz-header">
+        <span class="viz-title">Conclusion: No Free Lunch</span>
+      </div>
+
+      <p style="color: #666; margin-bottom: 20px;">
+        Each algorithm optimises for different things. There is no single "best" choice —
+        only trade-offs appropriate to your problem.
+      </p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <thead>
+          <tr style="background: #f0e6ff;">
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #9b59b6;">Algorithm</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #9b59b6;">Speed</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #9b59b6;">Accuracy</th>
+            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #9b59b6;">Representativeness</th>
+            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #9b59b6;">Best For</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>Gradient Ascent</strong></td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;">Simple convex problems, debugging</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>Newton-Raphson</strong></td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐⭐⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐⭐</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;">GLMs, smooth likelihoods</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>Random Restarts</strong></td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐⭐⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;">Mixture models, neural net init</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;"><strong>Simulated Annealing</strong></td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐⭐⭐</td>
+            <td style="padding: 12px; text-align: center; border-bottom: 1px solid #eee;">⭐</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; color: #666;">Discrete optimisation, scheduling</td>
+          </tr>
+          <tr>
+            <td style="padding: 12px;"><strong>MCMC</strong></td>
+            <td style="padding: 12px; text-align: center;">⭐</td>
+            <td style="padding: 12px; text-align: center;">⭐⭐</td>
+            <td style="padding: 12px; text-align: center;">⭐⭐⭐</td>
+            <td style="padding: 12px; color: #666;">Bayesian inference, uncertainty quantification</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="key-insight">
+        <h4>The Fundamental Trade-off</h4>
+        <p>
+          <strong>Speed vs Thoroughness:</strong> Fast algorithms assume the landscape is "nice" (convex, smooth).
+          Slow algorithms make fewer assumptions but pay with computation.<br><br>
+          <strong>Point Estimate vs Distribution:</strong> Optimisation finds <em>where</em> the peak is.
+          MCMC tells you <em>how certain</em> you should be about that answer.<br><br>
+          For most GLMs with well-behaved likelihoods, Newton-Raphson + Hessian-based standard errors is the sweet spot:
+          fast, accurate, and "representative enough". But always check your assumptions!
+        </p>
+      </div>
+    </div>
+
     <!-- Explanation -->
     <div class="explanation">
       <h3>Why This Matters for Statistics</h3>
@@ -856,6 +1099,9 @@
     import {
       getElevation as getElevationShared,
       getGradient as getGradientShared,
+      getFullHessian,
+      hessianToEllipse,
+      generateEllipsePoints,
       gradientMagnitude
     } from '../js/optimization/terrain.js';
     import {
@@ -864,8 +1110,17 @@
       stepSimulatedAnnealing,
       stepRandomRestarts,
       createInitialState,
-      getStepFunction
+      getStepFunction,
+      stepMCMC,
+      createMCMCChainState,
+      randn,
+      MCMC_DEFAULTS
     } from '../js/optimization/algorithms.js';
+    import {
+      createUnimodalTerrain,
+      createRidgeTerrain,
+      getPresetTerrain
+    } from '../js/optimization/synthetic-terrain.js';
 
     // Load elevation data and render
     let elevationData = null;
@@ -1585,6 +1840,525 @@
         antModal.classList.remove('visible');
       }
     });
+
+    // ============================================================
+    // SECTION 1: SPEED COMPARISON
+    // ============================================================
+
+    const speedState = {
+      gradientState: null,
+      newtonState: null,
+      terrain: null,
+      animationId: null,
+      running: false
+    };
+
+    function initSpeedSection() {
+      // Create unimodal terrain
+      speedState.terrain = getPresetTerrain('simple-peak');
+      drawSpeedTerrain('speed-canvas-gradient');
+      drawSpeedTerrain('speed-canvas-newton');
+    }
+
+    function drawSpeedTerrain(canvasId, path = null, currentPos = null) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const terrain = speedState.terrain;
+
+      // Draw terrain as heatmap
+      const imageData = ctx.createImageData(size, size);
+      for (let py = 0; py < size; py++) {
+        for (let px = 0; px < size; px++) {
+          const x = px / size;
+          const y = 1 - py / size;
+          const elev = getElevationShared(terrain, x, y);
+          const t = (elev - terrain.stats.min) / (terrain.stats.max - terrain.stats.min);
+
+          // Green to brown to white color scale
+          let r, g, b;
+          if (t < 0.5) {
+            r = Math.floor(45 + t * 180);
+            g = Math.floor(124 + t * 100);
+            b = Math.floor(22 + t * 60);
+          } else {
+            const t2 = (t - 0.5) * 2;
+            r = Math.floor(135 + t2 * 120);
+            g = Math.floor(174 + t2 * 80);
+            b = Math.floor(82 + t2 * 170);
+          }
+
+          const idx = (py * size + px) * 4;
+          imageData.data[idx] = r;
+          imageData.data[idx + 1] = g;
+          imageData.data[idx + 2] = b;
+          imageData.data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      // Draw contours
+      ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+      ctx.lineWidth = 0.5;
+      const contourLevels = [100, 150, 200, 225, 240];
+      contourLevels.forEach(level => {
+        drawContourLine(ctx, terrain, level, size);
+      });
+
+      // Draw path
+      if (path && path.length > 1) {
+        ctx.strokeStyle = canvasId.includes('gradient') ? '#e67e22' : '#9b59b6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(path[0].x * size, (1 - path[0].y) * size);
+        for (let i = 1; i < path.length; i++) {
+          ctx.lineTo(path[i].x * size, (1 - path[i].y) * size);
+        }
+        ctx.stroke();
+      }
+
+      // Draw current position
+      if (currentPos) {
+        ctx.fillStyle = canvasId.includes('gradient') ? '#e67e22' : '#9b59b6';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(currentPos.x * size, (1 - currentPos.y) * size, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Draw peak marker
+      const peakX = terrain.metadata.peaks[0].x;
+      const peakY = terrain.metadata.peaks[0].y;
+      ctx.fillStyle = '#c0392b';
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(peakX * size, (1 - peakY) * size, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawContourLine(ctx, terrain, level, size) {
+      // Simple marching squares for contour lines
+      const step = 5;
+      ctx.beginPath();
+      for (let py = 0; py < size - step; py += step) {
+        for (let px = 0; px < size - step; px += step) {
+          const x1 = px / size, y1 = 1 - py / size;
+          const x2 = (px + step) / size, y2 = 1 - (py + step) / size;
+
+          const v00 = getElevationShared(terrain, x1, y1);
+          const v10 = getElevationShared(terrain, x2, y1);
+          const v01 = getElevationShared(terrain, x1, y2);
+          const v11 = getElevationShared(terrain, x2, y2);
+
+          // Find crossings
+          if ((v00 < level) !== (v10 < level)) {
+            const t = (level - v00) / (v10 - v00);
+            ctx.moveTo(px + t * step, py);
+            ctx.lineTo(px + t * step, py + 1);
+          }
+          if ((v00 < level) !== (v01 < level)) {
+            const t = (level - v00) / (v01 - v00);
+            ctx.moveTo(px, py + t * step);
+            ctx.lineTo(px + 1, py + t * step);
+          }
+        }
+      }
+      ctx.stroke();
+    }
+
+    function runSpeedComparison() {
+      if (speedState.running) {
+        speedState.running = false;
+        if (speedState.animationId) cancelAnimationFrame(speedState.animationId);
+        document.getElementById('speed-run-btn').textContent = 'Compare Algorithms';
+        return;
+      }
+
+      speedState.running = true;
+      document.getElementById('speed-run-btn').textContent = 'Stop';
+
+      // Fixed starting position (bottom-left, away from peak)
+      const startX = 0.15;
+      const startY = 0.15;
+      const terrain = speedState.terrain;
+
+      // Initialize states
+      const getElev = (x, y) => getElevationShared(terrain, x, y);
+      speedState.gradientState = createInitialState(startX, startY, getElev, 'gradient');
+      speedState.gradientState.path = [{ x: startX, y: startY }];
+      speedState.newtonState = createInitialState(startX, startY, getElev, 'newton');
+      speedState.newtonState.path = [{ x: startX, y: startY }];
+
+      function animate() {
+        let gradientDone = speedState.gradientState.converged;
+        let newtonDone = speedState.newtonState.converged;
+
+        // Step gradient
+        if (!gradientDone) {
+          const newState = stepGradientAscent(speedState.gradientState, terrain, getElev);
+          Object.assign(speedState.gradientState, newState);
+          if (speedState.gradientState.x !== speedState.gradientState.path[speedState.gradientState.path.length - 1].x) {
+            speedState.gradientState.path.push({ x: speedState.gradientState.x, y: speedState.gradientState.y });
+          }
+        }
+
+        // Step Newton
+        if (!newtonDone) {
+          const newState = stepNewtonRaphson(speedState.newtonState, terrain, getElev);
+          Object.assign(speedState.newtonState, newState);
+          if (speedState.newtonState.x !== speedState.newtonState.path[speedState.newtonState.path.length - 1].x) {
+            speedState.newtonState.path.push({ x: speedState.newtonState.x, y: speedState.newtonState.y });
+          }
+        }
+
+        // Update displays
+        drawSpeedTerrain('speed-canvas-gradient', speedState.gradientState.path,
+          { x: speedState.gradientState.x, y: speedState.gradientState.y });
+        drawSpeedTerrain('speed-canvas-newton', speedState.newtonState.path,
+          { x: speedState.newtonState.x, y: speedState.newtonState.y });
+
+        document.getElementById('speed-gradient-steps').textContent = speedState.gradientState.iteration;
+        document.getElementById('speed-gradient-elev').textContent = speedState.gradientState.elevation.toFixed(1) + 'm';
+        document.getElementById('speed-newton-steps').textContent = speedState.newtonState.iteration;
+        document.getElementById('speed-newton-elev').textContent = speedState.newtonState.elevation.toFixed(1) + 'm';
+
+        // Update status
+        if (gradientDone && newtonDone) {
+          speedState.running = false;
+          document.getElementById('speed-run-btn').textContent = 'Compare Algorithms';
+          document.getElementById('speed-status').textContent =
+            `Newton: ${speedState.newtonState.iteration} steps vs Gradient: ${speedState.gradientState.iteration} steps`;
+        } else if (speedState.running) {
+          speedState.animationId = requestAnimationFrame(animate);
+        }
+      }
+
+      animate();
+    }
+
+    function resetSpeedSection() {
+      speedState.running = false;
+      if (speedState.animationId) cancelAnimationFrame(speedState.animationId);
+      document.getElementById('speed-run-btn').textContent = 'Compare Algorithms';
+      document.getElementById('speed-status').textContent = 'Click to compare...';
+      document.getElementById('speed-gradient-steps').textContent = '0';
+      document.getElementById('speed-gradient-elev').textContent = '--';
+      document.getElementById('speed-newton-steps').textContent = '0';
+      document.getElementById('speed-newton-elev').textContent = '--';
+      drawSpeedTerrain('speed-canvas-gradient');
+      drawSpeedTerrain('speed-canvas-newton');
+    }
+
+    // Speed section event listeners
+    document.getElementById('speed-run-btn').addEventListener('click', runSpeedComparison);
+    document.getElementById('speed-reset-btn').addEventListener('click', resetSpeedSection);
+
+    // ============================================================
+    // SECTION 2: ACCURACY COMPARISON
+    // ============================================================
+
+    const accuracyState = {
+      running: false,
+      results: { gradient: 0, newton: 0, restart: 0, annealing: 0 }
+    };
+
+    function runAccuracyTrials() {
+      if (accuracyState.running) return;
+      accuracyState.running = true;
+
+      // Reset counts
+      accuracyState.results = { gradient: 0, newton: 0, restart: 0, annealing: 0 };
+      document.getElementById('accuracy-gradient-success').textContent = '0';
+      document.getElementById('accuracy-newton-success').textContent = '0';
+      document.getElementById('accuracy-restart-success').textContent = '0';
+      document.getElementById('accuracy-annealing-success').textContent = '0';
+
+      const globalMax = elevationData.stats.max;
+      const tolerance = 5; // Within 5m of global max counts as success
+
+      let trial = 0;
+      const totalTrials = 20;
+
+      function runTrial() {
+        if (trial >= totalTrials) {
+          accuracyState.running = false;
+          document.getElementById('accuracy-status').textContent =
+            `Complete! Scout algorithms found the global peak more often.`;
+          return;
+        }
+
+        // Random starting position
+        const startX = 0.1 + Math.random() * 0.8;
+        const startY = 0.1 + Math.random() * 0.8;
+        const getElev = (x, y) => getElevationShared(elevationData, x, y);
+
+        // Run each algorithm to convergence
+        const algorithms = ['gradient', 'newton', 'random-restart', 'annealing'];
+        algorithms.forEach(algo => {
+          let state = createInitialState(startX, startY, getElev, algo);
+          let maxIter = algo === 'annealing' ? 500 : 200;
+
+          for (let i = 0; i < maxIter && !state.converged; i++) {
+            const stepFn = getStepFunction(algo);
+            const newState = stepFn(state, elevationData, getElev);
+            Object.assign(state, newState);
+          }
+
+          // Check if found global max
+          const finalElev = state.bestElevation || state.elevation;
+          if (finalElev >= globalMax - tolerance) {
+            const key = algo === 'random-restart' ? 'restart' : algo;
+            accuracyState.results[key]++;
+          }
+        });
+
+        // Update display
+        document.getElementById('accuracy-gradient-success').textContent = accuracyState.results.gradient;
+        document.getElementById('accuracy-newton-success').textContent = accuracyState.results.newton;
+        document.getElementById('accuracy-restart-success').textContent = accuracyState.results.restart;
+        document.getElementById('accuracy-annealing-success').textContent = accuracyState.results.annealing;
+        document.getElementById('accuracy-status').textContent = `Running trial ${trial + 1} of ${totalTrials}...`;
+
+        trial++;
+        setTimeout(runTrial, 50);
+      }
+
+      runTrial();
+    }
+
+    function resetAccuracySection() {
+      accuracyState.running = false;
+      accuracyState.results = { gradient: 0, newton: 0, restart: 0, annealing: 0 };
+      document.getElementById('accuracy-gradient-success').textContent = '0';
+      document.getElementById('accuracy-newton-success').textContent = '0';
+      document.getElementById('accuracy-restart-success').textContent = '0';
+      document.getElementById('accuracy-annealing-success').textContent = '0';
+      document.getElementById('accuracy-status').textContent = 'Click to run trials with random starting positions...';
+    }
+
+    document.getElementById('accuracy-run-btn').addEventListener('click', runAccuracyTrials);
+    document.getElementById('accuracy-reset-btn').addEventListener('click', resetAccuracySection);
+
+    // ============================================================
+    // SECTION 3: REPRESENTATIVENESS (HESSIAN VS MCMC)
+    // ============================================================
+
+    const reprState = {
+      terrain: null,
+      mcmcSamples: [],
+      mlePos: null,
+      ellipse: null,
+      running: false,
+      animationId: null
+    };
+
+    function getReprTerrain(name) {
+      if (name === 'arthurs-seat') {
+        return elevationData;
+      }
+      return getPresetTerrain(name);
+    }
+
+    function initReprSection() {
+      reprState.terrain = getPresetTerrain('simple-peak');
+      drawReprCanvas('repr-canvas-hessian');
+      drawReprCanvas('repr-canvas-mcmc');
+    }
+
+    function drawReprCanvas(canvasId, options = {}) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      const terrain = reprState.terrain;
+
+      if (!terrain) return;
+
+      // Draw terrain as heatmap
+      const imageData = ctx.createImageData(size, size);
+      for (let py = 0; py < size; py++) {
+        for (let px = 0; px < size; px++) {
+          const x = px / size;
+          const y = 1 - py / size;
+          const elev = getElevationShared(terrain, x, y);
+          const t = (elev - terrain.stats.min) / (terrain.stats.max - terrain.stats.min);
+
+          // Color scale
+          let r, g, b;
+          if (t < 0.5) {
+            r = Math.floor(45 + t * 180);
+            g = Math.floor(124 + t * 100);
+            b = Math.floor(22 + t * 60);
+          } else {
+            const t2 = (t - 0.5) * 2;
+            r = Math.floor(135 + t2 * 120);
+            g = Math.floor(174 + t2 * 80);
+            b = Math.floor(82 + t2 * 170);
+          }
+
+          const idx = (py * size + px) * 4;
+          imageData.data[idx] = r;
+          imageData.data[idx + 1] = g;
+          imageData.data[idx + 2] = b;
+          imageData.data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      // Draw MCMC samples
+      if (canvasId.includes('mcmc') && reprState.mcmcSamples.length > 0) {
+        ctx.fillStyle = 'rgba(26, 188, 156, 0.3)';
+        reprState.mcmcSamples.forEach(sample => {
+          ctx.beginPath();
+          ctx.arc(sample.x * size, (1 - sample.y) * size, 2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      // Draw Hessian ellipse
+      if (canvasId.includes('hessian') && reprState.ellipse && reprState.mlePos) {
+        const ellipsePoints = generateEllipsePoints(
+          reprState.mlePos.x, reprState.mlePos.y,
+          reprState.ellipse.semiMajor, reprState.ellipse.semiMinor,
+          reprState.ellipse.rotation
+        );
+
+        ctx.strokeStyle = '#9b59b6';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(ellipsePoints[0].x * size, (1 - ellipsePoints[0].y) * size);
+        for (let i = 1; i < ellipsePoints.length; i++) {
+          ctx.lineTo(ellipsePoints[i].x * size, (1 - ellipsePoints[i].y) * size);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        // Fill with semi-transparent
+        ctx.fillStyle = 'rgba(155, 89, 182, 0.2)';
+        ctx.fill();
+      }
+
+      // Draw MLE position
+      if (reprState.mlePos) {
+        ctx.fillStyle = canvasId.includes('hessian') ? '#9b59b6' : '#1abc9c';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(reprState.mlePos.x * size, (1 - reprState.mlePos.y) * size, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+
+    function runReprComparison() {
+      if (reprState.running) {
+        reprState.running = false;
+        if (reprState.animationId) cancelAnimationFrame(reprState.animationId);
+        return;
+      }
+
+      const terrainName = document.getElementById('repr-terrain-select').value;
+      reprState.terrain = getReprTerrain(terrainName);
+      reprState.mcmcSamples = [];
+      reprState.mlePos = null;
+      reprState.ellipse = null;
+
+      const terrain = reprState.terrain;
+      const getElev = (x, y) => getElevationShared(terrain, x, y);
+
+      // Step 1: Find MLE using Newton-Raphson
+      let state = createInitialState(0.5, 0.5, getElev, 'newton');
+      for (let i = 0; i < 100 && !state.converged; i++) {
+        const newState = stepNewtonRaphson(state, terrain, getElev);
+        Object.assign(state, newState);
+      }
+
+      reprState.mlePos = { x: state.x, y: state.y };
+
+      // Step 2: Compute Hessian at MLE
+      const hessian = getFullHessian(terrain, state.x, state.y);
+      reprState.ellipse = hessianToEllipse(hessian, 0.95);
+
+      // Scale ellipse for visualization (the raw ellipse is very small in normalized coords)
+      if (reprState.ellipse) {
+        // Scale factor depends on terrain - use a multiplier that makes it visible
+        const scaleFactor = 0.5; // Adjust for visibility
+        reprState.ellipse.semiMajor *= scaleFactor;
+        reprState.ellipse.semiMinor *= scaleFactor;
+      }
+
+      // Draw Hessian side
+      drawReprCanvas('repr-canvas-hessian');
+
+      // Step 3: Run MCMC from MLE position
+      reprState.running = true;
+      let mcmcState = createMCMCChainState(state.x, state.y, getElev);
+      const mcmcConfig = {
+        proposalSD: 0.02,
+        logScale: true,
+        useLogPosterior: true
+      };
+
+      let mcmcIter = 0;
+      const burnIn = 100;
+      const totalIter = 1000;
+
+      function mcmcStep() {
+        if (!reprState.running || mcmcIter >= totalIter) {
+          reprState.running = false;
+          drawReprCanvas('repr-canvas-mcmc');
+          return;
+        }
+
+        // Run 10 steps per frame
+        for (let i = 0; i < 10 && mcmcIter < totalIter; i++) {
+          const result = stepMCMC(mcmcState, terrain, getElev, mcmcConfig);
+          mcmcState = result.state;
+
+          if (mcmcIter >= burnIn) {
+            reprState.mcmcSamples.push({ x: mcmcState.x, y: mcmcState.y });
+          }
+          mcmcIter++;
+        }
+
+        drawReprCanvas('repr-canvas-mcmc');
+        reprState.animationId = requestAnimationFrame(mcmcStep);
+      }
+
+      mcmcStep();
+    }
+
+    function resetReprSection() {
+      reprState.running = false;
+      if (reprState.animationId) cancelAnimationFrame(reprState.animationId);
+      reprState.mcmcSamples = [];
+      reprState.mlePos = null;
+      reprState.ellipse = null;
+      reprState.terrain = getPresetTerrain('simple-peak');
+      drawReprCanvas('repr-canvas-hessian');
+      drawReprCanvas('repr-canvas-mcmc');
+    }
+
+    document.getElementById('repr-run-btn').addEventListener('click', runReprComparison);
+    document.getElementById('repr-reset-btn').addEventListener('click', resetReprSection);
+    document.getElementById('repr-terrain-select').addEventListener('change', () => {
+      resetReprSection();
+    });
+
+    // Initialize new sections after main data loads
+    // The original fetch is at line ~1156, we hook into when elevationData is set
+    function waitForDataAndInit() {
+      if (elevationData) {
+        initSpeedSection();
+        initReprSection();
+      } else {
+        setTimeout(waitForDataAndInit, 100);
+      }
+    }
+    waitForDataAndInit();
   </script>
 </body>
 </html>
