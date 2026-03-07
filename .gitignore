@@ -2,3 +2,5 @@
 data/raw-geo/
 __pycache__/
 *.pyc
+.claude/settings.local.json
+.claude/projects/
