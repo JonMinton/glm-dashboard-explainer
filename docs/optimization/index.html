@@ -1115,9 +1115,16 @@
           }
 
           const grad = gradient(currentEstimate);
-          const stepSize = 0.01 * (paramRange.max - paramRange.min);
+          const rangeSize = paramRange.max - paramRange.min;
 
-          currentEstimate = currentEstimate + stepSize * Math.sign(grad);
+          // True gradient descent: step proportional to gradient magnitude
+          // Learning rate scales with range² to handle different parameter scales
+          const learningRate = 0.0001 * rangeSize * rangeSize;
+          const rawStep = learningRate * grad;
+          const maxStep = 0.015 * rangeSize;
+          const step = Math.max(-maxStep, Math.min(maxStep, rawStep));
+
+          currentEstimate = currentEstimate + step;
 
           // Clamp
           currentEstimate = Math.max(paramRange.min + 0.01,

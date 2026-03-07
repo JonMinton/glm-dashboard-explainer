@@ -1002,18 +1002,23 @@
         case 'gradient':
           const [g0, g1] = gradient(currentIntercept, currentSlope);
 
-          // Use smaller, adaptive learning rates
-          // The intercept gradient scales with n, slope gradient scales with n * x^2
-          // So we need different learning rates for each
-          const lr0 = 0.1;  // learning rate for intercept
-          const lr1 = 0.02; // smaller learning rate for slope (x values are larger)
+          // Adaptive learning rates from inverse Hessian diagonal
+          // For Gaussian, H = -X'X/sigma^2, so curvature is known
+          const sigma2_g = 100;
+          let sumX2 = 0;
+          for (const d of data) { sumX2 += d.x * d.x; }
+          // Hessian diagonal: h00 = n/sigma2, h11 = sum(x^2)/sigma2
+          // Step size = fraction of Newton step = damping / |h_ii|
+          const damping = 0.3;
+          const lr0 = damping * sigma2_g / n;
+          const lr1 = damping * sigma2_g / sumX2;
 
           currentIntercept += lr0 * g0;
           currentSlope += lr1 * g1;
           iteration++;
           history.push({ b0: currentIntercept, b1: currentSlope });
 
-          // Check convergence (use relative tolerance)
+          // Check convergence
           const gradMag = Math.sqrt(g0*g0 + g1*g1);
           if (gradMag < 0.01 || iteration > 200) {
             isRunning = false;

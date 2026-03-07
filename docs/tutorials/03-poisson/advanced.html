@@ -530,11 +530,15 @@
               <td><strong>Gamma</strong></td>
               <td>Log</td>
               <td>$e^{\eta_i}$</td>
-              <td>$\mu_i^2$</td>
+              <td>$1$ (constant)</td>
               <td>$\mu_i^2 / \phi$</td>
             </tr>
           </tbody>
         </table>
+        <p style="font-size: 0.85em; color: #888; margin-top: 10px;">
+          Note: For Gamma with log link, the IRLS weight is $(d\mu/d\eta)^2 / V(\mu) = \mu^2 / \mu^2 = 1$.
+          With the canonical inverse link $g(\mu)=1/\mu$, the weight would be $\mu_i^2$.
+        </p>
       </div>
 
       <p>

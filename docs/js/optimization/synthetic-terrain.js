@@ -215,6 +215,68 @@ export function createRidgeTerrain(options = {}) {
 }
 
 /**
+ * Generate a synthetic approximation of Arthur's Seat, Edinburgh.
+ * Sum of 5 Gaussian bumps capturing the main topographic features:
+ * - Arthur's Seat summit (~238m, western side)
+ * - Shoulder northeast of summit
+ * - Salisbury Crags ridge (elongated NNW-SSE)
+ * - Broad Holyrood Park base elevation
+ * - Western slopes
+ *
+ * @param {number} gridSize - Grid resolution (default 100)
+ * @returns {Object} Terrain data in standard format
+ */
+export function createArthursSeatSynthetic(gridSize = 100) {
+  const bumps = [
+    { cx: 0.20, cy: 0.62, height: 128, sx: 0.06, sy: 0.07, rot: 0.3 },   // Summit
+    { cx: 0.25, cy: 0.67, height: 50,  sx: 0.07, sy: 0.05, rot: 0.5 },   // Shoulder
+    { cx: 0.32, cy: 0.48, height: 80,  sx: 0.05, sy: 0.18, rot: 0.2 },   // Salisbury Crags
+    { cx: 0.25, cy: 0.50, height: 30,  sx: 0.20, sy: 0.25, rot: 0.0 },   // Park base
+    { cx: 0.08, cy: 0.55, height: 15,  sx: 0.10, sy: 0.20, rot: 0.0 },   // Western slopes
+  ];
+  const baseHeight = 30;
+
+  const elevations = [];
+  let actualMax = baseHeight;
+
+  for (let row = 0; row < gridSize; row++) {
+    const rowData = [];
+    const y = row / (gridSize - 1);
+
+    for (let col = 0; col < gridSize; col++) {
+      const x = col / (gridSize - 1);
+      let z = baseHeight;
+
+      for (const b of bumps) {
+        const dx = x - b.cx;
+        const dy = y - b.cy;
+        const cosR = Math.cos(b.rot);
+        const sinR = Math.sin(b.rot);
+        const dxRot = dx * cosR + dy * sinR;
+        const dyRot = -dx * sinR + dy * cosR;
+        const exponent = -(dxRot * dxRot) / (2 * b.sx * b.sx)
+                         -(dyRot * dyRot) / (2 * b.sy * b.sy);
+        z += b.height * Math.exp(exponent);
+      }
+
+      if (z > actualMax) actualMax = z;
+      rowData.push(z);
+    }
+    elevations.push(rowData);
+  }
+
+  return {
+    elevations,
+    grid: { rows: gridSize, cols: gridSize },
+    stats: { min: baseHeight, max: actualMax },
+    metadata: {
+      type: 'arthurs-seat-synthetic',
+      description: "Smooth approximation of Arthur's Seat, Edinburgh"
+    }
+  };
+}
+
+/**
  * Preset terrain configurations for common pedagogical scenarios.
  */
 export const TERRAIN_PRESETS = {
@@ -266,7 +328,10 @@ export const TERRAIN_PRESETS = {
     sigmaParallel: 0.25,
     sigmaPerpendicular: 0.15,
     rotation: Math.PI / 4
-  })
+  }),
+
+  // Arthur's Seat synthetic - recognisable Edinburgh landmark
+  'arthurs-seat': () => createArthursSeatSynthetic()
 };
 
 /**

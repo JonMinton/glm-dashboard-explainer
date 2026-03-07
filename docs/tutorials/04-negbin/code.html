@@ -389,16 +389,19 @@ fit_pois <- <span class="function">glm</span>(cnt ~ temp + hum + windspeed + wor
 bike = pd.<span class="function">read_csv</span>(<span class="string">"day.csv"</span>)
 
 <span class="comment"># Fit Negative Binomial model</span>
-<span class="comment"># Note: Need to specify alpha = 1/theta for statsmodels</span>
-<span class="comment"># Or use NegativeBinomial() which estimates it</span>
-fit_nb = smf.<span class="function">glm</span>(
+<span class="comment"># NegativeBinomialP estimates the dispersion parameter automatically</span>
+<span class="comment"># (unlike GLM NegativeBinomial which requires a fixed alpha)</span>
+fit_nb = smf.<span class="function">negativebinomial</span>(
     <span class="string">'cnt ~ temp + hum + windspeed + workingday + weathersit'</span>,
-    data=bike,
-    family=sm.families.<span class="function">NegativeBinomial</span>(alpha=<span class="number">1</span>/<span class="number">6.773</span>)
+    data=bike
 ).<span class="function">fit</span>()
 
 <span class="comment"># View model summary</span>
 <span class="function">print</span>(fit_nb.<span class="function">summary</span>())
+
+<span class="comment"># Extract estimated dispersion (alpha = 1/theta)</span>
+alpha = fit_nb.params[<span class="string">'alpha'</span>]
+<span class="function">print</span>(<span class="string">f"alpha = {alpha:.4f}, theta = {1/alpha:.3f}"</span>)
 
 <span class="comment"># Compare to Poisson for SE differences</span>
 fit_pois = smf.<span class="function">glm</span>(

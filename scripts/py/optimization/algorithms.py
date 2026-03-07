@@ -137,6 +137,15 @@ class TerrainFunction:
         fyy = (self.get_elevation(x, y + h) - 2 * f + self.get_elevation(x, y - h)) / (h * h)
         return fxx, fyy
 
+    def get_full_hessian(self, x: float, y: float, h: float = 0.01) -> Tuple[float, float, float]:
+        """Compute full 2x2 Hessian including mixed partial derivative."""
+        f = self.get_elevation(x, y)
+        fxx = (self.get_elevation(x + h, y) - 2 * f + self.get_elevation(x - h, y)) / (h * h)
+        fyy = (self.get_elevation(x, y + h) - 2 * f + self.get_elevation(x, y - h)) / (h * h)
+        fxy = (self.get_elevation(x + h, y + h) - self.get_elevation(x + h, y - h)
+               - self.get_elevation(x - h, y + h) + self.get_elevation(x - h, y - h)) / (4 * h * h)
+        return fxx, fyy, fxy
+
 
 def clamp(x: float, min_val: float = 0.0, max_val: float = 1.0) -> float:
     """Clamp value to range."""
@@ -214,19 +223,31 @@ def step_newton_raphson(
         state.convergence_reason = 'gradient_small'
         return state
 
-    # Get Hessian
-    fxx, fyy = terrain.get_hessian_diag(state.x, state.y, h)
+    # Get full 2x2 Hessian
+    fxx, fyy, fxy = terrain.get_full_hessian(state.x, state.y, h)
 
-    # Newton step when well-conditioned
-    if fxx < config.nr_hessian_threshold:
-        step_x = -grad[0] / fxx
-    else:
-        step_x = grad[0] * config.nr_fallback_step_size
+    # Newton step using full Hessian inverse: step = -H^{-1} * grad
+    # For maximization, H must be negative definite: fxx < 0, fyy < 0, det > 0
+    det = fxx * fyy - fxy * fxy
+    hessian_neg_def = (fxx < config.nr_hessian_threshold
+                       and fyy < config.nr_hessian_threshold
+                       and det > 1e-10)
 
-    if fyy < config.nr_hessian_threshold:
-        step_y = -grad[1] / fyy
+    if hessian_neg_def:
+        # Full 2x2 inverse: H^{-1} = (1/det) * [[fyy, -fxy], [-fxy, fxx]]
+        step_x = -(fyy * grad[0] - fxy * grad[1]) / det
+        step_y = -(-fxy * grad[0] + fxx * grad[1]) / det
     else:
-        step_y = grad[1] * config.nr_fallback_step_size
+        # Fallback: use diagonal Newton per-axis where conditioned, else gradient
+        if fxx < config.nr_hessian_threshold:
+            step_x = -grad[0] / fxx
+        else:
+            step_x = grad[0] * config.nr_fallback_step_size
+
+        if fyy < config.nr_hessian_threshold:
+            step_y = -grad[1] / fyy
+        else:
+            step_y = grad[1] * config.nr_fallback_step_size
 
     # Apply damping
     step_x *= config.nr_damping
@@ -409,9 +430,11 @@ def step_mcmc(
     proposed_x = state.x + rng.standard_normal() * config.mcmc_proposal_sd
     proposed_y = state.y + rng.standard_normal() * config.mcmc_proposal_sd
 
-    # Clamp to valid bounds (slightly inside to avoid edge effects)
-    proposed_x = max(0.01, min(0.99, proposed_x))
-    proposed_y = max(0.01, min(0.99, proposed_y))
+    # Reject out-of-bounds proposals to preserve detailed balance
+    if proposed_x < 0.01 or proposed_x > 0.99 or proposed_y < 0.01 or proposed_y > 0.99:
+        state.iteration += 1
+        state.accepted = False
+        return state
 
     proposed_elevation = terrain(proposed_x, proposed_y)
 

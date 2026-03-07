@@ -3,7 +3,7 @@
  * All algorithms work with generic objective functions in normalized [0,1]^2 space.
  */
 
-import { getGradient, getHessianDiag, gradientMagnitude } from './terrain.js';
+import { getGradient, getHessianDiag, getFullHessian, gradientMagnitude } from './terrain.js';
 
 /**
  * Configuration defaults for algorithms.
@@ -110,24 +110,34 @@ export function stepNewtonRaphson(state, terrainData, getElev, config = {}) {
     };
   }
 
-  // Get Hessian diagonal
-  const hess = getHessianDiag(terrainData, state.x, state.y, h);
+  // Get full 2x2 Hessian
+  const hess = getFullHessian(terrainData, state.x, state.y, h);
 
-  // Compute Newton step when Hessian is well-conditioned
+  // Newton step using full Hessian inverse: step = -H^{-1} * grad
+  // For maximization, H must be negative definite: fxx < 0, fyy < 0, det > 0
   let stepX, stepY;
+  const det = hess.fxx * hess.fyy - hess.fxy * hess.fxy;
+  const hessianNegDef = (hess.fxx < opts.hessianThreshold
+                         && hess.fyy < opts.hessianThreshold
+                         && det > 1e-10);
 
-  if (hess.fxx < opts.hessianThreshold) {
-    // Newton step: -grad/H (H is negative for maximum)
-    stepX = -grad.dx / hess.fxx;
+  if (hessianNegDef) {
+    // Full 2x2 inverse: H^{-1} = (1/det) * [[fyy, -fxy], [-fxy, fxx]]
+    stepX = -(hess.fyy * grad.dx - hess.fxy * grad.dy) / det;
+    stepY = -(-hess.fxy * grad.dx + hess.fxx * grad.dy) / det;
   } else {
-    // Ill-conditioned: fall back to gradient ascent
-    stepX = grad.dx * opts.fallbackStepSize;
-  }
+    // Fallback: diagonal Newton per-axis where conditioned, else gradient
+    if (hess.fxx < opts.hessianThreshold) {
+      stepX = -grad.dx / hess.fxx;
+    } else {
+      stepX = grad.dx * opts.fallbackStepSize;
+    }
 
-  if (hess.fyy < opts.hessianThreshold) {
-    stepY = -grad.dy / hess.fyy;
-  } else {
-    stepY = grad.dy * opts.fallbackStepSize;
+    if (hess.fyy < opts.hessianThreshold) {
+      stepY = -grad.dy / hess.fyy;
+    } else {
+      stepY = grad.dy * opts.fallbackStepSize;
+    }
   }
 
   // Apply damping
@@ -434,11 +444,20 @@ export function stepMCMC(state, terrainData, getElev, config = {}) {
   const proposedX = state.x + randn() * opts.proposalSD;
   const proposedY = state.y + randn() * opts.proposalSD;
 
-  // Clamp to valid bounds (slightly inside to avoid edge effects)
-  const clampedX = Math.max(0.01, Math.min(0.99, proposedX));
-  const clampedY = Math.max(0.01, Math.min(0.99, proposedY));
+  // Reject out-of-bounds proposals to preserve detailed balance
+  if (proposedX < 0.01 || proposedX > 0.99 || proposedY < 0.01 || proposedY > 0.99) {
+    return {
+      ...state,
+      iteration: state.iteration + 1,
+      accepted: false,
+      proposedX,
+      proposedY,
+      proposedElevation: null,
+      logAcceptRatio: -Infinity,
+    };
+  }
 
-  const proposedElevation = getElev(clampedX, clampedY);
+  const proposedElevation = getElev(proposedX, proposedY);
 
   // Compute acceptance ratio
   let logAcceptRatio;
@@ -458,13 +477,13 @@ export function stepMCMC(state, terrainData, getElev, config = {}) {
   if (accepted) {
     return {
       ...state,
-      x: clampedX,
-      y: clampedY,
+      x: proposedX,
+      y: proposedY,
       elevation: proposedElevation,
       iteration: state.iteration + 1,
       accepted: true,
-      proposedX: clampedX,
-      proposedY: clampedY,
+      proposedX,
+      proposedY,
       proposedElevation,
       logAcceptRatio,
     };
@@ -473,8 +492,8 @@ export function stepMCMC(state, terrainData, getElev, config = {}) {
       ...state,
       iteration: state.iteration + 1,
       accepted: false,
-      proposedX: clampedX,
-      proposedY: clampedY,
+      proposedX,
+      proposedY,
       proposedElevation,
       logAcceptRatio,
     };
