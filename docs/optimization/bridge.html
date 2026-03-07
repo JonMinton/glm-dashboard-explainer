@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terrain as Log-Likelihood</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover { text-decoration: underline; }
+    .nav-links a.current { color: #9b59b6; font-weight: 600; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+
+    .card h3 {
+      font-size: 1.1em;
+      color: #34495e;
+      margin: 20px 0 10px;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+      color: #444;
+    }
+
+    .mapping-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .mapping-table th, .mapping-table td {
+      padding: 10px 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    .mapping-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .mapping-table .terrain-col { color: #27ae60; }
+    .mapping-table .stats-col { color: #2980b9; }
+
+    .highlight-box {
+      background: #e8f4fd;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+      font-style: italic;
+    }
+
+    .canvas-container {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .canvas-panel {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .canvas-panel h4 {
+      text-align: center;
+      margin-bottom: 8px;
+      color: #555;
+      font-size: 0.95em;
+    }
+
+    canvas {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: crosshair;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #3498db;
+      color: white;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+
+    .controls button:hover { background: #2980b9; }
+    .controls button.active { background: #e74c3c; }
+
+    .controls select {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 0.9em;
+    }
+
+    .info-text {
+      font-size: 0.85em;
+      color: #888;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .param-display {
+      background: #f8f9fa;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85em;
+      text-align: center;
+      margin: 10px 0;
+    }
+
+    .see-also {
+      background: #f0f7ff;
+      border: 1px solid #b8d4f0;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+
+    .see-also a {
+      color: #2980b9;
+      font-weight: 500;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #888;
+      font-size: 0.9em;
+    }
+
+    footer a { color: #3498db; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Terrain as Log-Likelihood</h1>
+      <p>The connection between walking uphill and fitting a statistical model</p>
+      <div class="nav-links">
+        <a href="index.html">1D: Mean</a>
+        <a href="2d.html">2D: Line</a>
+        <a href="multi-optima.html">Multi-Optima</a>
+        <a href="mcmc.html">MCMC</a>
+        <a class="current" href="bridge.html">Terrain = Likelihood</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <!-- Section 1: The Metaphor -->
+    <div class="card">
+      <h2>The Metaphor You've Been Using</h2>
+      <p>
+        In the optimisation pages, you watched algorithms climb a terrain — gradient ascent
+        following the steepest slope, Newton-Raphson using curvature to leap toward the peak,
+        simulated annealing randomly wandering to escape local hills.
+      </p>
+      <p>
+        That terrain wasn't just a convenient visual metaphor. In statistics,
+        <strong>the terrain <em>is</em> the log-likelihood surface</strong>.
+        Every point on the map represents a candidate set of model parameters,
+        and the elevation at that point is how well those parameters explain the observed data.
+      </p>
+
+      <table class="mapping-table">
+        <thead>
+          <tr>
+            <th class="terrain-col">Terrain Concept</th>
+            <th class="stats-col">Statistical Concept</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="terrain-col">Map coordinates (x, y)</td>
+            <td class="stats-col">Parameter values ($\beta_0, \beta_1, \ldots$)</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Elevation at a point</td>
+            <td class="stats-col">Log-likelihood $\ell(\beta | \text{data})$</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Peak / summit</td>
+            <td class="stats-col">Maximum likelihood estimate (MLE)</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Slope (gradient)</td>
+            <td class="stats-col">Score function $\nabla \ell(\beta)$</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Curvature (Hessian)</td>
+            <td class="stats-col">Observed information matrix $-\nabla^2 \ell(\beta)$</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Confidence ellipse at peak</td>
+            <td class="stats-col">Approximate confidence region for $\beta$</td>
+          </tr>
+          <tr>
+            <td class="terrain-col">Sharp peak vs broad plateau</td>
+            <td class="stats-col">Small vs large standard errors</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="highlight-box">
+        "Climbing a hill" <em>is</em> maximum likelihood estimation. The algorithms are the same —
+        only the surface they're climbing changes.
+      </div>
+    </div>
+
+    <!-- Section 2: Side-by-side comparison -->
+    <div class="card">
+      <h2>See It: Terrain vs Log-Likelihood</h2>
+      <p>
+        On the left, a Gaussian-bump terrain. On the right, the log-likelihood surface for a
+        logistic regression model with real data. They look different — but the algorithms
+        treat them identically.
+      </p>
+
+      <div class="controls">
+        <button id="btn-gradient" onclick="startAlgorithm('gradient')">Gradient Ascent</button>
+        <button id="btn-newton" onclick="startAlgorithm('newton')">Newton-Raphson</button>
+        <button id="btn-reset" onclick="resetBoth()">Reset</button>
+        <select id="ll-family" onchange="changeFamily()">
+          <option value="logistic">Logistic Regression</option>
+          <option value="gaussian">Gaussian Regression</option>
+          <option value="poisson">Poisson Regression</option>
+        </select>
+      </div>
+
+      <div class="canvas-container">
+        <div class="canvas-panel">
+          <h4>Synthetic Terrain (Gaussian Bump)</h4>
+          <canvas id="terrain-canvas" width="380" height="380"></canvas>
+        </div>
+        <div class="canvas-panel">
+          <h4 id="ll-title">Log-Likelihood Surface (Logistic)</h4>
+          <canvas id="ll-canvas" width="380" height="380"></canvas>
+        </div>
+      </div>
+
+      <div class="param-display" id="param-display">
+        Click a surface to set starting position, then run an algorithm.
+      </div>
+
+      <p class="info-text">
+        Both surfaces use the same gradient ascent and Newton-Raphson algorithms.
+        The terrain is a smooth Gaussian bump; the log-likelihood is computed from data.
+      </p>
+    </div>
+
+    <!-- Section 3: Why shapes differ -->
+    <div class="card">
+      <h2>Why Different Models Make Different Surfaces</h2>
+
+      <h3>Gaussian (Normal) Regression</h3>
+      <p>
+        The log-likelihood is a perfect quadratic bowl (an upside-down paraboloid).
+        This is why Newton-Raphson converges in exactly one step — the quadratic
+        approximation <em>is</em> the function. The Hessian is constant everywhere.
+      </p>
+      <p>
+        $\ell(\beta_0, \beta_1) = -\frac{1}{2\sigma^2} \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2 + \text{const}$
+      </p>
+
+      <h3>Logistic Regression</h3>
+      <p>
+        The log-likelihood is curved but <em>not</em> quadratic — it bends more in some
+        directions than others, and the curvature changes as you move. Newton-Raphson
+        still converges quickly, but needs multiple steps because its quadratic
+        approximation is only locally accurate.
+      </p>
+      <p>
+        $\ell(\beta_0, \beta_1) = \sum_{i=1}^{n} \left[ y_i \log p_i + (1-y_i) \log(1-p_i) \right]$
+        where $p_i = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x_i)}}$
+      </p>
+
+      <h3>Poisson Regression</h3>
+      <p>
+        The log-likelihood surface can be more elongated and asymmetric, especially
+        with skewed count data. The curvature depends on the predicted counts, creating
+        a surface that is steeper in some directions than others.
+      </p>
+      <p>
+        $\ell(\beta_0, \beta_1) = \sum_{i=1}^{n} \left[ y_i (\beta_0 + \beta_1 x_i) - e^{\beta_0 + \beta_1 x_i} \right] + \text{const}$
+      </p>
+
+      <div class="highlight-box">
+        The shape of the log-likelihood surface is determined by the model family.
+        Gaussian gives a bowl. Logistic gives a curved hill. Poisson gives an
+        asymmetric ridge. But the peak of each surface is the MLE.
+      </div>
+    </div>
+
+    <!-- Section 4: Connections -->
+    <div class="card">
+      <h2>Connecting the Pieces</h2>
+
+      <p>
+        Every tutorial's "fitting" page is about climbing a log-likelihood surface.
+        Every tutorial's "advanced" page derives the shape of that surface from the
+        probability model. And every optimisation visualisation demonstrates the
+        algorithms that do the climbing.
+      </p>
+
+      <div class="see-also">
+        <strong>Explore further:</strong>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><a href="index.html">1D optimisation</a> — gradient ascent on a single-parameter log-likelihood</li>
+          <li><a href="2d.html">2D optimisation</a> — climbing a Gaussian regression LL surface</li>
+          <li><a href="multi-optima.html">Multi-optima</a> — when the surface has multiple peaks</li>
+          <li><a href="mcmc.html">MCMC</a> — sampling from the surface instead of climbing it</li>
+          <li><a href="../tutorials/01-gaussian/advanced.html">Gaussian LL derivation</a> — why the surface is a quadratic bowl</li>
+          <li><a href="../tutorials/02-logistic/advanced.html">Logistic LL derivation</a> — why there's no closed-form MLE</li>
+          <li><a href="../tutorials/03-poisson/advanced.html">Poisson LL derivation</a> — the exponential family connection</li>
+        </ul>
+      </div>
+
+      <div class="see-also" style="border-color: #c8b8e8; background: #f5f0ff; margin-top: 15px;">
+        <strong>Theory:</strong>
+        For the mathematical foundations of likelihood-based inference, see
+        <a href="https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/">Likelihood and Simulation Theory</a>
+        on JonStats.
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>
+      Part of the <a href="https://jonminton.github.io/JonStats/">JonStats</a> teaching materials.
+      <br>
+      <a href="../index.html">&larr; Back to tutorials</a>
+    </p>
+  </footer>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    // ========================================
+    // Data and Log-Likelihood Computation
+    // ========================================
+
+    // Small embedded dataset: subset of heart disease data
+    // x = age (centered), y = heart disease (0/1)
+    const heartData = [
+      {x: -17, y: 0}, {x: -14, y: 0}, {x: -12, y: 0}, {x: -10, y: 1},
+      {x: -8, y: 0}, {x: -6, y: 0}, {x: -5, y: 0}, {x: -3, y: 1},
+      {x: -2, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 1, y: 0},
+      {x: 2, y: 1}, {x: 3, y: 1}, {x: 4, y: 0}, {x: 5, y: 1},
+      {x: 6, y: 1}, {x: 7, y: 0}, {x: 8, y: 1}, {x: 9, y: 1},
+      {x: 10, y: 1}, {x: 11, y: 1}, {x: 12, y: 0}, {x: 13, y: 1},
+      {x: 14, y: 1}, {x: 15, y: 1}, {x: 16, y: 1}, {x: 17, y: 1},
+      {x: 18, y: 1}, {x: 20, y: 1},
+    ];
+
+    // Count data: synthetic bike-rental-like
+    const countData = [
+      {x: -3, y: 2}, {x: -2.5, y: 3}, {x: -2, y: 1}, {x: -1.5, y: 4},
+      {x: -1, y: 5}, {x: -0.5, y: 3}, {x: 0, y: 7}, {x: 0.5, y: 8},
+      {x: 1, y: 6}, {x: 1.5, y: 12}, {x: 2, y: 15}, {x: 2.5, y: 10},
+      {x: 3, y: 20}, {x: 3.5, y: 25}, {x: 4, y: 18}, {x: 4.5, y: 30},
+      {x: 5, y: 35}, {x: 5.5, y: 28}, {x: 6, y: 45}, {x: 6.5, y: 50},
+    ];
+
+    // Gaussian data
+    const gaussData = [];
+    const rng = (function(s) { return function() { let t = s += 0x6D2B79F5; t = Math.imul(t^t>>>15, t|1); t ^= t+Math.imul(t^t>>>7, t|61); return ((t^t>>>14)>>>0)/4294967296; }; })(42);
+    for (let i = 0; i < 30; i++) {
+      const x = -10 + 20 * rng();
+      const y = 5 + 2 * x + (rng() + rng() + rng() - 1.5) * 8;
+      gaussData.push({x, y});
+    }
+
+    // Logistic function
+    function logistic(z) {
+      if (z > 20) return 1;
+      if (z < -20) return 0;
+      return 1 / (1 + Math.exp(-z));
+    }
+
+    // Log-likelihood functions
+    function logisticLL(b0, b1, data) {
+      let ll = 0;
+      for (const d of data) {
+        const p = logistic(b0 + b1 * d.x);
+        const pc = Math.max(1e-15, Math.min(1 - 1e-15, p));
+        ll += d.y * Math.log(pc) + (1 - d.y) * Math.log(1 - pc);
+      }
+      return ll;
+    }
+
+    function gaussianLL(b0, b1, data) {
+      const sigma2 = 100;
+      let ss = 0;
+      for (const d of data) {
+        const resid = d.y - (b0 + b1 * d.x);
+        ss += resid * resid;
+      }
+      return -data.length/2 * Math.log(2 * Math.PI * sigma2) - ss / (2 * sigma2);
+    }
+
+    function poissonLL(b0, b1, data) {
+      let ll = 0;
+      for (const d of data) {
+        const eta = b0 + b1 * d.x;
+        const mu = Math.exp(Math.max(-20, Math.min(20, eta)));
+        ll += d.y * eta - mu;
+        // Omit log(y!) constant
+      }
+      return ll;
+    }
+
+    // Parameter ranges for each family
+    const familyConfig = {
+      logistic: {
+        data: heartData,
+        llFn: logisticLL,
+        b0Range: [-3, 3],
+        b1Range: [-0.05, 0.2],
+        title: 'Log-Likelihood Surface (Logistic)',
+        b0Label: 'β₀ (intercept)',
+        b1Label: 'β₁ (age effect)',
+      },
+      gaussian: {
+        data: gaussData,
+        llFn: gaussianLL,
+        b0Range: [-10, 20],
+        b1Range: [-2, 6],
+        title: 'Log-Likelihood Surface (Gaussian)',
+        b0Label: 'β₀ (intercept)',
+        b1Label: 'β₁ (slope)',
+      },
+      poisson: {
+        data: countData,
+        llFn: poissonLL,
+        b0Range: [-1, 3],
+        b1Range: [0.1, 0.8],
+        title: 'Log-Likelihood Surface (Poisson)',
+        b0Label: 'β₀ (log baseline)',
+        b1Label: 'β₁ (log rate)',
+      },
+    };
+
+    // ========================================
+    // Canvas Drawing
+    // ========================================
+
+    const terrainCanvas = document.getElementById('terrain-canvas');
+    const terrainCtx = terrainCanvas.getContext('2d');
+    const llCanvas = document.getElementById('ll-canvas');
+    const llCtx = llCanvas.getContext('2d');
+
+    // High DPI
+    function setupCanvas(canvas, ctx) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      return { w: rect.width, h: rect.height };
+    }
+
+    let terrainSize, llSize;
+
+    // Colour map (blue-green-yellow-red)
+    function elevationColor(t) {
+      // t in [0,1]
+      t = Math.max(0, Math.min(1, t));
+      let r, g, b;
+      if (t < 0.25) {
+        const s = t / 0.25;
+        r = 0; g = Math.round(80 + 100 * s); b = Math.round(180 - 80 * s);
+      } else if (t < 0.5) {
+        const s = (t - 0.25) / 0.25;
+        r = Math.round(80 * s); g = Math.round(180 + 40 * s); b = Math.round(100 - 80 * s);
+      } else if (t < 0.75) {
+        const s = (t - 0.5) / 0.25;
+        r = Math.round(80 + 175 * s); g = Math.round(220 - 20 * s); b = Math.round(20 - 20 * s);
+      } else {
+        const s = (t - 0.75) / 0.25;
+        r = 255; g = Math.round(200 - 150 * s); b = 0;
+      }
+      return `rgb(${r},${g},${b})`;
+    }
+
+    // Gaussian bump terrain
+    function terrainElevation(x, y) {
+      const dx = x - 0.5, dy = y - 0.5;
+      return 50 + 200 * Math.exp(-(dx*dx)/(2*0.18*0.18) - (dy*dy)/(2*0.12*0.12));
+    }
+
+    function drawHeatmap(ctx, size, evalFn, xRange, yRange) {
+      const res = 100;
+      const cellW = size.w / res;
+      const cellH = size.h / res;
+
+      // First pass: find min/max
+      let min = Infinity, max = -Infinity;
+      const vals = [];
+      for (let r = 0; r < res; r++) {
+        vals[r] = [];
+        for (let c = 0; c < res; c++) {
+          const x = xRange[0] + (c + 0.5) / res * (xRange[1] - xRange[0]);
+          const y = yRange[1] - (r + 0.5) / res * (yRange[1] - yRange[0]);
+          const v = evalFn(x, y);
+          vals[r][c] = v;
+          if (isFinite(v)) {
+            if (v < min) min = v;
+            if (v > max) max = v;
+          }
+        }
+      }
+
+      // Second pass: draw
+      const range = max - min || 1;
+      for (let r = 0; r < res; r++) {
+        for (let c = 0; c < res; c++) {
+          const t = (vals[r][c] - min) / range;
+          ctx.fillStyle = elevationColor(t);
+          ctx.fillRect(c * cellW, r * cellH, cellW + 1, cellH + 1);
+        }
+      }
+
+      return { min, max };
+    }
+
+    function drawContours(ctx, size, evalFn, xRange, yRange, stats, nContours = 12) {
+      const res = 100;
+      const range = stats.max - stats.min || 1;
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+      ctx.lineWidth = 0.5;
+
+      for (let k = 1; k < nContours; k++) {
+        const level = stats.min + (k / nContours) * range;
+
+        // March through grid looking for contour crossings
+        for (let r = 0; r < res - 1; r++) {
+          for (let c = 0; c < res - 1; c++) {
+            const x0 = xRange[0] + (c + 0.5) / res * (xRange[1] - xRange[0]);
+            const x1 = xRange[0] + (c + 1.5) / res * (xRange[1] - xRange[0]);
+            const y0 = yRange[1] - (r + 0.5) / res * (yRange[1] - yRange[0]);
+            const y1 = yRange[1] - (r + 1.5) / res * (yRange[1] - yRange[0]);
+
+            const v00 = evalFn(x0, y0);
+            const v10 = evalFn(x1, y0);
+            const v01 = evalFn(x0, y1);
+
+            // Check horizontal crossing
+            if ((v00 - level) * (v10 - level) < 0) {
+              const frac = (level - v00) / (v10 - v00);
+              const px = (c + 0.5 + frac) / res * size.w;
+              const py = (r + 0.5) / res * size.h;
+              ctx.fillStyle = 'rgba(0,0,0,0.2)';
+              ctx.fillRect(px, py, 1.5, 1.5);
+            }
+
+            // Check vertical crossing
+            if ((v00 - level) * (v01 - level) < 0) {
+              const frac = (level - v00) / (v01 - v00);
+              const px = (c + 0.5) / res * size.w;
+              const py = (r + 0.5 + frac) / res * size.h;
+              ctx.fillStyle = 'rgba(0,0,0,0.2)';
+              ctx.fillRect(px, py, 1.5, 1.5);
+            }
+          }
+        }
+      }
+    }
+
+    // Draw axis labels
+    function drawAxes(ctx, size, xRange, yRange, xLabel, yLabel) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(0, size.h - 22, size.w, 22);
+      ctx.fillRect(0, 0, 45, size.h);
+
+      ctx.fillStyle = '#333';
+      ctx.font = '11px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(xLabel || `${xRange[0].toFixed(1)}`, 40, size.h - 5);
+      ctx.fillText(`${((xRange[0]+xRange[1])/2).toFixed(1)}`, size.w/2, size.h - 5);
+      ctx.fillText(`${xRange[1].toFixed(1)}`, size.w - 15, size.h - 5);
+
+      ctx.save();
+      ctx.translate(12, size.h / 2);
+      ctx.rotate(-Math.PI/2);
+      ctx.textAlign = 'center';
+      ctx.fillText(yLabel || '', 0, 0);
+      ctx.restore();
+
+      ctx.textAlign = 'left';
+      ctx.fillText(`${yRange[1].toFixed(1)}`, 2, 14);
+      ctx.fillText(`${yRange[0].toFixed(1)}`, 2, size.h - 25);
+    }
+
+    // ========================================
+    // Algorithm State
+    // ========================================
+
+    let currentFamily = 'logistic';
+    let terrainTrail = [];
+    let llTrail = [];
+    let terrainPos = null;
+    let llPos = null;
+    let animating = false;
+    let animId = null;
+    let currentAlgo = null;
+
+    // Terrain gradient
+    function terrainGradient(x, y) {
+      const h = 0.001;
+      const dx = (terrainElevation(x+h, y) - terrainElevation(x-h, y)) / (2*h);
+      const dy = (terrainElevation(x, y+h) - terrainElevation(x, y-h)) / (2*h);
+      return {dx, dy};
+    }
+
+    function terrainHessian(x, y) {
+      const h = 0.005;
+      const f = terrainElevation(x, y);
+      const fxx = (terrainElevation(x+h,y) - 2*f + terrainElevation(x-h,y))/(h*h);
+      const fyy = (terrainElevation(x,y+h) - 2*f + terrainElevation(x,y-h))/(h*h);
+      const fxy = (terrainElevation(x+h,y+h) - terrainElevation(x+h,y-h) - terrainElevation(x-h,y+h) + terrainElevation(x-h,y-h))/(4*h*h);
+      return {fxx, fyy, fxy};
+    }
+
+    // LL gradient (finite differences)
+    function llGradient(b0, b1) {
+      const cfg = familyConfig[currentFamily];
+      const h = 0.0001;
+      const ll = cfg.llFn;
+      const d = cfg.data;
+      const dx = (ll(b0+h, b1, d) - ll(b0-h, b1, d)) / (2*h);
+      const dy = (ll(b0, b1+h, d) - ll(b0, b1-h, d)) / (2*h);
+      return {dx, dy};
+    }
+
+    function llHessian(b0, b1) {
+      const cfg = familyConfig[currentFamily];
+      const h = 0.001;
+      const ll = cfg.llFn;
+      const d = cfg.data;
+      const f = ll(b0, b1, d);
+      const fxx = (ll(b0+h,b1,d) - 2*f + ll(b0-h,b1,d))/(h*h);
+      const fyy = (ll(b0,b1+h,d) - 2*f + ll(b0,b1-h,d))/(h*h);
+      const fxy = (ll(b0+h,b1+h,d) - ll(b0+h,b1-h,d) - ll(b0-h,b1+h,d) + ll(b0-h,b1-h,d))/(4*h*h);
+      return {fxx, fyy, fxy};
+    }
+
+    // Newton step (shared logic)
+    function newtonStep(pos, gradFn, hessFn) {
+      const g = gradFn(pos.x, pos.y);
+      const h = hessFn(pos.x, pos.y);
+      const det = h.fxx * h.fyy - h.fxy * h.fxy;
+
+      let sx, sy;
+      if (h.fxx < -0.01 && h.fyy < -0.01 && det > 1e-10) {
+        sx = -(h.fyy * g.dx - h.fxy * g.dy) / det;
+        sy = -(-h.fxy * g.dx + h.fxx * g.dy) / det;
+      } else {
+        sx = g.dx * 0.001;
+        sy = g.dy * 0.001;
+      }
+
+      // Damping + clamping
+      sx *= 0.5;
+      sy *= 0.5;
+      const maxS = 0.1;
+      sx = Math.max(-maxS, Math.min(maxS, sx));
+      sy = Math.max(-maxS, Math.min(maxS, sy));
+
+      return { x: pos.x + sx, y: pos.y + sy };
+    }
+
+    // Gradient step (shared)
+    function gradientStep(pos, gradFn, stepSize) {
+      const g = gradFn(pos.x, pos.y);
+      const mag = Math.sqrt(g.dx*g.dx + g.dy*g.dy);
+      if (mag < 1e-10) return pos;
+      return {
+        x: pos.x + (g.dx/mag) * stepSize,
+        y: pos.y + (g.dy/mag) * stepSize,
+      };
+    }
+
+    // ========================================
+    // Drawing trails
+    // ========================================
+
+    function coordToPixel(pos, size, xRange, yRange) {
+      const px = (pos.x - xRange[0]) / (xRange[1] - xRange[0]) * size.w;
+      const py = (1 - (pos.y - yRange[0]) / (yRange[1] - yRange[0])) * size.h;
+      return {px, py};
+    }
+
+    function drawTrail(ctx, trail, size, xRange, yRange, color) {
+      if (trail.length < 1) return;
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+
+      ctx.beginPath();
+      for (let i = 0; i < trail.length; i++) {
+        const {px, py} = coordToPixel(trail[i], size, xRange, yRange);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Draw dots
+      for (let i = 0; i < trail.length; i++) {
+        const {px, py} = coordToPixel(trail[i], size, xRange, yRange);
+        ctx.beginPath();
+        ctx.arc(px, py, i === trail.length - 1 ? 5 : 3, 0, Math.PI * 2);
+        ctx.fillStyle = i === trail.length - 1 ? '#e74c3c' : color;
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    function drawPeak(ctx, pos, size, xRange, yRange) {
+      const {px, py} = coordToPixel(pos, size, xRange, yRange);
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // ========================================
+    // Main draw
+    // ========================================
+
+    let terrainStats, llStats;
+
+    function drawAll() {
+      const cfg = familyConfig[currentFamily];
+
+      // Terrain
+      terrainStats = drawHeatmap(terrainCtx, terrainSize,
+        (x, y) => terrainElevation(x, y),
+        [0, 1], [0, 1]);
+      drawContours(terrainCtx, terrainSize,
+        (x, y) => terrainElevation(x, y),
+        [0, 1], [0, 1], terrainStats);
+      drawAxes(terrainCtx, terrainSize, [0, 1], [0, 1], 'x', 'y');
+
+      // LL surface
+      llStats = drawHeatmap(llCtx, llSize,
+        (b0, b1) => cfg.llFn(b0, b1, cfg.data),
+        cfg.b0Range, cfg.b1Range);
+      drawContours(llCtx, llSize,
+        (b0, b1) => cfg.llFn(b0, b1, cfg.data),
+        cfg.b0Range, cfg.b1Range, llStats);
+      drawAxes(llCtx, llSize, cfg.b0Range, cfg.b1Range, cfg.b0Label, cfg.b1Label);
+
+      // Trails
+      drawTrail(terrainCtx, terrainTrail, terrainSize, [0,1], [0,1], 'rgba(255,255,255,0.8)');
+      drawTrail(llCtx, llTrail, llSize, cfg.b0Range, cfg.b1Range, 'rgba(255,255,255,0.8)');
+
+      // Update title
+      document.getElementById('ll-title').textContent = cfg.title;
+    }
+
+    // ========================================
+    // Interaction
+    // ========================================
+
+    terrainCanvas.addEventListener('click', function(e) {
+      const rect = terrainCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = 1 - (e.clientY - rect.top) / rect.height;
+      terrainPos = {x, y};
+      terrainTrail = [{x, y}];
+      drawAll();
+      updateDisplay();
+    });
+
+    llCanvas.addEventListener('click', function(e) {
+      const cfg = familyConfig[currentFamily];
+      const rect = llCanvas.getBoundingClientRect();
+      const fx = (e.clientX - rect.left) / rect.width;
+      const fy = 1 - (e.clientY - rect.top) / rect.height;
+      const b0 = cfg.b0Range[0] + fx * (cfg.b0Range[1] - cfg.b0Range[0]);
+      const b1 = cfg.b1Range[0] + fy * (cfg.b1Range[1] - cfg.b1Range[0]);
+      llPos = {x: b0, y: b1};
+      llTrail = [{x: b0, y: b1}];
+      drawAll();
+      updateDisplay();
+    });
+
+    function updateDisplay() {
+      const cfg = familyConfig[currentFamily];
+      let text = '';
+      if (terrainPos) {
+        const e = terrainElevation(terrainPos.x, terrainPos.y);
+        text += `Terrain: (${terrainPos.x.toFixed(3)}, ${terrainPos.y.toFixed(3)}) elevation=${e.toFixed(1)}`;
+      }
+      if (llPos) {
+        const ll = cfg.llFn(llPos.x, llPos.y, cfg.data);
+        if (text) text += '  |  ';
+        text += `LL: (${llPos.x.toFixed(3)}, ${llPos.y.toFixed(4)}) ℓ=${ll.toFixed(2)}`;
+      }
+      if (!text) text = 'Click a surface to set starting position, then run an algorithm.';
+      document.getElementById('param-display').textContent = text;
+    }
+
+    function startAlgorithm(algo) {
+      if (animating) { stopAnimation(); return; }
+
+      // Set defaults if no click position
+      const cfg = familyConfig[currentFamily];
+      if (!terrainPos) {
+        terrainPos = {x: 0.2, y: 0.3};
+        terrainTrail = [{x: 0.2, y: 0.3}];
+      }
+      if (!llPos) {
+        const b0 = cfg.b0Range[0] + 0.2 * (cfg.b0Range[1] - cfg.b0Range[0]);
+        const b1 = cfg.b1Range[0] + 0.3 * (cfg.b1Range[1] - cfg.b1Range[0]);
+        llPos = {x: b0, y: b1};
+        llTrail = [{x: b0, y: b1}];
+      }
+
+      currentAlgo = algo;
+      animating = true;
+      document.getElementById('btn-' + algo).classList.add('active');
+      animate();
+    }
+
+    function stopAnimation() {
+      animating = false;
+      if (animId) cancelAnimationFrame(animId);
+      document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+    }
+
+    function animate() {
+      if (!animating) return;
+
+      const cfg = familyConfig[currentFamily];
+
+      // Step terrain
+      if (currentAlgo === 'gradient') {
+        terrainPos = gradientStep(terrainPos, terrainGradient, 0.008);
+        llPos = gradientStep(llPos, llGradient, 0.008);
+      } else {
+        terrainPos = newtonStep(terrainPos, terrainGradient, terrainHessian);
+        llPos = newtonStep(llPos, llGradient, llHessian);
+      }
+
+      // Clamp to bounds
+      terrainPos.x = Math.max(0.01, Math.min(0.99, terrainPos.x));
+      terrainPos.y = Math.max(0.01, Math.min(0.99, terrainPos.y));
+      llPos.x = Math.max(cfg.b0Range[0], Math.min(cfg.b0Range[1], llPos.x));
+      llPos.y = Math.max(cfg.b1Range[0], Math.min(cfg.b1Range[1], llPos.y));
+
+      terrainTrail.push({...terrainPos});
+      llTrail.push({...llPos});
+
+      drawAll();
+      updateDisplay();
+
+      // Check convergence
+      if (terrainTrail.length > 2 && llTrail.length > 2) {
+        const tLast = terrainTrail[terrainTrail.length - 1];
+        const tPrev = terrainTrail[terrainTrail.length - 2];
+        const lLast = llTrail[llTrail.length - 1];
+        const lPrev = llTrail[llTrail.length - 2];
+
+        const tDist = Math.sqrt((tLast.x-tPrev.x)**2 + (tLast.y-tPrev.y)**2);
+        const lDist = Math.sqrt((lLast.x-lPrev.x)**2 + (lLast.y-lPrev.y)**2);
+
+        if ((tDist < 1e-6 && lDist < 1e-7) || terrainTrail.length > 500) {
+          stopAnimation();
+          return;
+        }
+      }
+
+      animId = requestAnimationFrame(() => setTimeout(animate, 50));
+    }
+
+    function resetBoth() {
+      stopAnimation();
+      terrainPos = null;
+      llPos = null;
+      terrainTrail = [];
+      llTrail = [];
+      drawAll();
+      updateDisplay();
+    }
+
+    function changeFamily() {
+      currentFamily = document.getElementById('ll-family').value;
+      resetBoth();
+    }
+
+    // ========================================
+    // Initialize
+    // ========================================
+
+    function init() {
+      terrainSize = setupCanvas(terrainCanvas, terrainCtx);
+      llSize = setupCanvas(llCanvas, llCtx);
+      drawAll();
+    }
+
+    // KaTeX
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+      init();
+    });
+
+    window.addEventListener('resize', () => {
+      terrainSize = setupCanvas(terrainCanvas, terrainCtx);
+      llSize = setupCanvas(llCanvas, llCtx);
+      drawAll();
+    });
+  </script>
+</body>
+</html>
