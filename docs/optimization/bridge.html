@@ -117,7 +117,7 @@
 
     .canvas-container {
       display: flex;
-      gap: 20px;
+      gap: 15px;
       margin: 20px 0;
       flex-wrap: wrap;
       justify-content: center;
@@ -125,7 +125,8 @@
 
     .canvas-panel {
       flex: 1;
-      min-width: 300px;
+      min-width: 220px;
+      max-width: 320px;
     }
 
     .canvas-panel h4 {
@@ -287,13 +288,15 @@
       </div>
     </div>
 
-    <!-- Section 2: Side-by-side comparison -->
+    <!-- Section 2: Three-panel comparison -->
     <div class="card">
-      <h2>See It: Terrain vs Log-Likelihood</h2>
+      <h2>See It: What Link Functions Do to the Surface</h2>
       <p>
-        On the left, a Gaussian-bump terrain. On the right, the log-likelihood surface for a
-        logistic regression model with real data. They look different — but the algorithms
-        treat them identically.
+        The middle panel shows the log-likelihood parameterized directly in terms of
+        the mean $\mu$ (no link function). The right panel shows the <em>same</em>
+        log-likelihood after applying the canonical link transformation. Compare how
+        the link function reshapes the surface into something that looks like the
+        smooth terrain on the left.
       </p>
 
       <div class="controls">
@@ -301,20 +304,23 @@
         <button id="btn-newton" onclick="startAlgorithm('newton')">Newton-Raphson</button>
         <button id="btn-reset" onclick="resetBoth()">Reset</button>
         <select id="ll-family" onchange="changeFamily()">
-          <option value="logistic">Logistic Regression</option>
-          <option value="gaussian">Gaussian Regression</option>
-          <option value="poisson">Poisson Regression</option>
+          <option value="poisson">Poisson (log link)</option>
+          <option value="logistic">Logistic (logit link)</option>
         </select>
       </div>
 
       <div class="canvas-container">
         <div class="canvas-panel">
-          <h4>Synthetic Terrain (Gaussian Bump)</h4>
-          <canvas id="terrain-canvas" width="380" height="380"></canvas>
+          <h4>Terrain (Metaphor)</h4>
+          <canvas id="terrain-canvas" width="300" height="300"></canvas>
         </div>
         <div class="canvas-panel">
-          <h4 id="ll-title">Log-Likelihood Surface (Logistic)</h4>
-          <canvas id="ll-canvas" width="380" height="380"></canvas>
+          <h4 id="raw-title">LL without link (μ-space)</h4>
+          <canvas id="raw-canvas" width="300" height="300"></canvas>
+        </div>
+        <div class="canvas-panel">
+          <h4 id="ll-title">LL with link (η-space)</h4>
+          <canvas id="ll-canvas" width="300" height="300"></canvas>
         </div>
       </div>
 
@@ -323,52 +329,93 @@
       </div>
 
       <p class="info-text">
-        Both surfaces use the same gradient ascent and Newton-Raphson algorithms.
-        The terrain is a smooth Gaussian bump; the log-likelihood is computed from data.
+        Left: a smooth Gaussian-bump terrain. Middle: log-likelihood parameterized directly in $\mu$.
+        Right: the same log-likelihood after applying the canonical link function.
+        The link transforms the awkward middle surface into the well-behaved right surface.
       </p>
     </div>
 
-    <!-- Section 3: Why shapes differ -->
+    <!-- Section 3: Why link functions matter -->
     <div class="card">
-      <h2>Why Different Models Make Different Surfaces</h2>
+      <h2>Why Link Functions Make Surfaces Similar</h2>
 
-      <h3>Gaussian (Normal) Regression</h3>
       <p>
-        The log-likelihood is a perfect quadratic bowl (an upside-down paraboloid).
-        This is why Newton-Raphson converges in exactly one step — the quadratic
-        approximation <em>is</em> the function. The Hessian is constant everywhere.
-      </p>
-      <p>
-        $\ell(\beta_0, \beta_1) = -\frac{1}{2\sigma^2} \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2 + \text{const}$
+        Without a link function, the log-likelihood surface can be badly shaped:
+        cliffs where parameters hit constraints ($\mu > 0$ for counts,
+        $0 < p < 1$ for probabilities), asymmetric curvature, and steep drop-offs.
+        Optimisation algorithms struggle on such surfaces.
       </p>
 
-      <h3>Logistic Regression</h3>
+      <h3>The Canonical Link Solution</h3>
       <p>
-        The log-likelihood is curved but <em>not</em> quadratic — it bends more in some
-        directions than others, and the curvature changes as you move. Newton-Raphson
-        still converges quickly, but needs multiple steps because its quadratic
-        approximation is only locally accurate.
+        Each GLM family belongs to the <strong>exponential family</strong>, which
+        has a natural parameter $\theta$. The canonical link sets $\eta = \theta$,
+        giving the log-likelihood a common structure:
+      </p>
+      <p style="text-align: center; font-size: 1.1em;">
+        $\ell(\beta) = \sum_{i=1}^{n} \left[ y_i \theta_i - b(\theta_i) \right] + \text{const}$
       </p>
       <p>
-        $\ell(\beta_0, \beta_1) = \sum_{i=1}^{n} \left[ y_i \log p_i + (1-y_i) \log(1-p_i) \right]$
-        where $p_i = \frac{1}{1 + e^{-(\beta_0 + \beta_1 x_i)}}$
+        where $\theta_i = \eta_i = \beta_0 + \beta_1 x_i$. This is always <strong>concave</strong>
+        in $\beta$ — a smooth hill with a single peak, exactly like the terrain metaphor.
+        The different families only change $b(\theta)$:
       </p>
 
-      <h3>Poisson Regression</h3>
-      <p>
-        The log-likelihood surface can be more elongated and asymmetric, especially
-        with skewed count data. The curvature depends on the predicted counts, creating
-        a surface that is steeper in some directions than others.
-      </p>
-      <p>
-        $\ell(\beta_0, \beta_1) = \sum_{i=1}^{n} \left[ y_i (\beta_0 + \beta_1 x_i) - e^{\beta_0 + \beta_1 x_i} \right] + \text{const}$
-      </p>
+      <table class="mapping-table">
+        <thead>
+          <tr>
+            <th>Family</th>
+            <th>Canonical Link</th>
+            <th>$b(\theta)$</th>
+            <th>Surface Shape</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Gaussian</td>
+            <td>Identity: $\eta = \mu$</td>
+            <td>$\theta^2/2$</td>
+            <td>Exact quadratic bowl</td>
+          </tr>
+          <tr>
+            <td>Binomial</td>
+            <td>Logit: $\eta = \log\frac{p}{1-p}$</td>
+            <td>$\log(1 + e^\theta)$</td>
+            <td>Smooth concave hill</td>
+          </tr>
+          <tr>
+            <td>Poisson</td>
+            <td>Log: $\eta = \log\mu$</td>
+            <td>$e^\theta$</td>
+            <td>Smooth concave hill</td>
+          </tr>
+        </tbody>
+      </table>
 
       <div class="highlight-box">
-        The shape of the log-likelihood surface is determined by the model family.
-        Gaussian gives a bowl. Logistic gives a curved hill. Poisson gives an
-        asymmetric ridge. But the peak of each surface is the MLE.
+        The link function is not arbitrary decoration — it transforms a constrained,
+        awkwardly-shaped optimisation problem into a smooth, well-behaved hill
+        that algorithms can climb efficiently. This is <em>why</em> GLMs use link functions,
+        and why the terrain metaphor works so well for all of them.
       </div>
+
+      <h3>Without the link</h3>
+      <p>
+        If we parameterize Poisson regression as $\mu = \beta_0 + \beta_1 x$ (identity link),
+        the surface has a cliff where $\mu$ approaches zero (log-likelihood plummets to $-\infty$).
+        For logistic regression with $p = \beta_0 + \beta_1 x$ (linear probability model),
+        the surface has walls at $p = 0$ and $p = 1$.
+        These constraints make the surface hard to optimise and the terrain metaphor breaks down.
+      </p>
+
+      <h3>With the canonical link</h3>
+      <p>
+        Apply log: $\log\mu = \beta_0 + \beta_1 x$ for Poisson. Apply logit:
+        $\log\frac{p}{1-p} = \beta_0 + \beta_1 x$ for logistic.
+        Now the parameters are unconstrained, the surface is concave, and gradient
+        ascent or Newton-Raphson will find the peak reliably — just like climbing a
+        hill on a map.
+      </p>
     </div>
 
     <!-- Section 4: Connections -->
@@ -419,8 +466,7 @@
     // Data and Log-Likelihood Computation
     // ========================================
 
-    // Small embedded dataset: subset of heart disease data
-    // x = age (centered), y = heart disease (0/1)
+    // Heart disease data: x = age (centered), y = 0/1
     const heartData = [
       {x: -17, y: 0}, {x: -14, y: 0}, {x: -12, y: 0}, {x: -10, y: 1},
       {x: -8, y: 0}, {x: -6, y: 0}, {x: -5, y: 0}, {x: -3, y: 1},
@@ -434,21 +480,12 @@
 
     // Count data: synthetic bike-rental-like
     const countData = [
-      {x: -3, y: 2}, {x: -2.5, y: 3}, {x: -2, y: 1}, {x: -1.5, y: 4},
-      {x: -1, y: 5}, {x: -0.5, y: 3}, {x: 0, y: 7}, {x: 0.5, y: 8},
-      {x: 1, y: 6}, {x: 1.5, y: 12}, {x: 2, y: 15}, {x: 2.5, y: 10},
-      {x: 3, y: 20}, {x: 3.5, y: 25}, {x: 4, y: 18}, {x: 4.5, y: 30},
-      {x: 5, y: 35}, {x: 5.5, y: 28}, {x: 6, y: 45}, {x: 6.5, y: 50},
+      {x: 0, y: 5}, {x: 0.5, y: 3}, {x: 1, y: 7}, {x: 1.5, y: 8},
+      {x: 2, y: 6}, {x: 2.5, y: 12}, {x: 3, y: 15}, {x: 3.5, y: 10},
+      {x: 4, y: 20}, {x: 4.5, y: 25}, {x: 5, y: 18}, {x: 5.5, y: 30},
+      {x: 6, y: 35}, {x: 6.5, y: 28}, {x: 7, y: 45}, {x: 7.5, y: 50},
+      {x: 8, y: 40}, {x: 8.5, y: 55}, {x: 9, y: 60}, {x: 10, y: 80},
     ];
-
-    // Gaussian data
-    const gaussData = [];
-    const rng = (function(s) { return function() { let t = s += 0x6D2B79F5; t = Math.imul(t^t>>>15, t|1); t ^= t+Math.imul(t^t>>>7, t|61); return ((t^t>>>14)>>>0)/4294967296; }; })(42);
-    for (let i = 0; i < 30; i++) {
-      const x = -10 + 20 * rng();
-      const y = 5 + 2 * x + (rng() + rng() + rng() - 1.5) * 8;
-      gaussData.push({x, y});
-    }
 
     // Logistic function
     function logistic(z) {
@@ -457,8 +494,9 @@
       return 1 / (1 + Math.exp(-z));
     }
 
-    // Log-likelihood functions
-    function logisticLL(b0, b1, data) {
+    // LL WITH canonical link (parameterized in η-space)
+    function logisticLL_linked(b0, b1, data) {
+      // logit link: η = β₀ + β₁x, p = logistic(η)
       let ll = 0;
       for (const d of data) {
         const p = logistic(b0 + b1 * d.x);
@@ -468,55 +506,69 @@
       return ll;
     }
 
-    function gaussianLL(b0, b1, data) {
-      const sigma2 = 100;
-      let ss = 0;
-      for (const d of data) {
-        const resid = d.y - (b0 + b1 * d.x);
-        ss += resid * resid;
-      }
-      return -data.length/2 * Math.log(2 * Math.PI * sigma2) - ss / (2 * sigma2);
-    }
-
-    function poissonLL(b0, b1, data) {
+    function poissonLL_linked(b0, b1, data) {
+      // log link: η = β₀ + β₁x, μ = exp(η)
       let ll = 0;
       for (const d of data) {
         const eta = b0 + b1 * d.x;
         const mu = Math.exp(Math.max(-20, Math.min(20, eta)));
         ll += d.y * eta - mu;
-        // Omit log(y!) constant
+      }
+      return ll;
+    }
+
+    // LL WITHOUT link (parameterized in μ-space, identity link)
+    function logisticLL_raw(b0, b1, data) {
+      // Identity "link": p = β₀ + β₁x (linear probability model)
+      let ll = 0;
+      for (const d of data) {
+        const p = b0 + b1 * d.x;
+        // Outside [0,1] → LL is -Infinity
+        if (p <= 0 || p >= 1) return -1e6;
+        ll += d.y * Math.log(p) + (1 - d.y) * Math.log(1 - p);
+      }
+      return ll;
+    }
+
+    function poissonLL_raw(b0, b1, data) {
+      // Identity "link": μ = β₀ + β₁x (no log transform)
+      let ll = 0;
+      for (const d of data) {
+        const mu = b0 + b1 * d.x;
+        // μ must be > 0
+        if (mu <= 0) return -1e6;
+        ll += d.y * Math.log(mu) - mu;
       }
       return ll;
     }
 
     // Parameter ranges for each family
     const familyConfig = {
-      logistic: {
-        data: heartData,
-        llFn: logisticLL,
-        b0Range: [-3, 3],
-        b1Range: [-0.05, 0.2],
-        title: 'Log-Likelihood Surface (Logistic)',
-        b0Label: 'β₀ (intercept)',
-        b1Label: 'β₁ (age effect)',
-      },
-      gaussian: {
-        data: gaussData,
-        llFn: gaussianLL,
-        b0Range: [-10, 20],
-        b1Range: [-2, 6],
-        title: 'Log-Likelihood Surface (Gaussian)',
-        b0Label: 'β₀ (intercept)',
-        b1Label: 'β₁ (slope)',
-      },
       poisson: {
         data: countData,
-        llFn: poissonLL,
-        b0Range: [-1, 3],
-        b1Range: [0.1, 0.8],
-        title: 'Log-Likelihood Surface (Poisson)',
-        b0Label: 'β₀ (log baseline)',
-        b1Label: 'β₁ (log rate)',
+        llLinked: poissonLL_linked,
+        llRaw: poissonLL_raw,
+        // η-space (with log link)
+        linkedRange: { b0: [-1, 3], b1: [0.05, 0.6] },
+        // μ-space (identity — intercept is baseline count, slope is count per unit x)
+        rawRange: { b0: [-5, 30], b1: [0, 12] },
+        linkedTitle: 'LL with log link (η-space)',
+        rawTitle: 'LL without link (μ-space)',
+        linkedLabels: { b0: 'β₀ (log baseline)', b1: 'β₁ (log rate)' },
+        rawLabels: { b0: 'a₀ (baseline μ)', b1: 'a₁ (slope of μ)' },
+      },
+      logistic: {
+        data: heartData,
+        llLinked: logisticLL_linked,
+        llRaw: logisticLL_raw,
+        // η-space (with logit link)
+        linkedRange: { b0: [-3, 3], b1: [-0.05, 0.2] },
+        // μ-space (identity — intercept is baseline p, slope is change in p per unit x)
+        rawRange: { b0: [0.01, 0.99], b1: [-0.02, 0.06] },
+        linkedTitle: 'LL with logit link (η-space)',
+        rawTitle: 'LL without link (p-space)',
+        linkedLabels: { b0: 'β₀ (log-odds)', b1: 'β₁ (log-OR)' },
+        rawLabels: { b0: 'a₀ (baseline p)', b1: 'a₁ (slope of p)' },
       },
     };
 
@@ -526,6 +578,8 @@
 
     const terrainCanvas = document.getElementById('terrain-canvas');
     const terrainCtx = terrainCanvas.getContext('2d');
+    const rawCanvas = document.getElementById('raw-canvas');
+    const rawCtx = rawCanvas.getContext('2d');
     const llCanvas = document.getElementById('ll-canvas');
     const llCtx = llCanvas.getContext('2d');
 
@@ -541,7 +595,7 @@
       return { w: rect.width, h: rect.height };
     }
 
-    let terrainSize, llSize;
+    let terrainSize, rawSize, llSize;
 
     // Colour map (blue-green-yellow-red)
     function elevationColor(t) {
@@ -678,7 +732,7 @@
     // Algorithm State
     // ========================================
 
-    let currentFamily = 'logistic';
+    let currentFamily = 'poisson';
     let terrainTrail = [];
     let llTrail = [];
     let terrainPos = null;
@@ -704,34 +758,33 @@
       return {fxx, fyy, fxy};
     }
 
-    // LL gradient (finite differences)
-    function llGradient(b0, b1) {
-      const cfg = familyConfig[currentFamily];
-      const h = 0.0001;
-      const ll = cfg.llFn;
-      const d = cfg.data;
-      const dx = (ll(b0+h, b1, d) - ll(b0-h, b1, d)) / (2*h);
-      const dy = (ll(b0, b1+h, d) - ll(b0, b1-h, d)) / (2*h);
-      return {dx, dy};
+    // Generic finite-difference gradient/hessian for any LL function
+    function makeLLGradient(llFn, data) {
+      return function(b0, b1) {
+        const h = 0.0001;
+        const dx = (llFn(b0+h, b1, data) - llFn(b0-h, b1, data)) / (2*h);
+        const dy = (llFn(b0, b1+h, data) - llFn(b0, b1-h, data)) / (2*h);
+        return {dx, dy};
+      };
     }
 
-    function llHessian(b0, b1) {
-      const cfg = familyConfig[currentFamily];
-      const h = 0.001;
-      const ll = cfg.llFn;
-      const d = cfg.data;
-      const f = ll(b0, b1, d);
-      const fxx = (ll(b0+h,b1,d) - 2*f + ll(b0-h,b1,d))/(h*h);
-      const fyy = (ll(b0,b1+h,d) - 2*f + ll(b0,b1-h,d))/(h*h);
-      const fxy = (ll(b0+h,b1+h,d) - ll(b0+h,b1-h,d) - ll(b0-h,b1+h,d) + ll(b0-h,b1-h,d))/(4*h*h);
-      return {fxx, fyy, fxy};
+    function makeLLHessian(llFn, data) {
+      return function(b0, b1) {
+        const h = 0.001;
+        const f = llFn(b0, b1, data);
+        const fxx = (llFn(b0+h,b1,data) - 2*f + llFn(b0-h,b1,data))/(h*h);
+        const fyy = (llFn(b0,b1+h,data) - 2*f + llFn(b0,b1-h,data))/(h*h);
+        const fxy = (llFn(b0+h,b1+h,data) - llFn(b0+h,b1-h,data) - llFn(b0-h,b1+h,data) + llFn(b0-h,b1-h,data))/(4*h*h);
+        return {fxx, fyy, fxy};
+      };
     }
 
     // Newton step (shared logic)
-    function newtonStep(pos, gradFn, hessFn) {
+    function newtonStep(pos, gradFn, hessFn, maxStep) {
       const g = gradFn(pos.x, pos.y);
       const h = hessFn(pos.x, pos.y);
       const det = h.fxx * h.fyy - h.fxy * h.fxy;
+      const ms = maxStep || 0.1;
 
       let sx, sy;
       if (h.fxx < -0.01 && h.fyy < -0.01 && det > 1e-10) {
@@ -742,12 +795,10 @@
         sy = g.dy * 0.001;
       }
 
-      // Damping + clamping
       sx *= 0.5;
       sy *= 0.5;
-      const maxS = 0.1;
-      sx = Math.max(-maxS, Math.min(maxS, sx));
-      sy = Math.max(-maxS, Math.min(maxS, sy));
+      sx = Math.max(-ms, Math.min(ms, sx));
+      sy = Math.max(-ms, Math.min(ms, sy));
 
       return { x: pos.x + sx, y: pos.y + sy };
     }
@@ -819,10 +870,12 @@
     // Main draw
     // ========================================
 
-    let terrainStats, llStats;
+    let terrainStats, rawStats, llStats;
 
     function drawAll() {
       const cfg = familyConfig[currentFamily];
+      const rr = cfg.rawRange;
+      const lr = cfg.linkedRange;
 
       // Terrain
       terrainStats = drawHeatmap(terrainCtx, terrainSize,
@@ -833,21 +886,31 @@
         [0, 1], [0, 1], terrainStats);
       drawAxes(terrainCtx, terrainSize, [0, 1], [0, 1], 'x', 'y');
 
-      // LL surface
+      // Raw LL (no link)
+      rawStats = drawHeatmap(rawCtx, rawSize,
+        (b0, b1) => cfg.llRaw(b0, b1, cfg.data),
+        rr.b0, rr.b1);
+      drawContours(rawCtx, rawSize,
+        (b0, b1) => cfg.llRaw(b0, b1, cfg.data),
+        rr.b0, rr.b1, rawStats);
+      drawAxes(rawCtx, rawSize, rr.b0, rr.b1, cfg.rawLabels.b0, cfg.rawLabels.b1);
+
+      // Linked LL (with canonical link)
       llStats = drawHeatmap(llCtx, llSize,
-        (b0, b1) => cfg.llFn(b0, b1, cfg.data),
-        cfg.b0Range, cfg.b1Range);
+        (b0, b1) => cfg.llLinked(b0, b1, cfg.data),
+        lr.b0, lr.b1);
       drawContours(llCtx, llSize,
-        (b0, b1) => cfg.llFn(b0, b1, cfg.data),
-        cfg.b0Range, cfg.b1Range, llStats);
-      drawAxes(llCtx, llSize, cfg.b0Range, cfg.b1Range, cfg.b0Label, cfg.b1Label);
+        (b0, b1) => cfg.llLinked(b0, b1, cfg.data),
+        lr.b0, lr.b1, llStats);
+      drawAxes(llCtx, llSize, lr.b0, lr.b1, cfg.linkedLabels.b0, cfg.linkedLabels.b1);
 
-      // Trails
+      // Trails (only on terrain and linked LL — the two climbable surfaces)
       drawTrail(terrainCtx, terrainTrail, terrainSize, [0,1], [0,1], 'rgba(255,255,255,0.8)');
-      drawTrail(llCtx, llTrail, llSize, cfg.b0Range, cfg.b1Range, 'rgba(255,255,255,0.8)');
+      drawTrail(llCtx, llTrail, llSize, lr.b0, lr.b1, 'rgba(255,255,255,0.8)');
 
-      // Update title
-      document.getElementById('ll-title').textContent = cfg.title;
+      // Update titles
+      document.getElementById('raw-title').textContent = cfg.rawTitle;
+      document.getElementById('ll-title').textContent = cfg.linkedTitle;
     }
 
     // ========================================
@@ -866,11 +929,12 @@
 
     llCanvas.addEventListener('click', function(e) {
       const cfg = familyConfig[currentFamily];
+      const lr = cfg.linkedRange;
       const rect = llCanvas.getBoundingClientRect();
       const fx = (e.clientX - rect.left) / rect.width;
       const fy = 1 - (e.clientY - rect.top) / rect.height;
-      const b0 = cfg.b0Range[0] + fx * (cfg.b0Range[1] - cfg.b0Range[0]);
-      const b1 = cfg.b1Range[0] + fy * (cfg.b1Range[1] - cfg.b1Range[0]);
+      const b0 = lr.b0[0] + fx * (lr.b0[1] - lr.b0[0]);
+      const b1 = lr.b1[0] + fy * (lr.b1[1] - lr.b1[0]);
       llPos = {x: b0, y: b1};
       llTrail = [{x: b0, y: b1}];
       drawAll();
@@ -880,31 +944,26 @@
     function updateDisplay() {
       const cfg = familyConfig[currentFamily];
       let text = '';
-      if (terrainPos) {
-        const e = terrainElevation(terrainPos.x, terrainPos.y);
-        text += `Terrain: (${terrainPos.x.toFixed(3)}, ${terrainPos.y.toFixed(3)}) elevation=${e.toFixed(1)}`;
-      }
       if (llPos) {
-        const ll = cfg.llFn(llPos.x, llPos.y, cfg.data);
-        if (text) text += '  |  ';
-        text += `LL: (${llPos.x.toFixed(3)}, ${llPos.y.toFixed(4)}) ℓ=${ll.toFixed(2)}`;
+        const ll = cfg.llLinked(llPos.x, llPos.y, cfg.data);
+        text = `With link: (${llPos.x.toFixed(3)}, ${llPos.y.toFixed(4)}) ℓ = ${ll.toFixed(2)}`;
       }
-      if (!text) text = 'Click a surface to set starting position, then run an algorithm.';
+      if (!text) text = 'Click the right surface to set starting position, then run an algorithm.';
       document.getElementById('param-display').textContent = text;
     }
 
     function startAlgorithm(algo) {
       if (animating) { stopAnimation(); return; }
 
-      // Set defaults if no click position
       const cfg = familyConfig[currentFamily];
+      const lr = cfg.linkedRange;
       if (!terrainPos) {
         terrainPos = {x: 0.2, y: 0.3};
         terrainTrail = [{x: 0.2, y: 0.3}];
       }
       if (!llPos) {
-        const b0 = cfg.b0Range[0] + 0.2 * (cfg.b0Range[1] - cfg.b0Range[0]);
-        const b1 = cfg.b1Range[0] + 0.3 * (cfg.b1Range[1] - cfg.b1Range[0]);
+        const b0 = lr.b0[0] + 0.2 * (lr.b0[1] - lr.b0[0]);
+        const b1 = lr.b1[0] + 0.3 * (lr.b1[1] - lr.b1[0]);
         llPos = {x: b0, y: b1};
         llTrail = [{x: b0, y: b1}];
       }
@@ -925,21 +984,23 @@
       if (!animating) return;
 
       const cfg = familyConfig[currentFamily];
+      const lr = cfg.linkedRange;
+      const llGrad = makeLLGradient(cfg.llLinked, cfg.data);
+      const llHess = makeLLHessian(cfg.llLinked, cfg.data);
 
-      // Step terrain
       if (currentAlgo === 'gradient') {
         terrainPos = gradientStep(terrainPos, terrainGradient, 0.008);
-        llPos = gradientStep(llPos, llGradient, 0.008);
+        llPos = gradientStep(llPos, llGrad, 0.008);
       } else {
         terrainPos = newtonStep(terrainPos, terrainGradient, terrainHessian);
-        llPos = newtonStep(llPos, llGradient, llHessian);
+        llPos = newtonStep(llPos, llGrad, llHess);
       }
 
-      // Clamp to bounds
+      // Clamp
       terrainPos.x = Math.max(0.01, Math.min(0.99, terrainPos.x));
       terrainPos.y = Math.max(0.01, Math.min(0.99, terrainPos.y));
-      llPos.x = Math.max(cfg.b0Range[0], Math.min(cfg.b0Range[1], llPos.x));
-      llPos.y = Math.max(cfg.b1Range[0], Math.min(cfg.b1Range[1], llPos.y));
+      llPos.x = Math.max(lr.b0[0], Math.min(lr.b0[1], llPos.x));
+      llPos.y = Math.max(lr.b1[0], Math.min(lr.b1[1], llPos.y));
 
       terrainTrail.push({...terrainPos});
       llTrail.push({...llPos});
@@ -947,7 +1008,7 @@
       drawAll();
       updateDisplay();
 
-      // Check convergence
+      // Convergence check
       if (terrainTrail.length > 2 && llTrail.length > 2) {
         const tLast = terrainTrail[terrainTrail.length - 1];
         const tPrev = terrainTrail[terrainTrail.length - 2];
@@ -987,6 +1048,7 @@
 
     function init() {
       terrainSize = setupCanvas(terrainCanvas, terrainCtx);
+      rawSize = setupCanvas(rawCanvas, rawCtx);
       llSize = setupCanvas(llCanvas, llCtx);
       drawAll();
     }
@@ -1006,6 +1068,7 @@
 
     window.addEventListener('resize', () => {
       terrainSize = setupCanvas(terrainCanvas, terrainCtx);
+      rawSize = setupCanvas(rawCanvas, rawCtx);
       llSize = setupCanvas(llCanvas, llCtx);
       drawAll();
     });
