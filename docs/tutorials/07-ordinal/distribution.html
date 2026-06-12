@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Distribution (Ordinal)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #2c3e50;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 40%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #34495e;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    /* Distribution options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .option-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card:hover:not(.dimmed):not(.selected) {
+      border-color: #2c3e50;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .option-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .option-card.selected {
+      border-color: #27ae60;
+      background: #d4edda;
+    }
+
+    .option-card.wrong {
+      border-color: #e74c3c;
+      background: #f8d7da;
+      animation: shake 0.3s;
+    }
+
+    .option-card.semi-valid {
+      border-color: #f39c12;
+      background: #fff3cd;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .option-card h4 {
+      margin-bottom: 8px;
+    }
+
+    .option-card .variance {
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Times New Roman', serif;
+      font-size: 1em;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .option-card .desc {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    .option-card .support {
+      font-size: 0.8em;
+      color: #888;
+      margin-top: 8px;
+      font-style: italic;
+    }
+
+    /* Dialog overlay (modal style) */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 600px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin: 5px 0;
+    }
+
+    .key-point {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    .key-point.success {
+      background: #d4edda;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1a252f;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 3: Choose the Distribution Family</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">3</div>
+        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h3>Choose the Distribution Family</h3>
+      <p>
+        Pain level has <strong>4 ordered categories</strong>. The response is categorical with a natural ordering.
+        Which distribution family is appropriate for modelling the probability of each ordered category?
+      </p>
+    </div>
+
+    <!-- Options -->
+    <div class="options-grid">
+      <div class="option-card" data-dist="cumulative">
+        <h4>Cumulative (Ordinal)</h4>
+        <div class="variance">$P(Y = j) = P(Y \le j) - P(Y \le j-1)$</div>
+        <p class="desc">Multinomial with ordering constraint. Probability distributed across ordered categories, with cumulative structure.</p>
+        <p class="support">Support: $\{1, 2, \ldots, J\}$ (ordered)</p>
+      </div>
+
+      <div class="option-card" data-dist="multinomial">
+        <h4>Multinomial</h4>
+        <div class="variance">$P(Y = j) = \pi_j, \quad \sum \pi_j = 1$</div>
+        <p class="desc">General categorical distribution. No ordering assumed &mdash; each category is independent.</p>
+        <p class="support">Support: $\{1, 2, \ldots, J\}$ (unordered)</p>
+      </div>
+
+      <div class="option-card" data-dist="gaussian">
+        <h4>Gaussian (Normal)</h4>
+        <div class="variance">$\text{Var}(Y) = \sigma^2$</div>
+        <p class="desc">Continuous, symmetric distribution. The default for truly continuous data.</p>
+        <p class="support">Support: $(-\infty, \infty)$</p>
+      </div>
+
+      <div class="option-card" data-dist="poisson">
+        <h4>Poisson</h4>
+        <div class="variance">$\text{Var}(Y) = \mu$</div>
+        <p class="desc">For unbounded counts of events. Variance equals the mean.</p>
+        <p class="support">Support: $\{0, 1, 2, \ldots\}$ (counts)</p>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Cumulative (Ordinal) Distribution Selected</h3>
+      <p>The cumulative ordinal distribution models probabilities across ordered categories using $J-1$ thresholds and shared slopes.</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="link.html" class="btn btn-secondary">&larr; Back to Link</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for Cumulative (correct) -->
+  <div class="dialog-overlay" id="cumulativeDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Cumulative ordinal uses the ordering.</h3>
+      <p>
+        The <strong>cumulative ordinal</strong> distribution is the right choice because it:
+      </p>
+      <div class="key-point success">
+        <ul style="margin: 0 0 0 20px;">
+          <li><strong>Respects ordering:</strong> Models $P(Y \le j)$, which only makes sense for ordered categories</li>
+          <li><strong>Threshold structure:</strong> Think of a latent continuous variable cut by $J-1$ thresholds</li>
+          <li><strong>Efficient:</strong> Fewer parameters than unordered multinomial (shared slopes)</li>
+        </ul>
+      </div>
+      <p>
+        <strong>The latent variable interpretation:</strong>
+      </p>
+      <p>
+        Imagine there's a continuous "true pain" $Y^*$ that we can't observe directly. We only see
+        which of 4 bins it falls into:
+      </p>
+      <div class="key-point">
+        <p style="text-align: center; font-family: monospace; margin: 0;">
+          Y*: ----[None]----$\alpha_1$----[Mild]----$\alpha_2$----[Moderate]----$\alpha_3$----[Severe]----
+        </p>
+      </div>
+      <p>
+        The thresholds $\alpha_1, \alpha_2, \alpha_3$ are the boundaries between categories. The predictors
+        shift the location of $Y^*$, changing which category is most likely.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmCumulative()">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Multinomial (semi-valid) -->
+  <div class="dialog-overlay" id="multinomialDialog">
+    <div class="dialog warning">
+      <h3>&#9888; Valid but ignores the ordering.</h3>
+      <p>
+        The <strong>multinomial</strong> distribution works for any categorical outcome, but it
+        <strong>doesn't use the ordering</strong> information in pain levels.
+      </p>
+      <div class="key-point">
+        <p><strong>Multinomial logistic:</strong> Estimates separate parameters for each category comparison.</p>
+        <p>With 4 categories and 3 predictors: $(J-1) \times p = 3 \times 3 = 9$ slope parameters.</p>
+      </div>
+      <p>
+        <strong>Problems with ignoring ordering:</strong>
+      </p>
+      <ul>
+        <li><strong>More parameters:</strong> 9 slopes vs 3 slopes in proportional odds</li>
+        <li><strong>No proportional odds interpretation:</strong> Can't say "treatment shifts the whole distribution"</li>
+        <li><strong>Less efficient:</strong> Wider confidence intervals due to more parameters</li>
+        <li><strong>Harder to interpret:</strong> Each predictor has $J-1$ separate effects instead of one</li>
+      </ul>
+      <p>
+        When categories <em>are</em> ordered, using the ordering constraint gives a <strong>more powerful</strong>
+        and <strong>more interpretable</strong> model.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('multinomialDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Gaussian (wrong) -->
+  <div class="dialog-overlay" id="gaussianDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Pain level is not continuous.</h3>
+      <p>
+        The <strong>Gaussian distribution</strong> is for continuous data that can take any real value.
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> Predicting pain = 2.7 is meaningless. There's no pain level between Mild and Moderate.</p>
+      </div>
+      <p>
+        <strong>Why Gaussian doesn't work for ordinal data:</strong>
+      </p>
+      <ul>
+        <li>Pain level can only be 1, 2, 3, or 4 &mdash; not continuous</li>
+        <li>Residuals cannot be normally distributed for a 4-level outcome</li>
+        <li>Predictions can fall outside the valid range (e.g., pain = 0.3 or 5.1)</li>
+        <li>Assumes equal spacing between categories, which is rarely true</li>
+      </ul>
+      <p>
+        For ordered categories, we need a distribution that assigns probabilities to
+        <strong>discrete ordered outcomes</strong>.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('gaussianDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Poisson (wrong) -->
+  <div class="dialog-overlay" id="poissonDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Pain levels are not counts.</h3>
+      <p>
+        The <strong>Poisson distribution</strong> is for unbounded counts of events (0, 1, 2, 3, ...).
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> Pain levels are categories that happen to be numbered, not counts of anything.</p>
+      </div>
+      <p>
+        <strong>Key differences between counts and ordinal categories:</strong>
+      </p>
+      <ul>
+        <li><strong>Counts are unbounded:</strong> Can be 0, 1, 2, ..., 100, etc. Pain has exactly 4 levels.</li>
+        <li><strong>Counts are additive:</strong> 2 events + 3 events = 5 events. "Mild" + "Moderate" = ??? (meaningless)</li>
+        <li><strong>Poisson variance = mean:</strong> This constraint makes no sense for 4 ordered categories</li>
+        <li><strong>No ceiling:</strong> Poisson allows any non-negative integer; pain level is bounded at 4</li>
+      </ul>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('poissonDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedDist = null;
+
+    const cards = document.querySelectorAll('.option-card');
+    const continueBtn = document.getElementById('continueBtn');
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const dist = card.dataset.dist;
+        handleDistSelection(dist, card);
+      });
+    });
+
+    function handleDistSelection(dist, card) {
+      // Don't process if already confirmed
+      if (selectedDist === 'cumulative') return;
+
+      // Remove previous selection styling
+      cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+
+      switch(dist) {
+        case 'cumulative':
+          card.classList.add('selected');
+          showDialog('cumulativeDialog');
+          break;
+
+        case 'multinomial':
+          card.classList.add('semi-valid');
+          showDialog('multinomialDialog');
+          break;
+
+        case 'gaussian':
+          card.classList.add('wrong');
+          showDialog('gaussianDialog');
+          break;
+
+        case 'poisson':
+          card.classList.add('wrong');
+          showDialog('poissonDialog');
+          break;
+      }
+    }
+
+    function confirmCumulative() {
+      selectedDist = 'cumulative';
+      closeDialog('cumulativeDialog');
+
+      // Show result panel and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.option-card:not([data-dist="cumulative"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+
+      // Re-render math in dialog
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(dialog, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedDist !== 'cumulative') {
+        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (selectedDist === 'cumulative') {
+        window.location.href = 'fitting.html';
+      }
+    });
+
+    // Render initial math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

@@ -119,6 +119,9 @@
     .card-header.poisson { background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%); }
     .card-header.negbin { background: linear-gradient(135deg, #d35400 0%, #e67e22 100%); }
     .card-header.gamma { background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%); }
+    .card-header.beta { background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%); }
+    .card-header.ordinal { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); }
+    .card-header.zeroinfl { background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%); }
 
     .card-header h3 {
       font-size: 1.2em;
@@ -361,6 +364,24 @@
             <td class="wrong">Can predict negative costs</td>
             <td class="right">Gamma: strictly positive</td>
           </tr>
+          <tr>
+            <td>Proportion (0,1)</td>
+            <td>Exam pass rate</td>
+            <td class="wrong">Can predict rates > 1 or < 0</td>
+            <td class="right">Beta: bounded to (0,1)</td>
+          </tr>
+          <tr>
+            <td>Ordered categories</td>
+            <td>Pain level (None/Mild/Moderate/Severe)</td>
+            <td class="wrong">Treats gaps as equal, predicts "2.7 pain"</td>
+            <td class="right">Ordinal: respects ordering without equal spacing</td>
+          </tr>
+          <tr>
+            <td>Zero-heavy counts</td>
+            <td>Doctor visits (many never visit)</td>
+            <td class="wrong">Underpredicts zeros, wrong SEs</td>
+            <td class="right">ZIP: two processes generating zeros</td>
+          </tr>
         </tbody>
       </table>
 
@@ -508,6 +529,75 @@
         <div class="card-footer">
           <span></span>
           <a href="tutorials/05-gamma/systematic.html" class="start-btn">Start Tutorial</a>
+        </div>
+      </div>
+
+      <!-- Tutorial 6: Exam Proportions -->
+      <div class="tutorial-card">
+        <div class="card-header unknown">
+          <h3>6. Exam Performance Rates</h3>
+          <div class="family">Which GLM family?</div>
+        </div>
+        <div class="card-body">
+          <h4>The Decision Problem</h4>
+          <p>Predict the proportion of exam questions answered correctly&mdash;a continuous value bounded between 0 and 1.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">Synthetic Exam Proportions</div>
+          </div>
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> Proportions aren't binary and can't exceed [0,1]. What distribution handles continuous bounded data?
+          </div>
+        </div>
+        <div class="card-footer">
+          <span></span>
+          <a href="tutorials/06-beta/systematic.html" class="start-btn">Start Tutorial</a>
+        </div>
+      </div>
+
+      <!-- Tutorial 7: Pain Levels -->
+      <div class="tutorial-card">
+        <div class="card-header unknown">
+          <h3>7. Pain Level Assessment</h3>
+          <div class="family">Which GLM family?</div>
+        </div>
+        <div class="card-body">
+          <h4>The Decision Problem</h4>
+          <p>Predict pain severity (None/Mild/Moderate/Severe) after treatment&mdash;ordered categories with unequal gaps.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">Synthetic Clinical Trial</div>
+          </div>
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> The outcome has a natural ordering but isn't a number. How do you model ordered categories?
+          </div>
+        </div>
+        <div class="card-footer">
+          <span></span>
+          <a href="tutorials/07-ordinal/systematic.html" class="start-btn">Start Tutorial</a>
+        </div>
+      </div>
+
+      <!-- Tutorial 8: Doctor Visits -->
+      <div class="tutorial-card">
+        <div class="card-header unknown">
+          <h3>8. Doctor Visit Counts</h3>
+          <div class="family">Which GLM family?</div>
+        </div>
+        <div class="card-body">
+          <h4>The Decision Problem</h4>
+          <p>Predict annual doctor visits&mdash;count data where 40% of people have zero visits, far more than any standard model expects.</p>
+          <div class="dataset-info">
+            <div class="label">Dataset</div>
+            <div class="value">Synthetic Health Survey</div>
+          </div>
+          <div class="challenge-text">
+            <strong>Your challenge:</strong> Two different processes produce zeros: healthy non-visitors and access-blocked patients. How do you model both?
+          </div>
+        </div>
+        <div class="card-footer">
+          <span></span>
+          <a href="tutorials/08-zeroinfl/systematic.html" class="start-btn">Start Tutorial</a>
         </div>
       </div>
 

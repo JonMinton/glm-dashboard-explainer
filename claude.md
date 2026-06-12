@@ -72,6 +72,9 @@ See `.claude/specs/tutorial-series.md` for detailed implementation plan.
 | 3 | Bike Rental Counts | Poisson + Log | **COMPLETE** |
 | 4 | Overdispersed Counts | Negative Binomial + Log | **COMPLETE** |
 | 5 | Blood Pressure Prediction | Gamma + Log | **COMPLETE** |
+| 6 | Exam Performance Rates | Beta + Logit | **COMPLETE** |
+| 7 | Pain Level Assessment | Ordinal + Cumulative Logit | **COMPLETE** |
+| 8 | Doctor Visit Counts | Zero-Inflated Poisson | **COMPLETE** |
 
 ### Tutorial Files
 ```
@@ -88,7 +91,10 @@ docs/
     ├── 02-logistic/                # Tutorial 2: Heart Disease (Binomial)
     ├── 03-poisson/                 # Tutorial 3: Bike Rentals (Poisson)
     ├── 04-negbin/                  # Tutorial 4: Overdispersed Counts
-    └── 05-gamma/                   # Tutorial 5: Blood Pressure (Gamma)
+    ├── 05-gamma/                   # Tutorial 5: Blood Pressure (Gamma)
+    ├── 06-beta/                    # Tutorial 6: Exam Proportions (Beta)
+    ├── 07-ordinal/                 # Tutorial 7: Pain Levels (Ordinal)
+    └── 08-zeroinfl/                # Tutorial 8: Doctor Visits (ZIP)
 ```
 
 ### Design Pattern
@@ -178,7 +184,7 @@ glm-dashboard-explainer/
 │   │       ├── terrain.js    # Elevation lookup, Hessian, ellipse functions
 │   │       └── synthetic-terrain.js  # Gaussian bump terrain generators
 │   ├── css/                  # Shared CSS
-│   ├── tutorials/            # GLM tutorial pages (5 complete)
+│   ├── tutorials/            # GLM tutorial pages (8 complete)
 │   │   ├── 01-gaussian/      # 6 HTML files per tutorial
 │   │   ├── 02-logistic/
 │   │   ├── 03-poisson/

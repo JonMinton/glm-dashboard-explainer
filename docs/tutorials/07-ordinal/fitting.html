@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Fitting (Ordinal)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #2c3e50;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 60%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #34495e;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+      font-size: 1.1em;
+      overflow-x: auto;
+    }
+
+    /* Algorithm steps */
+    .algorithm-steps {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .algorithm-steps ol {
+      margin-left: 20px;
+    }
+
+    .algorithm-steps li {
+      margin: 12px 0;
+      padding-left: 10px;
+    }
+
+    .algorithm-steps .step-note {
+      font-size: 0.85em;
+      color: #666;
+      font-style: italic;
+      margin-top: 5px;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .comparison-table tr.highlight-row {
+      background: #eaf2f8;
+      font-weight: 500;
+    }
+
+    /* Highlight */
+    .highlight {
+      background: #eaf2f8;
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #2c3e50;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #1a252f;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 4: Understanding Ordinal Model Fitting</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="panel">
+      <h2>How Proportional Odds Model Fitting Works</h2>
+
+      <p>
+        The proportional odds model uses <strong>maximum likelihood estimation (MLE)</strong> to find
+        the best-fitting thresholds and slopes. Unlike standard GLMs that use IRLS, ordinal models
+        typically use Newton-Raphson or other general optimisers.
+      </p>
+
+      <div class="insight-box">
+        <h4>The Parameters</h4>
+        <p>
+          With $J = 4$ pain categories and $p$ predictors, we estimate:
+        </p>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>$J - 1 = 3$ threshold parameters:</strong> $\alpha_1, \alpha_2, \alpha_3$ (also called cut-points or intercepts)</li>
+          <li><strong>$p$ slope parameters:</strong> $\beta_1, \ldots, \beta_p$ (shared across all thresholds)</li>
+        </ul>
+        <p style="margin-top: 10px; margin-bottom: 0;">
+          <strong>Total:</strong> $3 + p$ parameters instead of $(J-1) \times p$ for unordered multinomial.
+        </p>
+      </div>
+
+      <h3>The Cumulative Logit Model</h3>
+
+      <p>
+        For each observation $i$ and threshold $j$:
+      </p>
+
+      <div class="math-display">
+        $$P(Y_i \le j) = \frac{1}{1 + \exp(-(\alpha_j - \mathbf{x}_i'\boldsymbol{\beta}))}$$
+      </div>
+
+      <p>
+        where $P(Y \le 0) = 0$ and $P(Y \le J) = 1$ by convention.
+      </p>
+
+      <h3>Category Probabilities</h3>
+
+      <p>
+        The probability of each specific category is the difference between consecutive cumulative probabilities:
+      </p>
+
+      <div class="math-display">
+        $$P(Y_i = j) = P(Y_i \le j) - P(Y_i \le j-1)$$
+      </div>
+
+      <p>
+        For example, with 4 categories:
+      </p>
+
+      <div class="algorithm-steps">
+        <ol>
+          <li>
+            <strong>$P(Y = 1)$</strong> = $P(Y \le 1) - 0$ = $P(Y \le 1)$
+            <p class="step-note">Probability of "None" pain</p>
+          </li>
+          <li>
+            <strong>$P(Y = 2)$</strong> = $P(Y \le 2) - P(Y \le 1)$
+            <p class="step-note">Probability of "Mild" pain</p>
+          </li>
+          <li>
+            <strong>$P(Y = 3)$</strong> = $P(Y \le 3) - P(Y \le 2)$
+            <p class="step-note">Probability of "Moderate" pain</p>
+          </li>
+          <li>
+            <strong>$P(Y = 4)$</strong> = $1 - P(Y \le 3)$
+            <p class="step-note">Probability of "Severe" pain</p>
+          </li>
+        </ol>
+      </div>
+
+      <h3>The Log-Likelihood</h3>
+
+      <p>
+        MLE finds parameters that maximise the probability of the observed data:
+      </p>
+
+      <div class="math-display">
+        $$\ell(\boldsymbol{\alpha}, \boldsymbol{\beta}) = \sum_{i=1}^{n} \log P(Y_i = y_i)$$
+      </div>
+
+      <p>
+        where each $P(Y_i = y_i)$ is computed from the cumulative model above.
+      </p>
+
+      <div class="insight-box key">
+        <h4>Proportional Odds Assumption</h4>
+        <p>
+          The key assumption is that the <strong>same $\boldsymbol{\beta}$</strong> applies at every threshold.
+          This means each predictor shifts the <strong>entire distribution</strong> by the same amount on
+          the logit scale.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Interpretation:</strong> $e^{\beta}$ gives the odds ratio for being in a <em>higher</em> vs <em>lower</em>
+          category, regardless of where you split the scale.
+        </p>
+      </div>
+
+      <h3>What Software Does</h3>
+
+      <p>
+        R uses <code>MASS::polr()</code> and Python uses <code>statsmodels.miscmodels.ordinal_model.OrderedModel</code>.
+        Both maximise the log-likelihood using iterative numerical methods (Newton-Raphson or BFGS).
+      </p>
+
+      <div class="insight-box" style="background: #f0e6ff; border-left-color: #9b59b6;">
+        <h4 style="color: #9b59b6;">Want to see optimisation in action?</h4>
+        <p style="margin-bottom: 0;">
+          Our <a href="../../optimization/" style="color: #9b59b6; font-weight: 600;">interactive visualisations</a>
+          show how algorithms like gradient descent and Newton-Raphson navigate parameter space,
+          from simple 1D problems to 4D and beyond.
+        </p>
+      </div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="panel">
+      <h2>GLM Family Comparison</h2>
+
+      <p>
+        Here's how the ordinal model compares to the other GLM families we've studied:
+      </p>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Family</th>
+          <th>Response</th>
+          <th>Parameters</th>
+          <th>Common Link</th>
+        </tr>
+        <tr>
+          <td>Gaussian</td>
+          <td>Continuous</td>
+          <td>$\boldsymbol{\beta}, \sigma^2$</td>
+          <td>Identity</td>
+        </tr>
+        <tr>
+          <td>Binomial</td>
+          <td>Binary</td>
+          <td>$\boldsymbol{\beta}$</td>
+          <td>Logit</td>
+        </tr>
+        <tr>
+          <td>Poisson</td>
+          <td>Counts</td>
+          <td>$\boldsymbol{\beta}$</td>
+          <td>Log</td>
+        </tr>
+        <tr>
+          <td>Neg. Binomial</td>
+          <td>Overdispersed counts</td>
+          <td>$\boldsymbol{\beta}, \theta$</td>
+          <td>Log</td>
+        </tr>
+        <tr>
+          <td>Gamma</td>
+          <td>Positive continuous</td>
+          <td>$\boldsymbol{\beta}, \text{shape}$</td>
+          <td>Log</td>
+        </tr>
+        <tr>
+          <td>Beta</td>
+          <td>Proportions (0,1)</td>
+          <td>$\boldsymbol{\beta}, \phi$</td>
+          <td>Logit</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>Ordinal</strong></td>
+          <td><strong>Ordered categories</strong></td>
+          <td><strong>$\boldsymbol{\beta}, \alpha_1 \ldots \alpha_{J-1}$</strong></td>
+          <td><strong>Cumulative logit</strong></td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>What Makes Ordinal Special</h4>
+        <p>
+          Unlike other GLMs where there's one intercept, the ordinal model has <strong>$J-1$ intercepts</strong>
+          (the thresholds) but still only <strong>one set of slopes</strong>. This is the proportional odds
+          structure: many intercepts, shared slopes.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>For our pain model:</strong> 3 thresholds ($\alpha_1, \alpha_2, \alpha_3$) + treatment, dose, and age coefficients.
+        </p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="distribution.html" class="btn btn-secondary">&larr; Back to Distribution</a>
+      <a href="code.html" class="btn btn-primary">Continue to R/Python Code &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

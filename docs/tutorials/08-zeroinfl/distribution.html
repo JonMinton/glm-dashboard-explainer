@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Distribution (Zero-Inflated)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #e67e22;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 40%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #e67e22;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #f39c12;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #e67e22;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #e67e22;
+      margin-bottom: 8px;
+    }
+
+    /* Stage container */
+    .stage {
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .stage.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Histogram canvas */
+    .histogram-container {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      text-align: center;
+    }
+
+    .histogram-container canvas {
+      max-width: 100%;
+    }
+
+    /* Comparison bar */
+    .zero-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .zero-bar {
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .zero-bar.observed {
+      background: #fef5e7;
+      border: 2px solid #e67e22;
+    }
+
+    .zero-bar.predicted {
+      background: #f8f9fa;
+      border: 2px solid #dee2e6;
+    }
+
+    .zero-bar .label {
+      font-size: 0.85em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .zero-bar .value {
+      font-size: 2em;
+      font-weight: 700;
+      margin: 5px 0;
+    }
+
+    .zero-bar.observed .value { color: #e67e22; }
+    .zero-bar.predicted .value { color: #666; }
+
+    .zero-bar .detail {
+      font-size: 0.85em;
+      color: #888;
+    }
+
+    /* Verdict */
+    .verdict {
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 15px 0;
+      font-weight: 600;
+    }
+
+    .verdict.fail {
+      background: #f8d7da;
+      border-left: 4px solid #e74c3c;
+      color: #721c24;
+    }
+
+    .verdict.partial {
+      background: #fff3cd;
+      border-left: 4px solid #f39c12;
+      color: #856404;
+    }
+
+    .verdict.success {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      color: #155724;
+    }
+
+    /* Two-zeros diagram */
+    .two-zeros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .zero-type {
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .zero-type.structural {
+      background: #ebdef0;
+      border: 2px solid #8e44ad;
+    }
+
+    .zero-type.sampling {
+      background: #d4efdf;
+      border: 2px solid #27ae60;
+    }
+
+    .zero-type h4 {
+      margin-bottom: 8px;
+    }
+
+    .zero-type.structural h4 { color: #8e44ad; }
+    .zero-type.sampling h4 { color: #27ae60; }
+
+    .zero-type p {
+      font-size: 0.9em;
+      margin-bottom: 8px;
+    }
+
+    .zero-type .example {
+      font-size: 0.85em;
+      font-style: italic;
+      color: #666;
+    }
+
+    /* Action buttons */
+    .action-btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #e67e22;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 10px 0;
+    }
+
+    .action-btn:hover {
+      background: #d35400;
+      transform: translateY(-1px);
+    }
+
+    .action-btn.success-btn {
+      background: #27ae60;
+    }
+
+    .action-btn.success-btn:hover {
+      background: #219a52;
+    }
+
+    .action-btn:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Stage indicator */
+    .stage-indicator {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stage-pip {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #dee2e6;
+      transition: all 0.3s ease;
+    }
+
+    .stage-pip.active {
+      background: #e67e22;
+      transform: scale(1.3);
+    }
+
+    .stage-pip.done {
+      background: #27ae60;
+    }
+
+    /* Insight box */
+    .insight-box {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #e67e22;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #e67e22;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #d35400;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 8: Zero-Heavy Counts</h1>
+      <p>Step 3: Diagnosing the Distribution</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">3</div>
+        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h3>A Diagnostic Journey</h3>
+      <p>
+        Instead of just picking a distribution, let's <strong>discover</strong> why we need a zero-inflated model.
+        We'll try simpler models first and see where they fail.
+      </p>
+    </div>
+
+    <!-- Stage indicators -->
+    <div class="stage-indicator">
+      <div class="stage-pip active" id="pip1"></div>
+      <div class="stage-pip" id="pip2"></div>
+      <div class="stage-pip" id="pip3"></div>
+    </div>
+
+    <!-- STAGE 1: Try Poisson -->
+    <div class="stage active" id="stage1">
+      <div class="panel">
+        <h2>Stage 1: Let's Try Poisson First</h2>
+
+        <p>
+          Here's the distribution of doctor visits in our data. Notice anything unusual?
+        </p>
+
+        <div class="histogram-container">
+          <canvas id="histogramCanvas" width="600" height="300"></canvas>
+        </div>
+
+        <p>
+          The data looks like count data &mdash; so Poisson seems like a natural choice.
+          But does it actually fit?
+        </p>
+
+        <button class="action-btn" id="tryPoissonBtn">Try Poisson</button>
+
+        <div id="poissonResult" style="display: none;">
+          <div class="zero-comparison">
+            <div class="zero-bar observed">
+              <div class="label">Observed Zeros</div>
+              <div class="value" id="observedZeros">--</div>
+              <div class="detail" id="observedPct">--% of data</div>
+            </div>
+            <div class="zero-bar predicted">
+              <div class="label">Poisson Predicts</div>
+              <div class="value" id="poissonZeros">--</div>
+              <div class="detail" id="poissonPct">--% expected</div>
+            </div>
+          </div>
+
+          <div class="verdict fail">
+            Poisson severely underpredicts zeros! The data has far more zeros than Poisson expects.
+            Poisson assumes all zeros come from the same process (low rate), but there seem to be
+            "extra" zeros from a different source.
+          </div>
+
+          <button class="action-btn" id="nextStage2Btn" style="margin-top: 10px;">
+            Maybe Negative Binomial can handle this? &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAGE 2: Try NegBin -->
+    <div class="stage" id="stage2">
+      <div class="panel">
+        <h2>Stage 2: Maybe Negative Binomial?</h2>
+
+        <p>
+          In Tutorial 4, we learned that Negative Binomial handles overdispersion
+          (variance > mean). Excess zeros cause overdispersion, so maybe NegBin
+          can absorb the extra zeros through its dispersion parameter?
+        </p>
+
+        <button class="action-btn" id="tryNegbinBtn">Try Negative Binomial</button>
+
+        <div id="negbinResult" style="display: none;">
+          <div class="zero-comparison">
+            <div class="zero-bar observed">
+              <div class="label">Observed Zeros</div>
+              <div class="value" id="observedZeros2">--</div>
+              <div class="detail" id="observedPct2">--% of data</div>
+            </div>
+            <div class="zero-bar predicted">
+              <div class="label">NegBin Predicts</div>
+              <div class="value" id="negbinZeros">--</div>
+              <div class="detail" id="negbinPct">--% expected</div>
+            </div>
+          </div>
+
+          <div class="verdict partial">
+            Better, but NegBin still underpredicts the number of zeros.
+            The extra dispersion parameter helps, but the fundamental problem remains:
+            the data has zeros from TWO different processes, and no single-component model
+            can capture both.
+          </div>
+
+          <button class="action-btn" id="nextStage3Btn" style="margin-top: 10px;">
+            Reveal the real answer &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STAGE 3: ZIP reveal -->
+    <div class="stage" id="stage3">
+      <div class="panel">
+        <h2>Stage 3: The Problem Isn't Overdispersion &mdash; It's a Mixture</h2>
+
+        <p>
+          The data contains <strong>two types of zeros</strong>, generated by completely different processes:
+        </p>
+
+        <div class="two-zeros">
+          <div class="zero-type structural">
+            <h4>Structural Zeros</h4>
+            <p>
+              People who <strong>would never visit</strong> regardless of their health needs.
+              They are outside the "at risk" population.
+            </p>
+            <p class="example">
+              Example: No insurance and clinic is 25km away &mdash; access barriers
+              make visiting effectively impossible.
+            </p>
+          </div>
+          <div class="zero-type sampling">
+            <h4>Sampling Zeros</h4>
+            <p>
+              People who <strong>could visit</strong> but happened to have zero visits this year.
+              They are in the "at risk" population but drew a zero from the Poisson.
+            </p>
+            <p class="example">
+              Example: Healthy 25-year-old with insurance &mdash; able to visit but
+              didn't need to this year.
+            </p>
+          </div>
+        </div>
+
+        <div class="insight-box key">
+          <h4>The ZIP Solution</h4>
+          <p>
+            The <strong>Zero-Inflated Poisson (ZIP)</strong> model explicitly separates these two processes:
+          </p>
+          <ul style="margin: 10px 0 0 20px;">
+            <li><strong>Zero-inflation component</strong> (logistic): models the probability $\pi$ of being a structural zero</li>
+            <li><strong>Count component</strong> (Poisson): models the expected count $\mu$ for the "at risk" population</li>
+          </ul>
+          <p style="margin-top: 10px;">
+            The probability of observing $y = 0$ is:
+          </p>
+          <div style="background: white; padding: 10px 15px; border-radius: 6px; text-align: center; margin: 10px 0;">
+            $P(Y = 0) = \pi + (1 - \pi) \cdot e^{-\mu}$
+          </div>
+          <p>
+            The first term captures <strong>structural zeros</strong>,
+            the second captures <strong>sampling zeros</strong>.
+          </p>
+        </div>
+
+        <button class="action-btn success-btn" id="confirmZipBtn">Confirm ZIP</button>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Zero-Inflated Poisson (ZIP) Selected</h3>
+      <p>
+        ZIP explicitly models the two types of zeros: structural (from the inflation component)
+        and sampling (from the Poisson component). This gives more accurate predictions and
+        reveals which factors drive each process.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="link.html" class="btn btn-secondary">&larr; Back to Link</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Fitting &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+    // Simulated data summary (based on DGP with seed=42)
+    // These are approximate values from the zero-inflated Poisson generating process
+    const DATA = {
+      totalN: 500,
+      observedZeros: 210,
+      observedZeroPct: 42.0,
+      poissonExpectedZeros: 130,
+      poissonExpectedPct: 26.0,
+      negbinExpectedZeros: 170,
+      negbinExpectedPct: 34.0,
+      // Histogram counts (doctor_visits 0-12+)
+      histCounts: [210, 85, 65, 48, 35, 22, 15, 9, 5, 3, 1, 1, 1]
+    };
+
+    // State machine
+    let currentStage = 1;
+
+    const continueBtn = document.getElementById('continueBtn');
+
+    // Draw histogram
+    function drawHistogram() {
+      const canvas = document.getElementById('histogramCanvas');
+      const ctx = canvas.getContext('2d');
+      const counts = DATA.histCounts;
+      const maxCount = Math.max(...counts);
+
+      const padding = { top: 30, right: 20, bottom: 50, left: 50 };
+      const plotW = canvas.width - padding.left - padding.right;
+      const plotH = canvas.height - padding.top - padding.bottom;
+      const barW = plotW / counts.length - 4;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Title
+      ctx.fillStyle = '#2c3e50';
+      ctx.font = 'bold 14px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Distribution of Doctor Visits', canvas.width / 2, 20);
+
+      // Bars
+      counts.forEach((count, i) => {
+        const x = padding.left + i * (plotW / counts.length) + 2;
+        const barH = (count / maxCount) * plotH;
+        const y = padding.top + plotH - barH;
+
+        // Highlight zero bar
+        if (i === 0) {
+          ctx.fillStyle = '#e67e22';
+        } else {
+          ctx.fillStyle = '#f39c12';
+        }
+        ctx.fillRect(x, y, barW, barH);
+
+        // Count label
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(count, x + barW / 2, y - 5);
+
+        // X label
+        ctx.fillStyle = '#666';
+        ctx.fillText(i === counts.length - 1 ? i + '+' : i.toString(), x + barW / 2, padding.top + plotH + 20);
+      });
+
+      // Y axis label
+      ctx.save();
+      ctx.translate(15, canvas.height / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = '#666';
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Count', 0, 0);
+      ctx.restore();
+
+      // X axis label
+      ctx.fillStyle = '#666';
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Doctor Visits', canvas.width / 2, canvas.height - 5);
+
+      // Annotation: highlight the zero bar
+      ctx.fillStyle = '#c0392b';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      const zeroBarX = padding.left + 2 + barW / 2;
+      ctx.fillText(DATA.observedZeroPct + '% zeros!', zeroBarX + 30, padding.top + 15);
+    }
+
+    // Stage 1: Try Poisson
+    document.getElementById('tryPoissonBtn').addEventListener('click', function() {
+      this.disabled = true;
+      this.textContent = 'Analysing...';
+
+      setTimeout(() => {
+        document.getElementById('observedZeros').textContent = DATA.observedZeros;
+        document.getElementById('observedPct').textContent = DATA.observedZeroPct + '% of data';
+        document.getElementById('poissonZeros').textContent = DATA.poissonExpectedZeros;
+        document.getElementById('poissonPct').textContent = DATA.poissonExpectedPct + '% expected';
+        document.getElementById('poissonResult').style.display = 'block';
+        this.style.display = 'none';
+      }, 800);
+    });
+
+    // Transition to stage 2
+    document.getElementById('nextStage2Btn').addEventListener('click', function() {
+      currentStage = 2;
+      document.getElementById('stage1').classList.remove('active');
+      document.getElementById('stage2').classList.add('active');
+      document.getElementById('pip1').classList.remove('active');
+      document.getElementById('pip1').classList.add('done');
+      document.getElementById('pip2').classList.add('active');
+    });
+
+    // Stage 2: Try NegBin
+    document.getElementById('tryNegbinBtn').addEventListener('click', function() {
+      this.disabled = true;
+      this.textContent = 'Analysing...';
+
+      setTimeout(() => {
+        document.getElementById('observedZeros2').textContent = DATA.observedZeros;
+        document.getElementById('observedPct2').textContent = DATA.observedZeroPct + '% of data';
+        document.getElementById('negbinZeros').textContent = DATA.negbinExpectedZeros;
+        document.getElementById('negbinPct').textContent = DATA.negbinExpectedPct + '% expected';
+        document.getElementById('negbinResult').style.display = 'block';
+        this.style.display = 'none';
+      }, 800);
+    });
+
+    // Transition to stage 3
+    document.getElementById('nextStage3Btn').addEventListener('click', function() {
+      currentStage = 3;
+      document.getElementById('stage2').classList.remove('active');
+      document.getElementById('stage3').classList.add('active');
+      document.getElementById('pip2').classList.remove('active');
+      document.getElementById('pip2').classList.add('done');
+      document.getElementById('pip3').classList.add('active');
+
+      // Render math in stage 3
+      setTimeout(() => {
+        if (typeof renderMathInElement !== 'undefined') {
+          renderMathInElement(document.getElementById('stage3'), {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$', display: false}
+            ]
+          });
+        }
+      }, 100);
+    });
+
+    // Stage 3: Confirm ZIP
+    document.getElementById('confirmZipBtn').addEventListener('click', function() {
+      document.getElementById('pip3').classList.remove('active');
+      document.getElementById('pip3').classList.add('done');
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+      this.disabled = true;
+      this.textContent = 'ZIP Confirmed';
+    });
+
+    continueBtn.addEventListener('click', () => {
+      window.location.href = 'fitting.html';
+    });
+
+    // Draw histogram on load
+    drawHistogram();
+
+    // Render initial math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

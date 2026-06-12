@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Link Functions (Zero-Inflated)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #e67e22;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 20%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #e67e22;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #f39c12;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3);
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #e67e22;
+      margin-bottom: 8px;
+    }
+
+    /* Two-part layout */
+    .link-sections {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .link-sections {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .link-section {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .link-section h3 {
+      margin-bottom: 5px;
+      font-size: 1.1em;
+    }
+
+    .link-section .section-subtitle {
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 15px;
+    }
+
+    .link-section.count-section h3 {
+      color: #8e44ad;
+    }
+
+    .link-section.zero-section h3 {
+      color: #2980b9;
+    }
+
+    .link-section.locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .link-section.confirmed {
+      border: 3px solid #27ae60;
+    }
+
+    /* Link options */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-card {
+      background: #f8f9fa;
+      border: 3px solid #dee2e6;
+      border-radius: 10px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card:hover:not(.dimmed):not(.selected) {
+      border-color: #f39c12;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    }
+
+    .option-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .option-card.selected {
+      border-color: #27ae60;
+      background: #d4edda;
+    }
+
+    .option-card.wrong {
+      border-color: #e74c3c;
+      background: #f8d7da;
+      animation: shake 0.3s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .option-card h4 {
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .option-card .formula {
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-family: 'Times New Roman', serif;
+      font-size: 1em;
+      margin: 8px 0;
+      text-align: center;
+    }
+
+    .option-card .desc {
+      font-size: 0.85em;
+      color: #666;
+    }
+
+    /* Dialog overlay */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 550px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .key-point {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    .key-point.success {
+      background: #d4edda;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .result-panel p {
+      color: #155724;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #e67e22;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #d35400;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+
+    /* Section status badge */
+    .section-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75em;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+
+    .section-status.pending {
+      background: #fef5e7;
+      color: #e67e22;
+    }
+
+    .section-status.done {
+      background: #d4edda;
+      color: #155724;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 8: Zero-Heavy Counts</h1>
+      <p>Step 2: Choose the Link Functions (two needed!)</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">2</div>
+        <div class="step-dot">3</div>
+        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h3>Choose TWO Link Functions</h3>
+      <p>
+        A zero-inflated model has <strong>two components</strong>, each needing its own link function.
+        First select the link for the <strong>count model</strong> (left),
+        then the link for the <strong>zero-inflation model</strong> (right).
+      </p>
+    </div>
+
+    <!-- Two-part selection -->
+    <div class="link-sections">
+      <!-- Part 1: Count Model Link -->
+      <div class="link-section count-section" id="countSection">
+        <h3>Part 1: Count Model Link
+          <span class="section-status pending" id="countStatus">Select</span>
+        </h3>
+        <p class="section-subtitle">For the Poisson count component: how many visits do non-structural-zero patients make?</p>
+
+        <div class="options-list">
+          <div class="option-card" data-link="log" data-section="count">
+            <h4>Log Link</h4>
+            <div class="formula">$g(\mu) = \log(\mu)$</div>
+            <p class="desc">Same log link as Poisson (Tutorial 3). Ensures positive count predictions.</p>
+          </div>
+
+          <div class="option-card" data-link="identity" data-section="count">
+            <h4>Identity Link</h4>
+            <div class="formula">$g(\mu) = \mu$</div>
+            <p class="desc">Predictions equal the linear predictor directly. Allows negative counts.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part 2: Zero-Inflation Model Link -->
+      <div class="link-section zero-section" id="zeroSection">
+        <h3>Part 2: Zero-Inflation Link
+          <span class="section-status pending" id="zeroStatus">Select</span>
+        </h3>
+        <p class="section-subtitle">For the structural-zero logistic component: what is the probability of being a structural zero?</p>
+
+        <div class="options-list">
+          <div class="option-card" data-link="logit" data-section="zero">
+            <h4>Logit Link</h4>
+            <div class="formula">$g(\pi) = \log\left(\frac{\pi}{1-\pi}\right)$</div>
+            <p class="desc">Same logit link as logistic regression (Tutorial 2). Models probability of being a structural zero.</p>
+          </div>
+
+          <div class="option-card" data-link="identity-zero" data-section="zero">
+            <h4>Identity Link</h4>
+            <div class="formula">$g(\pi) = \pi$</div>
+            <p class="desc">Probability not bounded to (0,1). Can predict impossible probabilities.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Both Link Functions Selected</h3>
+      <p>
+        <strong>Count model:</strong> Log link &mdash; ensures positive count predictions.<br>
+        <strong>Zero-inflation model:</strong> Logit link &mdash; bounds structural-zero probability to (0, 1).<br><br>
+        This is the first model with <strong>two link functions</strong> &mdash; one for each component.
+        The count part uses log (like Poisson), the zero-inflation part uses logit (like logistic regression).
+        Two models in one.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="systematic.html" class="btn btn-secondary">&larr; Back to Systematic</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Distribution &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog: Count Log (correct) -->
+  <div class="dialog-overlay" id="countLogDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Log link for the count component.</h3>
+      <p>
+        The <strong>log link</strong> is the standard choice for count models because:
+      </p>
+      <div class="key-point success">
+        <p><strong>Inverse link:</strong> $\mu = e^{\eta}$ is always positive.</p>
+        <p>Counts can't be negative, so the log link guarantees valid predictions.</p>
+      </div>
+      <p>
+        This is identical to the link used in standard Poisson regression (Tutorial 3).
+        The count component of a ZIP model is just a regular Poisson model applied to the
+        "at-risk" population.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmCount()">Confirm Count Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Count Identity (wrong) -->
+  <div class="dialog-overlay" id="countIdentityDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Identity link allows negative counts.</h3>
+      <p>
+        With the <strong>identity link</strong>, predictions equal the linear predictor:
+      </p>
+      <div class="key-point">
+        <p>$\mu = \eta = \beta_0 + \beta_1 X_1 + ...$</p>
+        <p>This can easily be negative, which makes no sense for counts!</p>
+      </div>
+      <p>
+        The count component needs the <strong>log link</strong> to ensure positive predictions,
+        just like standard Poisson regression.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('countIdentityDialog')">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Zero Logit (correct) -->
+  <div class="dialog-overlay" id="zeroLogitDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Logit link for the zero-inflation component.</h3>
+      <p>
+        The <strong>logit link</strong> is perfect for modelling probabilities because:
+      </p>
+      <div class="key-point success">
+        <p><strong>Inverse link:</strong> $\pi = \frac{e^{\eta}}{1 + e^{\eta}}$ is always between 0 and 1.</p>
+        <p>The probability of being a structural zero is bounded to a valid range.</p>
+      </div>
+      <p>
+        This is identical to the link used in logistic regression (Tutorial 2).
+        The zero-inflation component is effectively a logistic regression predicting
+        whether someone is a "structural zero" (never visits) or "at risk" (might visit).
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmZero()">Confirm Zero-Inflation Link</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog: Zero Identity (wrong) -->
+  <div class="dialog-overlay" id="zeroIdentityDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Identity link gives unbounded probabilities.</h3>
+      <p>
+        With the <strong>identity link</strong>, the predicted probability equals the linear predictor:
+      </p>
+      <div class="key-point">
+        <p>$\pi = \eta = \gamma_0 + \gamma_1 Z_1 + ...$</p>
+        <p>This can give $\pi > 1$ or $\pi < 0$ &mdash; impossible for a probability!</p>
+      </div>
+      <p>
+        The zero-inflation component models a probability, so it needs the <strong>logit link</strong>
+        to keep predictions in the valid (0, 1) range, just like logistic regression.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('zeroIdentityDialog')">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let countConfirmed = false;
+    let zeroConfirmed = false;
+
+    const continueBtn = document.getElementById('continueBtn');
+    const countSection = document.getElementById('countSection');
+    const zeroSection = document.getElementById('zeroSection');
+
+    // Initially lock zero section
+    zeroSection.classList.add('locked');
+
+    // Count section card clicks
+    countSection.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (countConfirmed) return;
+
+        // Clear previous styling
+        countSection.querySelectorAll('.option-card').forEach(c =>
+          c.classList.remove('selected', 'wrong'));
+
+        const link = card.dataset.link;
+        if (link === 'log') {
+          card.classList.add('selected');
+          showDialog('countLogDialog');
+        } else {
+          card.classList.add('wrong');
+          showDialog('countIdentityDialog');
+        }
+      });
+    });
+
+    // Zero section card clicks
+    zeroSection.querySelectorAll('.option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        if (zeroConfirmed) return;
+
+        zeroSection.querySelectorAll('.option-card').forEach(c =>
+          c.classList.remove('selected', 'wrong'));
+
+        const link = card.dataset.link;
+        if (link === 'logit') {
+          card.classList.add('selected');
+          showDialog('zeroLogitDialog');
+        } else {
+          card.classList.add('wrong');
+          showDialog('zeroIdentityDialog');
+        }
+      });
+    });
+
+    function confirmCount() {
+      countConfirmed = true;
+      closeDialog('countLogDialog');
+
+      // Update UI
+      document.getElementById('countStatus').textContent = 'Done';
+      document.getElementById('countStatus').className = 'section-status done';
+      countSection.classList.add('confirmed');
+
+      // Dim wrong option
+      countSection.querySelector('.option-card[data-link="identity"]').classList.add('dimmed');
+
+      // Unlock zero section
+      zeroSection.classList.remove('locked');
+    }
+
+    function confirmZero() {
+      zeroConfirmed = true;
+      closeDialog('zeroLogitDialog');
+
+      // Update UI
+      document.getElementById('zeroStatus').textContent = 'Done';
+      document.getElementById('zeroStatus').className = 'section-status done';
+      zeroSection.classList.add('confirmed');
+
+      // Dim wrong option
+      zeroSection.querySelector('.option-card[data-link="identity-zero"]').classList.add('dimmed');
+
+      // Show result and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      continueBtn.disabled = false;
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(dialog, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear wrong styling
+      if (!countConfirmed) {
+        countSection.querySelectorAll('.option-card').forEach(c =>
+          c.classList.remove('selected', 'wrong'));
+      }
+      if (!zeroConfirmed) {
+        zeroSection.querySelectorAll('.option-card').forEach(c =>
+          c.classList.remove('selected', 'wrong'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (countConfirmed && zeroConfirmed) {
+        window.location.href = 'distribution.html';
+      }
+    });
+
+    // Render initial math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>
