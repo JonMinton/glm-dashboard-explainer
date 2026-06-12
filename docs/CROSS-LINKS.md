@@ -45,26 +45,40 @@ Suggested links:
 
 ---
 
-## GLM Dashboard → JonStats
+## GLM Dashboard → JonStats / blog (IMPLEMENTED)
+
+All links below are now live in the dashboard pages. Convention: plain `<a href>` links (no `target="_blank"` — matching the site's existing convention), small caption text or each page's own info/insight box class.
 
 ### Tutorial Index (`docs/index.html`)
-Already has a footer link. Add a contextual link in the philosophy section:
-> *"These tutorials are the interactive companion to [JonStats: Statistical Inference and Simulation](https://jonminton.github.io/JonStats/), which covers the theory in depth."*
+- Philosophy section: companion-site link to [JonStats](https://jonminton.github.io/JonStats/) *(pre-existing)*
+- Above the tutorial cards: "New to GLMs? Start with the theory in [Introduction to Generalised Linear Models](https://jonminton.github.io/JonStats/pages/main-course/intro-to-glms/) on JonStats."
+- Below the tutorial cards: "Tutorials 4–8 extend the framework beyond the original blog series — see the [25-part GLM series](https://jonminton.github.io/jon-blog/glms.html) that started it all."
+- Optimisation section: [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/) *(pre-existing)*
+- Footer: JonStats home *(pre-existing)*
 
-### Tutorial fitting pages (`*/fitting.html`)
-Where IRLS and MLE are explained conceptually, link to JonStats likelihood theory:
-> *"For the mathematical foundations of likelihood and why it works, see [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/)"*
+### Tutorial fitting pages (all eight `*/fitting.html`)
+One-line further-reading note just before the nav buttons (small caption `<p>` in tutorials 1–3; `insight-box` in tutorials 4–8):
+> *"Why does maximising the likelihood work? See [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/) on JonStats."*
 
-### Tutorial advanced pages (`*/advanced.html`)
-Where log-likelihoods are derived, link back to JonStats simulation:
-> *"To see how these fitted models are used for inference via simulation, see [Complete Simulation Example](https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/)"*
+### Tutorial advanced pages
+- `01-gaussian/advanced.html` and `03-poisson/advanced.html` (end-of-page takeaways): "To use a fitted model for simulation-based inference, see the [Complete Simulation Example](https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/) on JonStats." *(JonStats links back to these exact pages, completing the loop.)*
+- `02-logistic/advanced.html` (after Key Takeaways): "Compare with the blog derivation: [Part Ten — Log Likelihood estimation for Logistic Regression](https://jonminton.github.io/jon-blog/posts/glms/likelihood-and-simulation-theory/lms-are-glms-part-10/)."
+
+### Tutorial code pages
+- `02-logistic/code.html` (next-steps box, odds-ratio interpretation): "Don't stargaze at coefficients — see how to interpret GLM outputs properly in [Intro to GLMs](https://jonminton.github.io/JonStats/pages/main-course/intro-to-glms/)."
+
+### Tutorials 6–8 systematic pages (beyond JonStats coverage)
+Framing line in each context panel: "This tutorial extends the GLM framework from the [JonStats](https://jonminton.github.io/JonStats/) course to [bounded proportions / ordered categories / zero-inflated counts] — material not covered in the original series."
 
 ### Optimisation index (`docs/optimization/index.html`)
-Link to JonStats likelihood theory to ground the "why":
-> *"These visualisations show how MLE algorithms work in practice. For the theory behind likelihood-based inference, see [JonStats](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/)"*
+End of explanation panel: "For the theory behind these surfaces — likelihood, `optim()` and Fisher information — see [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/) on JonStats."
 
-### Bridge page (planned: `docs/optimization/bridge.html`)
-This page will explicitly connect the terrain metaphor to log-likelihood surfaces, linking heavily to both JonStats likelihood theory and the dashboard tutorials.
+### Bridge page (`docs/optimization/bridge.html`)
+- Theory see-also box: [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/) *(pre-existing)*, plus "Blog origin of the landscape metaphor: [Part Five — Traversing the Likelihood Landscape](https://jonminton.github.io/jon-blog/posts/glms/likelihood-and-simulation-theory/lms-are-glms-part-05/)."
+- Footer: JonStats home *(pre-existing)*
+
+### MCMC page (`docs/optimization/mcmc.html`)
+Further-reading note at the end of "The Bayesian Perspective" card: the marble-vs-jumping-bean analogy in [Statistical Simulation: A Complete Example](https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/) on JonStats, and the blog version, [Part Thirteen — On Marbles and Jumping Beans](https://jonminton.github.io/jon-blog/posts/glms/complete-simulation-example/lms-are-glms-part-13/).
 
 ---
 
