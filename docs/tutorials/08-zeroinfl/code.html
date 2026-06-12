@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Code (Zero-Inflated)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #e67e22;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 80%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #e67e22;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #f39c12;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3);
+    }
+
+    /* Panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #e67e22;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-bottom: none;
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      background: #e9ecef;
+    }
+
+    .tab.active {
+      background: #2c3e50;
+      color: white;
+      border-color: #2c3e50;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    pre {
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #f8f8f2;
+      line-height: 1.5;
+    }
+
+    .comment { color: #6272a4; }
+    .string { color: #f1fa8c; }
+    .keyword { color: #ff79c6; }
+    .function { color: #50fa7b; }
+    .number { color: #bd93f9; }
+
+    /* Output panel */
+    .output-panel {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85em;
+      color: #d4d4d4;
+      overflow-x: auto;
+    }
+
+    .output-panel .header {
+      color: #569cd6;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    /* Formula split diagram */
+    .formula-split {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      text-align: center;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.95em;
+      overflow-x: auto;
+    }
+
+    .formula-split .count-part {
+      background: #d4efdf;
+      border: 2px solid #27ae60;
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: inline-block;
+    }
+
+    .formula-split .pipe {
+      font-weight: bold;
+      font-size: 1.3em;
+      color: #e67e22;
+      padding: 0 6px;
+    }
+
+    .formula-split .zero-part {
+      background: #ebdef0;
+      border: 2px solid #8e44ad;
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: inline-block;
+    }
+
+    .formula-legend {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .formula-legend .legend-item {
+      padding: 10px 15px;
+      border-radius: 8px;
+    }
+
+    .formula-legend .legend-item.count {
+      background: #d4efdf;
+      border-left: 4px solid #27ae60;
+    }
+
+    .formula-legend .legend-item.zero {
+      background: #ebdef0;
+      border-left: 4px solid #8e44ad;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table .highlight-row {
+      background: #fef5e7;
+    }
+
+    .comparison-table .good {
+      color: #27ae60;
+      font-weight: 600;
+    }
+
+    .comparison-table .bad {
+      color: #e74c3c;
+      font-weight: 600;
+    }
+
+    /* Key result */
+    .key-result {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .key-result h4 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .key-result p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+
+    /* Interpretation section */
+    .interpretation {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .interpretation h4 {
+      color: #e67e22;
+      margin-bottom: 10px;
+    }
+
+    /* Note box */
+    .note-box {
+      background: #eaf2f8;
+      border-left: 4px solid #3498db;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .note-box h4 {
+      color: #2471a3;
+      margin-bottom: 8px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #e67e22;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #d35400;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 8: Zero-Heavy Counts</h1>
+      <p>Step 5: R and Python Implementation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- The two-part formula -->
+    <div class="panel">
+      <h2>The Two-Part Formula</h2>
+
+      <p>
+        Because ZIP contains two sub-models, the model formula needs <strong>two parts</strong>.
+        R's <code>pscl::zeroinfl</code> separates them with a vertical bar <code>|</code>:
+      </p>
+
+      <div class="formula-split">
+        doctor_visits ~ <span class="count-part">age + income_10k + chronic_condition</span><span class="pipe">|</span><span class="zero-part">has_insurance + distance_to_clinic</span>
+      </div>
+
+      <div class="formula-legend">
+        <div class="legend-item count">
+          <strong>Left of the bar:</strong> predictors for the <strong>count component</strong>
+          (Poisson, log link) &mdash; how many visits, for the at-risk population.
+        </div>
+        <div class="legend-item zero">
+          <strong>Right of the bar:</strong> predictors for the <strong>zero-inflation component</strong>
+          (logistic) &mdash; the probability of being a structural zero.
+        </div>
+      </div>
+
+      <p>
+        The two predictor sets can overlap, but here they are completely different: health factors
+        drive <em>how many</em> visits, while access factors (insurance, distance) drive
+        <em>whether visiting is possible at all</em>.
+      </p>
+
+      <div class="note-box">
+        <h4>A Practical Tip: Rescale Big Predictors</h4>
+        <p style="margin-bottom: 0;">
+          We use <code>income_10k = income / 10000</code> rather than raw income. With income on its
+          raw scale (15,000&ndash;120,000) the likelihood surface is so stretched in one direction that
+          the curvature matrix becomes numerically singular &mdash; the optimiser converges but the standard
+          errors come back as <code>NA</code>. Rescaling fixes this; only the coefficient's units change.
+        </p>
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel">
+      <h2>Fitting Zero-Inflated Poisson in R and Python</h2>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="r">R</div>
+        <div class="tab" data-tab="python">Python</div>
+      </div>
+
+      <!-- R Code -->
+      <div class="tab-content active" id="r-content">
+        <pre><code><span class="comment"># Load required libraries</span>
+<span class="keyword">library</span>(<span class="function">pscl</span>)   <span class="comment"># zeroinfl() and vuong()</span>
+<span class="keyword">library</span>(<span class="function">MASS</span>)   <span class="comment"># glm.nb() for comparison</span>
+
+<span class="comment"># Load the doctor visits dataset</span>
+visits_data <- <span class="function">read.csv</span>(<span class="string">"doctor_visits.csv"</span>)
+
+<span class="comment"># Rescale income for numerical stability</span>
+visits_data$income_10k <- visits_data$income / <span class="number">10000</span>
+
+<span class="comment"># Fit Zero-Inflated Poisson</span>
+<span class="comment"># Formula has two parts separated by |</span>
+<span class="comment">#   Left of |:  count model predictors (Poisson, log link)</span>
+<span class="comment">#   Right of |: zero-inflation predictors (logistic)</span>
+fit_zip <- <span class="function">zeroinfl</span>(doctor_visits ~ age + income_10k + chronic_condition |
+                    has_insurance + distance_to_clinic,
+                    data = visits_data, dist = <span class="string">"poisson"</span>)
+
+<span class="function">summary</span>(fit_zip)
+
+<span class="comment"># Fit the simpler models we rejected on the Distribution page</span>
+fit_poisson <- <span class="function">glm</span>(doctor_visits ~ age + income_10k + chronic_condition,
+                   family = <span class="function">poisson</span>(link = <span class="string">"log"</span>), data = visits_data)
+fit_nb <- <span class="function">glm.nb</span>(doctor_visits ~ age + income_10k + chronic_condition,
+                 data = visits_data)
+
+<span class="comment"># Compare all three by AIC (lower is better)</span>
+<span class="function">AIC</span>(fit_poisson, fit_nb, fit_zip)
+
+<span class="comment"># Formal test for zero-inflation</span>
+<span class="function">vuong</span>(fit_zip, fit_poisson)</code></pre>
+      </div>
+
+      <!-- Python Code -->
+      <div class="tab-content" id="python-content">
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+<span class="keyword">from</span> statsmodels.discrete.count_model <span class="keyword">import</span> ZeroInflatedPoisson
+<span class="keyword">from</span> statsmodels.discrete.discrete_model <span class="keyword">import</span> NegativeBinomial
+
+<span class="comment"># Load the doctor visits dataset</span>
+visits_data = pd.<span class="function">read_csv</span>(<span class="string">"doctor_visits.csv"</span>)
+
+<span class="comment"># Rescale income for numerical stability</span>
+visits_data[<span class="string">'income_10k'</span>] = visits_data[<span class="string">'income'</span>] / <span class="number">10000</span>
+
+y = visits_data[<span class="string">'doctor_visits'</span>]
+
+<span class="comment"># exog: count model design matrix; exog_infl: zero-inflation design matrix</span>
+X = sm.<span class="function">add_constant</span>(visits_data[[<span class="string">'age'</span>, <span class="string">'income_10k'</span>, <span class="string">'chronic_condition'</span>]])
+Z = sm.<span class="function">add_constant</span>(visits_data[[<span class="string">'has_insurance'</span>, <span class="string">'distance_to_clinic'</span>]])
+
+<span class="comment"># Fit ZIP (method='bfgs' is more reliable here than the default)</span>
+zip_model = <span class="function">ZeroInflatedPoisson</span>(endog=y, exog=X, exog_infl=Z)
+fit_zip = zip_model.<span class="function">fit</span>(method=<span class="string">'bfgs'</span>, maxiter=<span class="number">500</span>)
+<span class="function">print</span>(fit_zip.<span class="function">summary</span>())
+
+<span class="comment"># Comparison models</span>
+fit_poisson = sm.<span class="function">Poisson</span>(y, X).<span class="function">fit</span>()
+fit_nb = <span class="function">NegativeBinomial</span>(y, X).<span class="function">fit</span>(method=<span class="string">'bfgs'</span>, maxiter=<span class="number">500</span>)
+
+<span class="comment"># AIC comparison -- compute ZIP's by hand: statsmodels' reported AIC</span>
+<span class="comment"># for ZIP omits the inflation parameters from its parameter count</span>
+k_zip = <span class="number">7</span>  <span class="comment"># 4 count params + 3 inflation params</span>
+aic_zip = -<span class="number">2</span> * fit_zip.llf + <span class="number">2</span> * k_zip
+<span class="function">print</span>(<span class="string">f"AIC  Poisson: {fit_poisson.aic:.1f}"</span>)
+<span class="function">print</span>(<span class="string">f"AIC  NegBin:  {fit_nb.aic:.1f}"</span>)
+<span class="function">print</span>(<span class="string">f"AIC  ZIP:     {aic_zip:.1f}"</span>)</code></pre>
+      </div>
+
+      <!-- Output -->
+      <div class="output-panel">
+        <div class="header">Model Output (R)</div>
+<pre>Call:
+zeroinfl(formula = doctor_visits ~ age + income_10k + chronic_condition |
+    has_insurance + distance_to_clinic, data = visits_data, dist = "poisson")
+
+Count model coefficients (poisson with log link):
+                    Estimate Std. Error z value Pr(>|z|)
+(Intercept)       -0.0003443  0.1631295  -0.002    0.998
+age                0.0098413  0.0023100   4.260 2.04e-05 ***
+income_10k         0.0005878  0.0141243   0.042    0.967
+chronic_condition  0.5586556  0.0890589   6.273 3.54e-10 ***
+
+Zero-inflation model coefficients (binomial with logit link):
+                   Estimate Std. Error z value Pr(>|z|)
+(Intercept)        -0.69962    0.31883  -2.194   0.0282 *
+has_insurance      -1.22733    0.27194  -4.513 6.38e-06 ***
+distance_to_clinic  0.03098    0.01571   1.972   0.0486 *
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Number of iterations in BFGS optimization: 14
+Log-likelihood: -752.7 on 7 Df
+
+> AIC(fit_poisson, fit_nb, fit_zip)
+            df      AIC
+fit_poisson  4 1659.911
+fit_nb       5 1586.244
+fit_zip      7 1519.395
+
+> vuong(fit_zip, fit_poisson)
+Vuong Non-Nested Hypothesis Test-Statistic:
+              Vuong z-statistic             H_A    p-value
+Raw                    5.811884 model1 > model2 3.0887e-09</pre>
+      </div>
+
+      <div class="note-box">
+        <h4>R and Python Agree</h4>
+        <p style="margin-bottom: 0;">
+          The Python fit converges to the same solution: log-likelihood &minus;752.70 with identical
+          coefficients (e.g. <code>inflate_has_insurance</code> = &minus;1.2273,
+          <code>chronic_condition</code> = 0.5587). In the statsmodels summary the zero-inflation
+          coefficients appear first, prefixed with <code>inflate_</code>. statsmodels may print a
+          convergence warning even though the optimiser has in fact reached the same maximum as R
+          &mdash; check that the reported log-likelihood matches.
+        </p>
+      </div>
+    </div>
+
+    <!-- Key result -->
+    <div class="key-result">
+      <h4>The Key Result: ZIP Wins the Model Comparison</h4>
+      <p>
+        AIC drops from 1659.9 (Poisson) to 1586.2 (NegBin) to <strong>1519.4 (ZIP)</strong> &mdash; exactly
+        the diagnostic journey from the Distribution page, now in numbers. The Vuong test confirms it
+        formally: z = 5.81, p = 3.1&times;10<sup>&minus;9</sup>, decisively favouring ZIP over plain Poisson.
+      </p>
+    </div>
+
+    <!-- Model comparison table -->
+    <div class="panel">
+      <h2>Model Fit Comparison</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Model</th>
+          <th>Parameters</th>
+          <th>AIC</th>
+          <th>Verdict</th>
+        </tr>
+        <tr>
+          <td>Poisson</td>
+          <td>4</td>
+          <td class="bad">1659.9</td>
+          <td>Cannot explain the excess zeros</td>
+        </tr>
+        <tr>
+          <td>Negative Binomial</td>
+          <td>5</td>
+          <td>1586.2</td>
+          <td>Extra dispersion absorbs some, but not the mechanism</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>Zero-Inflated Poisson</strong></td>
+          <td>7</td>
+          <td class="good">1519.4</td>
+          <td><strong>Models both zero-generating processes explicitly</strong></td>
+        </tr>
+      </table>
+
+      <p>
+        Note that ZIP wins <em>despite</em> being penalised for two extra parameters &mdash; AIC already
+        accounts for model complexity. The improvement comes from capturing the right
+        <strong>structure</strong>, not from extra flexibility alone.
+      </p>
+    </div>
+
+    <!-- Interpretation -->
+    <div class="interpretation">
+      <h4>Interpreting the Two Sets of Coefficients</h4>
+      <p>
+        <strong>Count component</strong> (log link &mdash; same interpretation as Tutorials 3 and 4):
+      </p>
+      <ul style="margin: 10px 0 12px 20px;">
+        <li><strong>exp(0.559) = 1.75:</strong> a chronic condition raises the expected number of visits by about 75%, among people who can visit</li>
+        <li><strong>exp(0.0098) = 1.010:</strong> each additional year of age increases expected visits by about 1%</li>
+      </ul>
+      <p>
+        <strong>Zero-inflation component</strong> (logit link &mdash; same interpretation as Tutorial 2,
+        but predicting <em>structural-zero membership</em>):
+      </p>
+      <ul style="margin: 10px 0 12px 20px;">
+        <li><strong>exp(&minus;1.227) = 0.29:</strong> having insurance cuts the odds of being a structural zero by 71%</li>
+        <li><strong>exp(0.031) = 1.031:</strong> each extra kilometre to the clinic raises the odds of being a structural zero by about 3%</li>
+      </ul>
+      <p style="margin-bottom: 0;">
+        <strong>The payoff:</strong> two different stories from one model. Health drives <em>how many</em>
+        visits; access drives <em>whether visits happen at all</em>. A single-component model would
+        blur these together.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+      });
+    });
+
+    // KaTeX
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

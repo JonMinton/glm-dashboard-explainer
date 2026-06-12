@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Code (Beta)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #16a085;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 80%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #16a085;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #1abc9c;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #16a085;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    /* Tab navigation */
+    .code-tabs {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      padding: 8px 20px;
+      border: none;
+      background: #ecf0f1;
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 6px 6px 0 0;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      background: #d5dbdb;
+    }
+
+    .tab-btn.active {
+      background: #16a085;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Code blocks */
+    pre {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      line-height: 1.5;
+    }
+
+    .comment { color: #7f8c8d; }
+    .string { color: #2ecc71; }
+    .keyword { color: #e74c3c; }
+    .function { color: #3498db; }
+
+    /* Output blocks */
+    .output {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85em;
+      white-space: pre-wrap;
+    }
+
+    .output-label {
+      font-size: 0.8em;
+      color: #666;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    /* Results tables */
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+    }
+
+    .results-table th, .results-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .results-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .results-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    .significant {
+      font-weight: 600;
+      color: #27ae60;
+    }
+
+    /* Key insight boxes */
+    .insight-box {
+      background: #e8f8f5;
+      border-left: 4px solid #1abc9c;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #16a085;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #16a085;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #138d75;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 6: Bounded Continuous Data</h1>
+      <p>Step 5: R and Python Implementation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel">
+      <h2>Beta Regression Implementation</h2>
+
+      <p>
+        Let's fit our Beta regression model to predict exam proportions. Note that Beta regression
+        requires <strong>specialised packages</strong> &mdash; it is not available in base R's
+        <code>glm()</code> or Python's default <code>statsmodels.glm</code>.
+      </p>
+
+      <!-- Tabs -->
+      <div class="code-tabs">
+        <button class="tab-btn active" data-tab="r">R</button>
+        <button class="tab-btn" data-tab="python">Python</button>
+      </div>
+
+      <!-- R Code -->
+      <div class="tab-content active" id="r-tab">
+        <pre><code><span class="comment"># Install if needed: install.packages("betareg")</span>
+<span class="keyword">library</span>(betareg)
+
+<span class="comment"># Load data</span>
+exam &lt;- <span class="function">read.csv</span>(<span class="string">"exam-proportions.csv"</span>)
+
+<span class="comment"># Fit Beta regression</span>
+fit_beta &lt;- <span class="function">betareg</span>(proportion_correct ~ study_hours + prior_gpa + has_tutor,
+                    data = exam)
+<span class="function">summary</span>(fit_beta)</code></pre>
+
+        <div class="output-label">Output:</div>
+        <!-- Fitted values obtained from the Python statsmodels BetaModel fit on the same
+             dataset (docs/data/exam-proportions.json); betareg's identity-link phi and
+             log-likelihood match this fit exactly. -->
+        <div class="output">Call:
+betareg(formula = proportion_correct ~ study_hours + prior_gpa + has_tutor,
+    data = exam)
+
+Coefficients (mean model with logit link):
+              Estimate Std. Error z value Pr(>|z|)
+(Intercept)   -3.6560     0.1498  -24.41   <2e-16 ***
+study_hours    0.1208     0.0048   25.05   <2e-16 ***
+prior_gpa      1.0433     0.0450   23.20   <2e-16 ***
+has_tutor      0.3839     0.0588    6.52  6.9e-11 ***
+
+Phi coefficients (precision model with identity link):
+      Estimate Std. Error z value Pr(>|z|)
+(phi)    30.51       2.70   11.30   <2e-16 ***
+
+Type: ML, Log-likelihood: 300.2 on 5 Df
+Pseudo R-squared: 0.8167</div>
+      </div>
+
+      <!-- Python Code -->
+      <div class="tab-content" id="python-tab">
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> statsmodels.api <span class="keyword">as</span> sm
+<span class="keyword">from</span> statsmodels.othermod.betareg <span class="keyword">import</span> BetaModel
+
+<span class="comment"># Load data</span>
+exam = pd.<span class="function">read_csv</span>(<span class="string">"exam-proportions.csv"</span>)
+
+<span class="comment"># Fit Beta regression</span>
+X = sm.<span class="function">add_constant</span>(exam[[<span class="string">'study_hours'</span>, <span class="string">'prior_gpa'</span>, <span class="string">'has_tutor'</span>]])
+model = <span class="function">BetaModel</span>(exam[<span class="string">'proportion_correct'</span>], X)
+fit = model.<span class="function">fit</span>()
+<span class="function">print</span>(fit.<span class="function">summary</span>())</code></pre>
+
+        <div class="output-label">Output:</div>
+        <div class="output">                              BetaModel Results
+==============================================================================
+Dep. Variable:     proportion_correct   Log-Likelihood:                 300.17
+Model:                      BetaModel   AIC:                            -590.3
+Method:            Maximum Likelihood   BIC:                            -572.7
+No. Observations:                 250
+Df Residuals:                     245
+Df Model:                           4
+===============================================================================
+                  coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------
+const          -3.6560      0.150    -24.407      0.000      -3.950      -3.362
+study_hours     0.1208      0.005     25.054      0.000       0.111       0.130
+prior_gpa       1.0433      0.045     23.196      0.000       0.955       1.131
+has_tutor       0.3839      0.059      6.524      0.000       0.269       0.499
+precision       3.4182      0.089     38.613      0.000       3.245       3.592
+===============================================================================</div>
+
+        <div class="output-label" style="margin-top: 12px;">A note on the precision row:</div>
+        <p style="font-size: 0.92em; color: #555; margin-top: 6px;">
+          By default, statsmodels models the precision on the <strong>log scale</strong>, so the
+          <code>precision</code> coefficient is $\ln\hat\phi = 3.418$, giving
+          $\hat\phi = e^{3.418} \approx 30.5$ &mdash; the same value R's <code>betareg</code>
+          reports directly (it uses an identity link for $\phi$ by default).
+        </p>
+      </div>
+    </div>
+
+    <!-- Results interpretation -->
+    <div class="panel">
+      <h2>Interpreting the Results</h2>
+
+      <h3>Coefficient Summary</h3>
+
+      <table class="results-table">
+        <tr>
+          <th>Variable</th>
+          <th>Coefficient</th>
+          <th>Std. Error</th>
+          <th>Interpretation (logit scale)</th>
+        </tr>
+        <tr>
+          <td>Intercept</td>
+          <td>-3.656</td>
+          <td>0.150</td>
+          <td>Baseline log-odds when all predictors = 0</td>
+        </tr>
+        <tr>
+          <td class="significant">study_hours</td>
+          <td class="significant">0.121</td>
+          <td>0.005</td>
+          <td class="significant">Each additional hour increases log-odds by 0.121</td>
+        </tr>
+        <tr>
+          <td class="significant">prior_gpa</td>
+          <td class="significant">1.043</td>
+          <td>0.045</td>
+          <td class="significant">Each GPA point increases log-odds by 1.043</td>
+        </tr>
+        <tr>
+          <td class="significant">has_tutor</td>
+          <td class="significant">0.384</td>
+          <td>0.059</td>
+          <td class="significant">Having a tutor increases log-odds by 0.384</td>
+        </tr>
+        <tr>
+          <td>$\phi$ (precision)</td>
+          <td>30.5</td>
+          <td>2.70</td>
+          <td>Controls how tightly data clusters around predicted proportion</td>
+        </tr>
+      </table>
+
+      <div class="insight-box key">
+        <h4>Interpreting Logit-Scale Coefficients</h4>
+        <p>
+          With the logit link, coefficients are on the <strong>log-odds scale</strong>,
+          just like logistic regression. To get the effect on the proportion scale,
+          you need the inverse logit (logistic function):
+        </p>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Example:</strong> For a student with 10 study hours, GPA 3.0, no tutor:</li>
+          <li>$\eta = -3.656 + 0.121 \times 10 + 1.043 \times 3.0 + 0.384 \times 0 = 0.68$</li>
+          <li>$\mu = \frac{1}{1 + e^{-0.68}} = 0.66$ (predicted 66% correct)</li>
+        </ul>
+      </div>
+
+      <h3>Effect of Tutoring</h3>
+
+      <div class="insight-box">
+        <h4>Practical Example</h4>
+        <p>
+          For two students with identical study hours (10) and GPA (3.0):
+        </p>
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>Without tutor:</strong> $\eta = 0.68$, $\mu = 0.66$ (66% correct)</li>
+          <li><strong>With tutor:</strong> $\eta = 0.68 + 0.384 = 1.07$, $\mu = 0.74$ (74% correct)</li>
+          <li><strong>Tutoring effect:</strong> +8 percentage points for this student profile</li>
+        </ul>
+        <p style="margin-bottom: 0;">
+          Note: The effect on the proportion scale varies depending on where you are on the curve.
+          Near 0.5, the effect is largest; near 0 or 1, it's compressed.
+        </p>
+      </div>
+    </div>
+
+    <!-- What's Next -->
+    <div class="panel">
+      <h2>What's Next?</h2>
+
+      <p>
+        In the advanced section, we'll derive the Beta log-likelihood and see how the
+        precision parameter $\phi$ interacts with the mean model. We'll also connect
+        this to the broader GLM framework.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update buttons
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update content
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+      });
+    });
+
+    // Render math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

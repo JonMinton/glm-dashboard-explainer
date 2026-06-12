@@ -468,7 +468,7 @@
           <label for="algorithm-select">Algorithm:</label>
           <select id="algorithm-select">
             <option value="analytic">Analytic (OLS)</option>
-            <option value="gradient">Gradient Descent</option>
+            <option value="gradient">Gradient Ascent</option>
             <option value="newton">Newton-Raphson</option>
           </select>
         </div>
@@ -512,7 +512,7 @@
         <li><strong>Contour lines</strong> connect points with equal log-likelihood (like elevation lines on a map)</li>
         <li><strong>The peak</strong> (MLE) is at the center of the elliptical contours</li>
         <li><strong>Ellipse shape</strong> shows how intercept and slope estimates are correlated</li>
-        <li><strong>Gradient descent</strong> follows the steepest uphill path to the peak</li>
+        <li><strong>Gradient ascent</strong> follows the steepest uphill path to the peak</li>
       </ul>
       <p style="margin-top: 15px;">
         Notice how the regression line changes as you move across the likelihood surface.
@@ -1219,7 +1219,7 @@
           desc: 'Computes the exact MLE using matrix algebra: β = (X\'X)⁻¹X\'y. One-shot solution!'
         },
         gradient: {
-          name: 'Gradient Descent',
+          name: 'Gradient Ascent',
           desc: 'Iteratively climbs uphill by following the gradient. Needs careful tuning of step size to avoid overshooting. Watch it zigzag toward the peak!'
         },
         newton: {

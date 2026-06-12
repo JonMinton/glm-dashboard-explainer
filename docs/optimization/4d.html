@@ -598,7 +598,7 @@
           <select id="algorithm-select">
             <option value="analytic">Analytic (OLS)</option>
             <option value="newton">Newton-Raphson</option>
-            <option value="gradient">Gradient Descent</option>
+            <option value="gradient">Gradient Ascent</option>
           </select>
         </div>
 
@@ -723,7 +723,7 @@
 
       <p>Consider what the algorithms are doing in 4D:</p>
       <ul>
-        <li><strong>Gradient Descent:</strong> Computes 4 partial derivatives (∂ℓ/∂β₀, ∂ℓ/∂β₁, ∂ℓ/∂β₂, ∂ℓ/∂β₃) and moves in that direction</li>
+        <li><strong>Gradient Ascent:</strong> Computes 4 partial derivatives (∂ℓ/∂β₀, ∂ℓ/∂β₁, ∂ℓ/∂β₂, ∂ℓ/∂β₃) and moves in that direction</li>
         <li><strong>Newton-Raphson:</strong> Uses a 4×4 Hessian matrix to find the step that accounts for curvature in all directions simultaneously</li>
         <li><strong>OLS Analytic:</strong> Inverts a 4×4 matrix (X'X) — same formula as 2D, just bigger matrices</li>
       </ul>
@@ -1467,7 +1467,7 @@
           desc: 'Uses a 4×4 Hessian matrix: β_new = β - H⁻¹∇ℓ. Still converges in 1-2 steps regardless of dimensionality.'
         },
         gradient: {
-          name: 'Gradient Descent',
+          name: 'Gradient Ascent',
           desc: 'Follows the 4-dimensional gradient vector. Each step moves in all 4 directions simultaneously.'
         }
       };

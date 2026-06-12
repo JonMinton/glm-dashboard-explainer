@@ -627,7 +627,7 @@
           <p><strong>"Always seek higher ground"</strong></p>
           <p>Fast, decisive, follows orders (the gradient). But if started on the wrong hill, will climb to a local peak and declare victory.</p>
           <ul>
-            <li>Gradient Descent</li>
+            <li>Gradient Ascent</li>
             <li>Newton-Raphson</li>
             <li>Steepest Ascent</li>
           </ul>
@@ -859,14 +859,15 @@
           <div style="font-weight: 600; color: #9b59b6; margin-bottom: 8px;">MLE + Hessian Ellipse</div>
           <canvas id="repr-canvas-hessian" width="350" height="350" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
           <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
-            95% confidence region based on curvature at the peak
+            95% region from the curvature at the peak of the log-target &mdash;
+            elevation&#8309;, the same sharpened surface the MCMC panel samples
           </div>
         </div>
         <div style="text-align: center;">
           <div style="font-weight: 600; color: #1abc9c; margin-bottom: 8px;">MCMC Posterior Samples</div>
           <canvas id="repr-canvas-mcmc" width="350" height="350" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
           <div style="margin-top: 8px; font-size: 0.85em; color: #666;">
-            Actual samples from the probability landscape
+            Metropolis samples from a target &prop; elevation&#8309;
           </div>
         </div>
       </div>
@@ -2087,8 +2088,18 @@
       function runTrial() {
         if (trial >= totalTrials) {
           accuracyState.running = false;
-          document.getElementById('accuracy-status').textContent =
-            `Complete! Scout algorithms found the global peak more often.`;
+          const r = accuracyState.results;
+          const scoutBest = Math.max(r.restart, r.annealing);
+          const localBest = Math.max(r.gradient, r.newton);
+          let message;
+          if (scoutBest > localBest) {
+            message = `Complete! Scout algorithms found the global peak more often (best scout: ${scoutBest}/${totalTrials} vs best local: ${localBest}/${totalTrials}).`;
+          } else if (localBest > scoutBest) {
+            message = `Complete! This time the local algorithms found the global peak more often (best local: ${localBest}/${totalTrials} vs best scout: ${scoutBest}/${totalTrials}) — randomness matters, try again.`;
+          } else {
+            message = `Complete! Scout and local algorithms tied (${scoutBest}/${totalTrials} each) — try running again.`;
+          }
+          document.getElementById('accuracy-status').textContent = message;
           return;
         }
 
@@ -2279,17 +2290,19 @@
 
       reprState.mlePos = { x: state.x, y: state.y };
 
-      // Step 2: Compute Hessian at MLE
+      // Step 2: Compute the Hessian of the MCMC log-target at the MLE.
+      // The MCMC panel samples target ∝ elevation^logScale, so the log-target
+      // is logScale·log(elevation). At a local peak ∇f = 0, hence
+      // ∇²[logScale·log f] = logScale·(∇²f)/f.
+      const logScale = 5; // Must match mcmcConfig.logScale below
       const hessian = getFullHessian(terrain, state.x, state.y);
-      reprState.ellipse = hessianToEllipse(hessian, 0.95);
-
-      // Scale ellipse for visualization (the raw ellipse is very small in normalized coords)
-      if (reprState.ellipse) {
-        // Scale factor depends on terrain - use a multiplier that makes it visible
-        const scaleFactor = 0.5; // Adjust for visibility
-        reprState.ellipse.semiMajor *= scaleFactor;
-        reprState.ellipse.semiMinor *= scaleFactor;
-      }
+      const peakElevation = getElev(state.x, state.y);
+      const logTargetHessian = {
+        fxx: logScale * hessian.fxx / peakElevation,
+        fyy: logScale * hessian.fyy / peakElevation,
+        fxy: logScale * hessian.fxy / peakElevation
+      };
+      reprState.ellipse = hessianToEllipse(logTargetHessian, 0.95);
 
       // Draw Hessian side
       drawReprCanvas('repr-canvas-hessian');
@@ -2299,7 +2312,7 @@
       let mcmcState = createMCMCChainState(state.x, state.y, getElev);
       const mcmcConfig = {
         proposalSD: 0.02,
-        logScale: true,
+        logScale: logScale,        // Target ∝ elevation^5; matches the Hessian ellipse above
         useLogPosterior: true
       };
 
@@ -2316,8 +2329,7 @@
 
         // Run 10 steps per frame
         for (let i = 0; i < 10 && mcmcIter < totalIter; i++) {
-          const result = stepMCMC(mcmcState, terrain, getElev, mcmcConfig);
-          mcmcState = result.state;
+          mcmcState = stepMCMC(mcmcState, terrain, getElev, mcmcConfig);
 
           if (mcmcIter >= burnIn) {
             reprState.mcmcSamples.push({ x: mcmcState.x, y: mcmcState.y });

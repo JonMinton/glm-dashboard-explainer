@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GLM Tutorial: Fitting (Negative Binomial)</title>
+  <title>GLM Tutorial: Fitting (Beta)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -28,7 +28,7 @@
     }
 
     header {
-      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      background: linear-gradient(135deg, #16a085 0%, #1abc9c 100%);
       color: white;
       padding: 20px;
       margin-bottom: 20px;
@@ -77,7 +77,7 @@
       top: 50%;
       left: 0;
       height: 3px;
-      background: #d35400;
+      background: #16a085;
       transform: translateY(-50%);
       z-index: 2;
       width: 60%;
@@ -97,15 +97,15 @@
     }
 
     .step-dot.completed {
-      background: #d35400;
+      background: #16a085;
       color: white;
     }
 
     .step-dot.current {
-      background: #e67e22;
+      background: #1abc9c;
       color: white;
       transform: scale(1.2);
-      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.3);
+      box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.3);
     }
 
     /* Content panels */
@@ -118,7 +118,7 @@
     }
 
     .panel h2 {
-      color: #d35400;
+      color: #16a085;
       margin-bottom: 15px;
       font-size: 1.3em;
     }
@@ -135,8 +135,8 @@
 
     /* Key insight boxes */
     .insight-box {
-      background: #fef5e7;
-      border-left: 4px solid #e67e22;
+      background: #e8f8f5;
+      border-left: 4px solid #1abc9c;
       padding: 15px 20px;
       border-radius: 0 8px 8px 0;
       margin: 15px 0;
@@ -148,7 +148,7 @@
     }
 
     .insight-box h4 {
-      color: #d35400;
+      color: #16a085;
       margin-bottom: 8px;
     }
 
@@ -165,30 +165,6 @@
       text-align: center;
       font-size: 1.1em;
       overflow-x: auto;
-    }
-
-    /* Algorithm steps */
-    .algorithm-steps {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 15px 0;
-    }
-
-    .algorithm-steps ol {
-      margin-left: 20px;
-    }
-
-    .algorithm-steps li {
-      margin: 12px 0;
-      padding-left: 10px;
-    }
-
-    .algorithm-steps .step-note {
-      font-size: 0.85em;
-      color: #666;
-      font-style: italic;
-      margin-top: 5px;
     }
 
     /* Comparison table */
@@ -215,7 +191,7 @@
 
     /* Highlight */
     .highlight {
-      background: #fef5e7;
+      background: #e8f8f5;
       padding: 2px 6px;
       border-radius: 3px;
     }
@@ -240,13 +216,13 @@
     }
 
     .btn-primary {
-      background: #d35400;
+      background: #16a085;
       color: white;
       border: none;
     }
 
     .btn-primary:hover {
-      background: #ba4a00;
+      background: #138d75;
     }
 
     .btn-secondary {
@@ -258,7 +234,7 @@
     .btn-secondary:hover {
       background: #bdc3c7;
     }
-  
+
     .back-to-index {
       display: inline-block;
       color: rgba(255,255,255,0.8);
@@ -276,8 +252,8 @@
   <header>
     <div class="container">
       <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
-      <h1>Tutorial 4: Handling Overdispersion</h1>
-      <p>Step 4: Understanding Negative Binomial Fitting</p>
+      <h1>Tutorial 6: Bounded Continuous Data</h1>
+      <p>Step 4: Understanding Beta Regression Fitting</p>
     </div>
   </header>
 
@@ -297,140 +273,162 @@
 
     <!-- Main content -->
     <div class="panel">
-      <h2>How Negative Binomial Fitting Works</h2>
+      <h2>How Beta Regression Fitting Works</h2>
 
       <p>
-        Negative Binomial regression is more complex than Poisson because we need to estimate
-        <strong>two sets of parameters</strong>: the regression coefficients $\beta$ and the
-        dispersion parameter $\theta$.
+        Beta regression uses <strong>maximum likelihood estimation (MLE)</strong> to find the
+        best-fitting parameters. Unlike the standard GLM families (Gaussian, Binomial, Poisson, Gamma),
+        the Beta distribution is <strong>not</strong> part of the classical exponential family used by
+        R's <code>glm()</code> function &mdash; so it requires a separate package.
       </p>
 
       <div class="insight-box">
-        <h4>The Extra Parameter: $\theta$</h4>
+        <h4>The Precision Parameter</h4>
         <p>
-          Unlike Poisson (which has only $\beta$), Negative Binomial adds a <strong>dispersion
-          parameter $\theta$</strong> that controls how much extra variance exists beyond the mean.
+          The Beta distribution has two shape parameters ($a$ and $b$), but for regression we
+          reparameterise in terms of the <strong>mean $\mu$</strong> and <strong>precision $\phi$</strong>:
         </p>
+        <div class="math-display">
+          $a = \mu \phi, \quad b = (1-\mu) \phi$
+        </div>
         <p style="margin-bottom: 0;">
-          <strong>Variance formula:</strong> $\text{Var}(Y) = \mu + \frac{\mu^2}{\theta}$
+          <strong>Variance formula:</strong> $\text{Var}(Y) = \frac{\mu(1-\mu)}{1 + \phi}$
         </p>
       </div>
 
-      <h3>The Fitting Algorithm</h3>
+      <h3>Mean-Precision Parameterisation</h3>
 
       <p>
-        Most software uses an <strong>alternating algorithm</strong> that iterates between:
-      </p>
-
-      <div class="algorithm-steps">
-        <ol>
-          <li>
-            <strong>Fix $\theta$, update $\beta$:</strong> Given current $\theta$, use IRLS to find optimal $\beta$
-            <p class="step-note">This is essentially weighted Poisson regression with adjusted weights</p>
-          </li>
-          <li>
-            <strong>Fix $\beta$, update $\theta$:</strong> Given current $\beta$, find $\theta$ that maximizes likelihood
-            <p class="step-note">Often done via Newton-Raphson on the profile likelihood</p>
-          </li>
-          <li>
-            <strong>Repeat</strong> until both $\beta$ and $\theta$ converge
-            <p class="step-note">Usually converges in 5-15 iterations</p>
-          </li>
-        </ol>
-      </div>
-
-      <h3>The IRLS Step (for $\beta$)</h3>
-
-      <p>
-        When fitting $\beta$ with $\theta$ fixed, IRLS uses these Negative Binomial-specific weights:
+        The standard Beta distribution uses shape parameters $a$ and $b$. For regression,
+        we reparameterise:
       </p>
 
       <div class="math-display">
-        $W = \text{diag}\left(\frac{\mu_i}{1 + \mu_i/\theta}\right)$
+        $\mu = \frac{a}{a+b}, \quad \phi = a + b$
       </div>
 
       <p>
-        Compare to Poisson weights: $W = \text{diag}(\mu_i)$. The NegBin weights are
-        <strong>smaller</strong> (less than $\mu$), reflecting the extra uncertainty.
+        This is analogous to how we handle other GLM families:
       </p>
+
+      <ul style="margin: 10px 0 10px 20px;">
+        <li><strong>$\mu$</strong> is modelled via the systematic component: $g(\mu) = X\beta$</li>
+        <li><strong>$\phi$</strong> is the precision (inverse of dispersion), estimated separately</li>
+      </ul>
 
       <div class="insight-box key">
-        <h4>Why Smaller Weights = Larger Standard Errors</h4>
+        <h4>Key Insight: Precision $\phi$ Plays the Same Role as Other Dispersion Parameters</h4>
         <p>
-          In weighted least squares, <strong>smaller weights mean less precision</strong>.
-          The Negative Binomial's variance formula $\mu + \mu^2/\theta$ is always larger than
-          Poisson's $\mu$, so the weights are smaller, and the standard errors are larger.
+          Just as $\sigma^2$ controls dispersion in Gaussian, and shape controls dispersion in Gamma,
+          the precision parameter $\phi$ controls how tightly data clusters around the mean in Beta regression.
         </p>
         <p style="margin-bottom: 0;">
-          This is exactly what we want! The larger SEs reflect the true uncertainty in the data.
+          <strong>Higher $\phi$</strong> = less variability (more precise predictions).
+          <strong>Lower $\phi$</strong> = more spread around the mean.
         </p>
       </div>
 
-      <h3>Estimating $\theta$</h3>
+      <h3>MLE for Beta Regression</h3>
 
       <p>
-        The dispersion parameter $\theta$ is estimated by maximizing the <strong>profile likelihood</strong>.
-        For our bike rental data:
+        Since Beta regression is <strong>not in base R's <code>glm()</code></strong>, it uses direct
+        maximum likelihood optimisation rather than IRLS. The <code>betareg</code> package in R
+        (and <code>statsmodels.othermod.betareg</code> in Python) handles this automatically.
       </p>
-
-      <div class="math-display">
-        $\hat{\theta} = 6.773 \quad (\text{SE} = 0.347)$
-      </div>
 
       <p>
-        This relatively small $\theta$ indicates <strong>substantial overdispersion</strong>.
-        As $\theta \to \infty$, the Negative Binomial approaches Poisson.
+        The optimisation simultaneously estimates:
       </p>
 
-      <h3>Comparison: Poisson vs Negative Binomial Fitting</h3>
+      <ol style="margin: 10px 0 10px 20px;">
+        <li><strong>Mean model coefficients $\beta$:</strong> How predictors affect the expected proportion</li>
+        <li><strong>Precision $\phi$:</strong> How tightly observations cluster around the predicted mean</li>
+      </ol>
+
+      <h3>Comparison: All GLM Families</h3>
 
       <table class="comparison-table">
         <tr>
-          <th>Aspect</th>
-          <th>Poisson (Tutorial 3)</th>
-          <th>Negative Binomial</th>
+          <th>Family</th>
+          <th>Variance</th>
+          <th>Dispersion</th>
+          <th>Common link</th>
         </tr>
         <tr>
-          <td>Parameters estimated</td>
-          <td>$\beta$ only</td>
-          <td>$\beta$ and $\theta$</td>
+          <td>Gaussian</td>
+          <td>$\sigma^2$</td>
+          <td>$\sigma^2$ (estimated)</td>
+          <td>Identity</td>
         </tr>
         <tr>
-          <td>Algorithm</td>
-          <td>IRLS only</td>
-          <td>Alternating IRLS + profile likelihood</td>
+          <td>Binomial</td>
+          <td>$\mu(1-\mu)$</td>
+          <td>1 (fixed)</td>
+          <td>Logit</td>
         </tr>
         <tr>
-          <td>IRLS weights</td>
-          <td>$W = \text{diag}(\mu)$</td>
-          <td>$W = \text{diag}\left(\frac{\mu}{1 + \mu/\theta}\right)$</td>
+          <td>Poisson</td>
+          <td>$\mu$</td>
+          <td>1 (fixed)</td>
+          <td>Log</td>
         </tr>
         <tr>
-          <td>Variance assumed</td>
-          <td>$\text{Var} = \mu$</td>
-          <td>$\text{Var} = \mu + \mu^2/\theta$</td>
+          <td>Neg. Binomial</td>
+          <td>$\mu + \mu^2/\theta$</td>
+          <td>$\theta$ (estimated)</td>
+          <td>Log</td>
         </tr>
         <tr>
-          <td>Convergence</td>
-          <td>Fast (5-10 iterations)</td>
-          <td>Slightly slower (outer loop for $\theta$)</td>
+          <td>Gamma</td>
+          <td>$\mu^2/\text{shape}$</td>
+          <td>$1/\text{shape}$ (estimated)</td>
+          <td>Log</td>
+        </tr>
+        <tr style="background: #e8f8f5;">
+          <td><strong>Beta</strong></td>
+          <td><strong>$\mu(1-\mu)/(1+\phi)$</strong></td>
+          <td><strong>$\phi$ (estimated)</strong></td>
+          <td><strong>Logit</strong></td>
         </tr>
       </table>
 
+      <h3>For Our Exam Proportions Model</h3>
+
+      <p>
+        After fitting, we get a precision of approximately:
+      </p>
+
+      <div class="math-display">
+        $\hat{\phi} \approx 30.5$
+      </div>
+
+      <p>
+        This means for a predicted proportion of $\mu = 0.5$:
+      </p>
+
+      <div class="math-display">
+        $\text{SD} = \sqrt{\frac{0.5 \times 0.5}{1 + 30.5}} \approx 0.089$
+      </div>
+
       <div class="insight-box">
-        <h4>When to Use Which?</h4>
-        <ul style="margin: 10px 0 0 20px;">
-          <li><strong>Poisson:</strong> When deviance/df $\approx$ 1 (variance equals mean)</li>
-          <li><strong>Negative Binomial:</strong> When deviance/df >> 1 (overdispersion present)</li>
-          <li><strong>Rule of thumb:</strong> If Poisson deviance/df > 2, try Negative Binomial</li>
-        </ul>
+        <h4>Interpretation</h4>
+        <p>
+          A precision of 30.5 means that for a student predicted to score 50% correct,
+          the standard deviation is about 8.9 percentage points.
+          For a student predicted to score 80%, the SD is smaller:
+          $\sqrt{0.8 \times 0.2 / 31.5} \approx 0.071$ (7.1 pp).
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Notice:</strong> Unlike Gaussian, the variance <em>automatically</em> decreases near
+          the boundaries (0 and 1) &mdash; a natural property of the Beta distribution.
+        </p>
       </div>
 
       <div class="insight-box" style="background: #f0e6ff; border-left-color: #9b59b6;">
-        <h4 style="color: #9b59b6;">🔍 Want to see optimisation in action?</h4>
+        <h4 style="color: #9b59b6;">Want to see optimisation in action?</h4>
         <p style="margin-bottom: 0;">
           Our <a href="../../optimization/" style="color: #9b59b6; font-weight: 600;">interactive visualisations</a>
-          show how algorithms like IRLS, gradient descent and Newton-Raphson navigate parameter space,
+          show how algorithms like MLE, gradient descent and Newton-Raphson navigate parameter space,
           from simple 1D problems to 4D and beyond.
         </p>
       </div>

@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Link Function (Ordinal)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #2c3e50;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 20%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #34495e;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
+    }
+
+    /* Instruction panel */
+    .instruction-panel {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .instruction-panel h3 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    /* Link options */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .option-card {
+      background: white;
+      border: 3px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-card:hover:not(.dimmed):not(.selected) {
+      border-color: #2c3e50;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .option-card.dimmed {
+      opacity: 0.4;
+      filter: grayscale(40%);
+      pointer-events: none;
+    }
+
+    .option-card.selected {
+      border-color: #27ae60;
+      background: #d4edda;
+    }
+
+    .option-card.wrong {
+      border-color: #e74c3c;
+      background: #f8d7da;
+      animation: shake 0.3s;
+    }
+
+    .option-card.semi-valid {
+      border-color: #f39c12;
+      background: #fff3cd;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .option-card h4 {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .option-card .formula {
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: 'Times New Roman', serif;
+      font-size: 1.1em;
+      margin: 10px 0;
+      text-align: center;
+    }
+
+    .option-card .desc {
+      font-size: 0.9em;
+      color: #666;
+    }
+
+    /* Dialog overlay (modal style) */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+    }
+
+    .dialog-overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 600px;
+      margin: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .dialog.success {
+      border-top: 4px solid #27ae60;
+    }
+
+    .dialog.warning {
+      border-top: 4px solid #f39c12;
+    }
+
+    .dialog.error {
+      border-top: 4px solid #e74c3c;
+    }
+
+    .dialog h3 {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dialog p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .dialog ul {
+      margin: 10px 0 10px 20px;
+    }
+
+    .dialog li {
+      margin: 5px 0;
+    }
+
+    .key-point {
+      background: #f8f9fa;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+
+    .key-point.success {
+      background: #d4edda;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    /* Result panel */
+    .result-panel {
+      display: none;
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+      padding: 20px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 20px;
+    }
+
+    .result-panel.show {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .result-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Key insight box */
+    .insight-box {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 15px 0;
+    }
+
+    .insight-box h4 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #1a252f;
+    }
+
+    .btn-primary:disabled {
+      background: #bdc3c7;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 2: Choose the Link Function</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">2</div>
+        <div class="step-dot">3</div>
+        <div class="step-dot">4</div>
+        <div class="step-dot">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Instruction -->
+    <div class="instruction-panel">
+      <h3>Choose the Link Function</h3>
+      <p>
+        Pain level has <strong>4 ordered categories</strong> (None &lt; Mild &lt; Moderate &lt; Severe).
+        Which link function respects this ordering and models the cumulative probabilities?
+      </p>
+    </div>
+
+    <!-- Options -->
+    <div class="options-grid">
+      <div class="option-card" data-link="cumulative-logit">
+        <h4>Cumulative Logit</h4>
+        <div class="formula">$g(P(Y \le j)) = \log\frac{P(Y \le j)}{P(Y > j)}$</div>
+        <p class="desc">Models cumulative probabilities using logit. The proportional odds model &mdash; one set of slopes $\beta$, with $J-1$ threshold intercepts.</p>
+      </div>
+
+      <div class="option-card" data-link="logit-binary">
+        <h4>Logit (Binary)</h4>
+        <div class="formula">$g(\mu) = \log\frac{\mu}{1-\mu}$</div>
+        <p class="desc">The standard logit link for binary (two-category) outcomes.</p>
+      </div>
+
+      <div class="option-card" data-link="identity">
+        <h4>Identity Link</h4>
+        <div class="formula">$g(\mu) = \mu$</div>
+        <p class="desc">Predictions equal the linear predictor directly. Simple additive interpretation.</p>
+      </div>
+
+      <div class="option-card" data-link="log">
+        <h4>Log Link</h4>
+        <div class="formula">$g(\mu) = \log(\mu)$</div>
+        <p class="desc">Ensures positive predictions via $\mu = e^{\eta}$. Multiplicative interpretation.</p>
+      </div>
+    </div>
+
+    <!-- Key insight -->
+    <div class="insight-box" id="keyInsight" style="display: none;">
+      <h4>Key Insight: Multiple Thresholds, One Set of Slopes</h4>
+      <p>
+        The proportional odds assumption means $\beta$ has the same effect at every cut-point &mdash;
+        treatment shifts the <strong>entire pain distribution</strong>, not just one comparison.
+        Each $\beta$ has a single interpretation: it shifts the distribution up or down.
+      </p>
+    </div>
+
+    <!-- Result panel -->
+    <div class="result-panel" id="resultPanel">
+      <h3>&#10003; Cumulative Logit Selected</h3>
+      <p>The cumulative logit models ordered categories with proportional odds &mdash; one set of slopes with $J-1$ thresholds.</p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="systematic.html" class="btn btn-secondary">&larr; Back to Systematic</a>
+      <button class="btn btn-primary" id="continueBtn" disabled>Continue to Distribution &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Dialog for Cumulative Logit (correct) -->
+  <div class="dialog-overlay" id="cumulativeLogitDialog">
+    <div class="dialog success">
+      <h3>&#10004; Correct! Cumulative logit respects the ordering.</h3>
+      <p>
+        The <strong>cumulative logit</strong> (proportional odds) link is the standard choice for ordinal data because:
+      </p>
+      <div class="key-point success">
+        <p><strong>Model:</strong> $\text{logit}(P(Y \le j)) = \alpha_j - \mathbf{x}'\boldsymbol{\beta}$</p>
+        <p>There are $J-1 = 3$ threshold intercepts ($\alpha_1, \alpha_2, \alpha_3$) and one shared set of slopes $\boldsymbol{\beta}$.</p>
+      </div>
+      <p>
+        <strong>Why this works:</strong>
+      </p>
+      <ul>
+        <li>Models <strong>cumulative probabilities</strong> $P(Y \le j)$, which respect the ordering</li>
+        <li>One set of $\beta$ coefficients &mdash; each coefficient shifts the <strong>entire distribution</strong></li>
+        <li>$e^{\beta}$ gives the <strong>odds ratio</strong> for being in a higher vs lower category</li>
+        <li>Thresholds $\alpha_j$ capture the baseline cut-points between categories</li>
+      </ul>
+      <p>
+        <strong>Proportional odds:</strong> The effect of each predictor is the same regardless of which
+        cut-point you're considering. Treatment B shifts the entire pain distribution, not just one threshold.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="confirmSelection()">Confirm Selection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Logit Binary (wrong) -->
+  <div class="dialog-overlay" id="logitBinaryDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Standard logit only works for 2 categories.</h3>
+      <p>
+        The <strong>binary logit</strong> link models a single probability $P(Y = 1)$, which works for
+        two categories (success/failure).
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> Pain has 4 levels &mdash; you'd need to collapse the scale to binary, losing information.</p>
+      </div>
+      <p>
+        <strong>What you'd lose:</strong>
+      </p>
+      <ul>
+        <li>Collapsing "None vs Mild/Moderate/Severe" discards the ordering within the higher categories</li>
+        <li>Different binary splits give different answers &mdash; which one do you pick?</li>
+        <li>You'd need multiple separate binary models instead of one unified model</li>
+      </ul>
+      <p>
+        The <strong>cumulative logit</strong> generalises the binary logit to multiple ordered categories
+        by modelling cumulative probabilities at each threshold simultaneously.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logitBinaryDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Identity (wrong) -->
+  <div class="dialog-overlay" id="identityDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Identity treats categories as equally-spaced numbers.</h3>
+      <p>
+        The <strong>identity link</strong> means $\mu = \eta$ directly. This treats the outcome as a
+        continuous number, implying equal spacing between categories.
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> "Moderate" is not twice "Mild". The gaps between categories are unknown and may differ.</p>
+      </div>
+      <p>
+        <strong>Treating ordinal as continuous:</strong>
+      </p>
+      <ul>
+        <li>Assumes the difference between None (1) and Mild (2) equals Moderate (3) vs Severe (4)</li>
+        <li>Predicting pain = 2.7 is meaningless &mdash; there's no pain level between Mild and Moderate</li>
+        <li>Can predict values outside the valid range (e.g., pain = 0.3 or 5.1)</li>
+      </ul>
+      <p>
+        Ordinal regression avoids these assumptions by modelling <strong>cumulative probabilities</strong>
+        rather than treating the category numbers directly.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('identityDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog for Log (wrong) -->
+  <div class="dialog-overlay" id="logDialog">
+    <div class="dialog error">
+      <h3>&#10060; Wrong! Log link is designed for positive continuous outcomes.</h3>
+      <p>
+        The <strong>log link</strong> ensures positive predictions ($\mu = e^{\eta}$), which is useful
+        for counts (Poisson) or positive continuous data (Gamma).
+      </p>
+      <div class="key-point">
+        <p><strong>Problem:</strong> Pain levels are categories that happen to be numbered, not counts of anything.</p>
+      </div>
+      <p>
+        <strong>Why log doesn't work here:</strong>
+      </p>
+      <ul>
+        <li>Pain level is not a count or a positive continuous measure</li>
+        <li>$e^{\eta}$ gives a continuous positive number, not a probability distribution over ordered categories</li>
+        <li>No mechanism for modelling transitions between ordered categories</li>
+      </ul>
+      <p>
+        For ordered categories, we need a link that models the <strong>cumulative probabilities</strong>
+        $P(Y \le j)$ at each threshold between categories.
+      </p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="closeDialog('logDialog')">Try Another Option</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let selectedLink = null;
+
+    const cards = document.querySelectorAll('.option-card');
+    const continueBtn = document.getElementById('continueBtn');
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const link = card.dataset.link;
+        handleLinkSelection(link, card);
+      });
+    });
+
+    function handleLinkSelection(link, card) {
+      // Don't process if already confirmed
+      if (selectedLink === 'cumulative-logit') return;
+
+      // Remove previous selection styling
+      cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+
+      switch(link) {
+        case 'cumulative-logit':
+          card.classList.add('selected');
+          showDialog('cumulativeLogitDialog');
+          break;
+
+        case 'logit-binary':
+          card.classList.add('wrong');
+          showDialog('logitBinaryDialog');
+          break;
+
+        case 'identity':
+          card.classList.add('wrong');
+          showDialog('identityDialog');
+          break;
+
+        case 'log':
+          card.classList.add('wrong');
+          showDialog('logDialog');
+          break;
+      }
+    }
+
+    function confirmSelection() {
+      selectedLink = 'cumulative-logit';
+      closeDialog('cumulativeLogitDialog');
+
+      // Show result panel, key insight, and enable continue
+      document.getElementById('resultPanel').classList.add('show');
+      document.getElementById('keyInsight').style.display = 'block';
+      continueBtn.disabled = false;
+
+      // Dim other cards
+      document.querySelectorAll('.option-card:not([data-link="cumulative-logit"])').forEach(c => {
+        c.classList.add('dimmed');
+      });
+    }
+
+    function showDialog(dialogId) {
+      const dialog = document.getElementById(dialogId);
+      dialog.classList.add('show');
+
+      // Re-render math in dialog
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(dialog, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    }
+
+    function closeDialog(dialogId) {
+      document.getElementById(dialogId).classList.remove('show');
+
+      // Clear selection styling if not confirmed
+      if (selectedLink !== 'cumulative-logit') {
+        cards.forEach(c => c.classList.remove('selected', 'wrong', 'semi-valid'));
+      }
+    }
+
+    // Close dialogs on overlay click
+    document.querySelectorAll('.dialog-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          closeDialog(overlay.id);
+        }
+      });
+    });
+
+    continueBtn.addEventListener('click', () => {
+      if (selectedLink === 'cumulative-logit') {
+        window.location.href = 'distribution.html';
+      }
+    });
+
+    // Render initial math
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

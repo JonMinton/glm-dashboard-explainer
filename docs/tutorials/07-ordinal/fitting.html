@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GLM Tutorial: Fitting (Negative Binomial)</title>
+  <title>GLM Tutorial: Fitting (Ordinal)</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -28,7 +28,7 @@
     }
 
     header {
-      background: linear-gradient(135deg, #d35400 0%, #e67e22 100%);
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
       color: white;
       padding: 20px;
       margin-bottom: 20px;
@@ -77,7 +77,7 @@
       top: 50%;
       left: 0;
       height: 3px;
-      background: #d35400;
+      background: #2c3e50;
       transform: translateY(-50%);
       z-index: 2;
       width: 60%;
@@ -97,15 +97,15 @@
     }
 
     .step-dot.completed {
-      background: #d35400;
+      background: #2c3e50;
       color: white;
     }
 
     .step-dot.current {
-      background: #e67e22;
+      background: #34495e;
       color: white;
       transform: scale(1.2);
-      box-shadow: 0 0 0 4px rgba(230, 126, 34, 0.3);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
     }
 
     /* Content panels */
@@ -118,7 +118,7 @@
     }
 
     .panel h2 {
-      color: #d35400;
+      color: #2c3e50;
       margin-bottom: 15px;
       font-size: 1.3em;
     }
@@ -135,8 +135,8 @@
 
     /* Key insight boxes */
     .insight-box {
-      background: #fef5e7;
-      border-left: 4px solid #e67e22;
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
       padding: 15px 20px;
       border-radius: 0 8px 8px 0;
       margin: 15px 0;
@@ -148,7 +148,7 @@
     }
 
     .insight-box h4 {
-      color: #d35400;
+      color: #2c3e50;
       margin-bottom: 8px;
     }
 
@@ -213,9 +213,14 @@
       background: #fafafa;
     }
 
+    .comparison-table tr.highlight-row {
+      background: #eaf2f8;
+      font-weight: 500;
+    }
+
     /* Highlight */
     .highlight {
-      background: #fef5e7;
+      background: #eaf2f8;
       padding: 2px 6px;
       border-radius: 3px;
     }
@@ -240,13 +245,13 @@
     }
 
     .btn-primary {
-      background: #d35400;
+      background: #2c3e50;
       color: white;
       border: none;
     }
 
     .btn-primary:hover {
-      background: #ba4a00;
+      background: #1a252f;
     }
 
     .btn-secondary {
@@ -258,7 +263,7 @@
     .btn-secondary:hover {
       background: #bdc3c7;
     }
-  
+
     .back-to-index {
       display: inline-block;
       color: rgba(255,255,255,0.8);
@@ -276,8 +281,8 @@
   <header>
     <div class="container">
       <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
-      <h1>Tutorial 4: Handling Overdispersion</h1>
-      <p>Step 4: Understanding Negative Binomial Fitting</p>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 4: Understanding Ordinal Model Fitting</p>
     </div>
   </header>
 
@@ -297,141 +302,189 @@
 
     <!-- Main content -->
     <div class="panel">
-      <h2>How Negative Binomial Fitting Works</h2>
+      <h2>How Proportional Odds Model Fitting Works</h2>
 
       <p>
-        Negative Binomial regression is more complex than Poisson because we need to estimate
-        <strong>two sets of parameters</strong>: the regression coefficients $\beta$ and the
-        dispersion parameter $\theta$.
+        The proportional odds model uses <strong>maximum likelihood estimation (MLE)</strong> to find
+        the best-fitting thresholds and slopes. Unlike standard GLMs that use IRLS, ordinal models
+        typically use Newton-Raphson or other general optimisers.
       </p>
 
       <div class="insight-box">
-        <h4>The Extra Parameter: $\theta$</h4>
+        <h4>The Parameters</h4>
         <p>
-          Unlike Poisson (which has only $\beta$), Negative Binomial adds a <strong>dispersion
-          parameter $\theta$</strong> that controls how much extra variance exists beyond the mean.
+          With $J = 4$ pain categories and $p$ predictors, we estimate:
         </p>
-        <p style="margin-bottom: 0;">
-          <strong>Variance formula:</strong> $\text{Var}(Y) = \mu + \frac{\mu^2}{\theta}$
+        <ul style="margin: 10px 0 0 20px;">
+          <li><strong>$J - 1 = 3$ threshold parameters:</strong> $\alpha_1, \alpha_2, \alpha_3$ (also called cut-points or intercepts)</li>
+          <li><strong>$p$ slope parameters:</strong> $\beta_1, \ldots, \beta_p$ (shared across all thresholds)</li>
+        </ul>
+        <p style="margin-top: 10px; margin-bottom: 0;">
+          <strong>Total:</strong> $3 + p$ parameters instead of $(J-1) \times p$ for unordered multinomial.
         </p>
       </div>
 
-      <h3>The Fitting Algorithm</h3>
+      <h3>The Cumulative Logit Model</h3>
 
       <p>
-        Most software uses an <strong>alternating algorithm</strong> that iterates between:
+        For each observation $i$ and threshold $j$:
+      </p>
+
+      <div class="math-display">
+        $$P(Y_i \le j) = \frac{1}{1 + \exp(-(\alpha_j - \mathbf{x}_i'\boldsymbol{\beta}))}$$
+      </div>
+
+      <p>
+        where $P(Y \le 0) = 0$ and $P(Y \le J) = 1$ by convention.
+      </p>
+
+      <h3>Category Probabilities</h3>
+
+      <p>
+        The probability of each specific category is the difference between consecutive cumulative probabilities:
+      </p>
+
+      <div class="math-display">
+        $$P(Y_i = j) = P(Y_i \le j) - P(Y_i \le j-1)$$
+      </div>
+
+      <p>
+        For example, with 4 categories:
       </p>
 
       <div class="algorithm-steps">
         <ol>
           <li>
-            <strong>Fix $\theta$, update $\beta$:</strong> Given current $\theta$, use IRLS to find optimal $\beta$
-            <p class="step-note">This is essentially weighted Poisson regression with adjusted weights</p>
+            <strong>$P(Y = 1)$</strong> = $P(Y \le 1) - 0$ = $P(Y \le 1)$
+            <p class="step-note">Probability of "None" pain</p>
           </li>
           <li>
-            <strong>Fix $\beta$, update $\theta$:</strong> Given current $\beta$, find $\theta$ that maximizes likelihood
-            <p class="step-note">Often done via Newton-Raphson on the profile likelihood</p>
+            <strong>$P(Y = 2)$</strong> = $P(Y \le 2) - P(Y \le 1)$
+            <p class="step-note">Probability of "Mild" pain</p>
           </li>
           <li>
-            <strong>Repeat</strong> until both $\beta$ and $\theta$ converge
-            <p class="step-note">Usually converges in 5-15 iterations</p>
+            <strong>$P(Y = 3)$</strong> = $P(Y \le 3) - P(Y \le 2)$
+            <p class="step-note">Probability of "Moderate" pain</p>
+          </li>
+          <li>
+            <strong>$P(Y = 4)$</strong> = $1 - P(Y \le 3)$
+            <p class="step-note">Probability of "Severe" pain</p>
           </li>
         </ol>
       </div>
 
-      <h3>The IRLS Step (for $\beta$)</h3>
+      <h3>The Log-Likelihood</h3>
 
       <p>
-        When fitting $\beta$ with $\theta$ fixed, IRLS uses these Negative Binomial-specific weights:
+        MLE finds parameters that maximise the probability of the observed data:
       </p>
 
       <div class="math-display">
-        $W = \text{diag}\left(\frac{\mu_i}{1 + \mu_i/\theta}\right)$
+        $$\ell(\boldsymbol{\alpha}, \boldsymbol{\beta}) = \sum_{i=1}^{n} \log P(Y_i = y_i)$$
       </div>
 
       <p>
-        Compare to Poisson weights: $W = \text{diag}(\mu_i)$. The NegBin weights are
-        <strong>smaller</strong> (less than $\mu$), reflecting the extra uncertainty.
+        where each $P(Y_i = y_i)$ is computed from the cumulative model above.
       </p>
 
       <div class="insight-box key">
-        <h4>Why Smaller Weights = Larger Standard Errors</h4>
+        <h4>Proportional Odds Assumption</h4>
         <p>
-          In weighted least squares, <strong>smaller weights mean less precision</strong>.
-          The Negative Binomial's variance formula $\mu + \mu^2/\theta$ is always larger than
-          Poisson's $\mu$, so the weights are smaller, and the standard errors are larger.
+          The key assumption is that the <strong>same $\boldsymbol{\beta}$</strong> applies at every threshold.
+          This means each predictor shifts the <strong>entire distribution</strong> by the same amount on
+          the logit scale.
         </p>
         <p style="margin-bottom: 0;">
-          This is exactly what we want! The larger SEs reflect the true uncertainty in the data.
+          <strong>Interpretation:</strong> $e^{\beta}$ gives the odds ratio for being in a <em>higher</em> vs <em>lower</em>
+          category, regardless of where you split the scale.
         </p>
       </div>
 
-      <h3>Estimating $\theta$</h3>
+      <h3>What Software Does</h3>
 
       <p>
-        The dispersion parameter $\theta$ is estimated by maximizing the <strong>profile likelihood</strong>.
-        For our bike rental data:
+        R uses <code>MASS::polr()</code> and Python uses <code>statsmodels.miscmodels.ordinal_model.OrderedModel</code>.
+        Both maximise the log-likelihood using iterative numerical methods (Newton-Raphson or BFGS).
       </p>
 
-      <div class="math-display">
-        $\hat{\theta} = 6.773 \quad (\text{SE} = 0.347)$
+      <div class="insight-box" style="background: #f0e6ff; border-left-color: #9b59b6;">
+        <h4 style="color: #9b59b6;">Want to see optimisation in action?</h4>
+        <p style="margin-bottom: 0;">
+          Our <a href="../../optimization/" style="color: #9b59b6; font-weight: 600;">interactive visualisations</a>
+          show how algorithms like gradient descent and Newton-Raphson navigate parameter space,
+          from simple 1D problems to 4D and beyond.
+        </p>
       </div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="panel">
+      <h2>GLM Family Comparison</h2>
 
       <p>
-        This relatively small $\theta$ indicates <strong>substantial overdispersion</strong>.
-        As $\theta \to \infty$, the Negative Binomial approaches Poisson.
+        Here's how the ordinal model compares to the other GLM families we've studied:
       </p>
-
-      <h3>Comparison: Poisson vs Negative Binomial Fitting</h3>
 
       <table class="comparison-table">
         <tr>
-          <th>Aspect</th>
-          <th>Poisson (Tutorial 3)</th>
-          <th>Negative Binomial</th>
+          <th>Family</th>
+          <th>Response</th>
+          <th>Parameters</th>
+          <th>Common Link</th>
         </tr>
         <tr>
-          <td>Parameters estimated</td>
-          <td>$\beta$ only</td>
-          <td>$\beta$ and $\theta$</td>
+          <td>Gaussian</td>
+          <td>Continuous</td>
+          <td>$\boldsymbol{\beta}, \sigma^2$</td>
+          <td>Identity</td>
         </tr>
         <tr>
-          <td>Algorithm</td>
-          <td>IRLS only</td>
-          <td>Alternating IRLS + profile likelihood</td>
+          <td>Binomial</td>
+          <td>Binary</td>
+          <td>$\boldsymbol{\beta}$</td>
+          <td>Logit</td>
         </tr>
         <tr>
-          <td>IRLS weights</td>
-          <td>$W = \text{diag}(\mu)$</td>
-          <td>$W = \text{diag}\left(\frac{\mu}{1 + \mu/\theta}\right)$</td>
+          <td>Poisson</td>
+          <td>Counts</td>
+          <td>$\boldsymbol{\beta}$</td>
+          <td>Log</td>
         </tr>
         <tr>
-          <td>Variance assumed</td>
-          <td>$\text{Var} = \mu$</td>
-          <td>$\text{Var} = \mu + \mu^2/\theta$</td>
+          <td>Neg. Binomial</td>
+          <td>Overdispersed counts</td>
+          <td>$\boldsymbol{\beta}, \theta$</td>
+          <td>Log</td>
         </tr>
         <tr>
-          <td>Convergence</td>
-          <td>Fast (5-10 iterations)</td>
-          <td>Slightly slower (outer loop for $\theta$)</td>
+          <td>Gamma</td>
+          <td>Positive continuous</td>
+          <td>$\boldsymbol{\beta}, \text{shape}$</td>
+          <td>Log</td>
+        </tr>
+        <tr>
+          <td>Beta</td>
+          <td>Proportions (0,1)</td>
+          <td>$\boldsymbol{\beta}, \phi$</td>
+          <td>Logit</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>Ordinal</strong></td>
+          <td><strong>Ordered categories</strong></td>
+          <td><strong>$\boldsymbol{\beta}, \alpha_1 \ldots \alpha_{J-1}$</strong></td>
+          <td><strong>Cumulative logit</strong></td>
         </tr>
       </table>
 
       <div class="insight-box">
-        <h4>When to Use Which?</h4>
-        <ul style="margin: 10px 0 0 20px;">
-          <li><strong>Poisson:</strong> When deviance/df $\approx$ 1 (variance equals mean)</li>
-          <li><strong>Negative Binomial:</strong> When deviance/df >> 1 (overdispersion present)</li>
-          <li><strong>Rule of thumb:</strong> If Poisson deviance/df > 2, try Negative Binomial</li>
-        </ul>
-      </div>
-
-      <div class="insight-box" style="background: #f0e6ff; border-left-color: #9b59b6;">
-        <h4 style="color: #9b59b6;">🔍 Want to see optimisation in action?</h4>
+        <h4>What Makes Ordinal Special</h4>
+        <p>
+          Unlike other GLMs where there's one intercept, the ordinal model has <strong>$J-1$ intercepts</strong>
+          (the thresholds) but still only <strong>one set of slopes</strong>. This is the proportional odds
+          structure: many intercepts, shared slopes.
+        </p>
         <p style="margin-bottom: 0;">
-          Our <a href="../../optimization/" style="color: #9b59b6; font-weight: 600;">interactive visualisations</a>
-          show how algorithms like IRLS, gradient descent and Newton-Raphson navigate parameter space,
-          from simple 1D problems to 4D and beyond.
+          <strong>For our pain model:</strong> 3 thresholds ($\alpha_1, \alpha_2, \alpha_3$) + treatment, dose, and age coefficients.
         </p>
       </div>
       <div class="insight-box">

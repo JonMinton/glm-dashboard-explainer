@@ -567,7 +567,7 @@
           <select id="algorithm-select">
             <option value="analytic">Analytic (OLS)</option>
             <option value="newton">Newton-Raphson</option>
-            <option value="gradient">Gradient Descent</option>
+            <option value="gradient">Gradient Ascent</option>
           </select>
         </div>
 
@@ -1587,7 +1587,7 @@
           desc: 'Uses second derivatives (Hessian) for faster convergence: β_new = β - H⁻¹∇ℓ. Typically converges in 1-2 steps!'
         },
         gradient: {
-          name: 'Gradient Descent',
+          name: 'Gradient Ascent',
           desc: 'Follows the gradient in all 3 dimensions simultaneously. Watch the path on the slice view!'
         }
       };

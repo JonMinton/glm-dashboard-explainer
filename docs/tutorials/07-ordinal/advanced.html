@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced (Ordinal)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #2c3e50;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 100%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #34495e;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 25px 0 15px 0;
+      font-size: 1.15em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .math-display.key {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .derivation-step {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border-left: 3px solid #34495e;
+    }
+
+    .derivation-step .step-label {
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    /* Insight boxes */
+    .insight-box {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box.warning {
+      background: #fdedec;
+      border-left-color: #e74c3c;
+    }
+
+    .insight-box h4 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    .insight-box.warning h4 {
+      color: #922b21;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Interactive demo */
+    .demo-area {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .demo-area canvas {
+      display: block;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto 15px auto;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+    }
+
+    .slider-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .slider-control label {
+      display: block;
+      font-size: 0.9em;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 4px;
+    }
+
+    .slider-control input[type="range"] {
+      width: 100%;
+    }
+
+    .prob-readout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .prob-chip {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9em;
+      color: white;
+      min-width: 130px;
+      text-align: center;
+    }
+
+    /* Success panel */
+    .success-panel {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .success-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .success-panel p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #2c3e50;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #1a252f;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 6: The Cumulative Logit Log-Likelihood</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">6</div>
+      </div>
+    </div>
+
+    <!-- Latent variable view -->
+    <div class="panel">
+      <h2>The Latent Variable View</h2>
+
+      <p>
+        The cleanest way to understand the proportional odds model is through a
+        <strong>latent (unobserved) continuous variable</strong>. Imagine each patient has a true
+        underlying pain intensity $Y^*$ on a continuous scale:
+      </p>
+
+      <div class="math-display">
+        $$Y_i^* = \mathbf{x}_i'\boldsymbol{\beta} + \varepsilon_i, \qquad \varepsilon_i \sim \text{standard logistic}$$
+      </div>
+
+      <p>
+        We never observe $Y^*$ directly. Instead, the patient reports the category their latent
+        pain falls into, determined by the <strong>thresholds</strong> (cut-points)
+        $\alpha_1 < \alpha_2 < \alpha_3$:
+      </p>
+
+      <div class="math-display">
+        $$Y_i = j \quad \iff \quad \alpha_{j-1} < Y_i^* \le \alpha_j$$
+      </div>
+
+      <p>
+        with the conventions $\alpha_0 = -\infty$ and $\alpha_J = +\infty$. Because the standard
+        logistic distribution has CDF $F(z) = \text{logit}^{-1}(z) = 1/(1 + e^{-z})$, this latent
+        construction gives exactly the cumulative logit model:
+      </p>
+
+      <div class="math-display">
+        $$P(Y_i \le j) = P(\varepsilon_i \le \alpha_j - \mathbf{x}_i'\boldsymbol{\beta}) = \text{logit}^{-1}(\alpha_j - \mathbf{x}_i'\boldsymbol{\beta})$$
+      </div>
+
+      <div class="insight-box">
+        <h4>Why the Thresholds Are Free Parameters</h4>
+        <p style="margin-bottom: 0;">
+          The latent scale has no natural units &mdash; "pain intensity" cannot be measured in metres
+          or millimetres of mercury. So the model fixes the <em>error</em> distribution (standard
+          logistic, scale 1) and lets the data choose where the cut-points sit. The fitted
+          thresholds tell us how the four labels carve up the latent scale: a wide gap
+          between $\hat{\alpha}_1$ and $\hat{\alpha}_2$ means "Mild" covers a broad band of
+          underlying intensities. This is also why there is no separate intercept: adding a
+          constant to $\mathbf{x}'\boldsymbol{\beta}$ and to every $\alpha_j$ leaves all
+          probabilities unchanged, so the thresholds <em>are</em> the intercepts.
+        </p>
+      </div>
+
+      <p>
+        Swap the logistic error for a standard normal and you get the <strong>ordered probit</strong>
+        model &mdash; the same idea we met with binary probit in Tutorial 2, now with multiple
+        cut-points instead of one.
+      </p>
+    </div>
+
+    <!-- Interactive demo -->
+    <div class="panel">
+      <h2>Interactive: Thresholds Slicing the Latent Scale</h2>
+
+      <p>
+        The curve below is the latent logistic density, centred at the linear predictor
+        $\eta = \mathbf{x}'\boldsymbol{\beta}$. The vertical lines are the thresholds
+        $\alpha_1, \alpha_2, \alpha_3$, and each shaded slice is the probability of one
+        pain category. Drag the sliders and watch the four probabilities redistribute &mdash;
+        they always sum to 1.
+      </p>
+
+      <div class="demo-area">
+        <canvas id="latentCanvas" width="900" height="320"></canvas>
+        <div class="slider-grid">
+          <div class="slider-control">
+            <label for="etaSlider">Linear predictor $\eta$: <span id="etaVal">0.20</span></label>
+            <input type="range" id="etaSlider" min="-4" max="4" step="0.05" value="0.20">
+          </div>
+          <div class="slider-control">
+            <label for="a1Slider">Threshold $\alpha_1$ (None | Mild): <span id="a1Val">-2.54</span></label>
+            <input type="range" id="a1Slider" min="-5" max="5" step="0.05" value="-2.54">
+          </div>
+          <div class="slider-control">
+            <label for="a2Slider">Threshold $\alpha_2$ (Mild | Moderate): <span id="a2Val">-0.09</span></label>
+            <input type="range" id="a2Slider" min="-5" max="5" step="0.05" value="-0.09">
+          </div>
+          <div class="slider-control">
+            <label for="a3Slider">Threshold $\alpha_3$ (Moderate | Severe): <span id="a3Val">1.77</span></label>
+            <input type="range" id="a3Slider" min="-5" max="5" step="0.05" value="1.77">
+          </div>
+        </div>
+        <div class="prob-readout">
+          <div class="prob-chip" style="background: #27ae60;">None: <span id="p1">0.00</span></div>
+          <div class="prob-chip" style="background: #f39c12;">Mild: <span id="p2">0.00</span></div>
+          <div class="prob-chip" style="background: #e67e22;">Moderate: <span id="p3">0.00</span></div>
+          <div class="prob-chip" style="background: #c0392b;">Severe: <span id="p4">0.00</span></div>
+        </div>
+      </div>
+
+      <p>
+        The sliders start at the values fitted on the code page: thresholds
+        $(-2.54, -0.09, 1.77)$ and $\eta \approx 0.20$ (a 50-year-old on Treatment A with a
+        50&nbsp;mg dose). Increasing $\eta$ slides the whole density to the right, pushing
+        probability into the higher pain categories &mdash; that is the proportional odds
+        structure in action: <strong>one shift moves everything together</strong>.
+      </p>
+    </div>
+
+    <!-- Log-likelihood derivation -->
+    <div class="panel">
+      <h2>Deriving the Log-Likelihood</h2>
+
+      <p>
+        We have $J = 4$ ordered categories, thresholds $\boldsymbol{\alpha} = (\alpha_1, \alpha_2, \alpha_3)$
+        and slopes $\boldsymbol{\beta}$. Write $\eta_i = \mathbf{x}_i'\boldsymbol{\beta}$ for the linear predictor.
+      </p>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-label">Step 1: Cumulative Probabilities</div>
+          <p>The cumulative logit model specifies, for $j = 1, \ldots, J-1$:</p>
+          <div class="math-display">
+            $$P(Y_i \le j) = \text{logit}^{-1}(\alpha_j - \eta_i) = \frac{1}{1 + \exp\!\big(-(\alpha_j - \eta_i)\big)}$$
+          </div>
+          <p style="margin-bottom: 0;">
+            with the boundary conventions $P(Y_i \le 0) = 0$ and $P(Y_i \le J) = 1$.
+          </p>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 2: Category Probabilities by Differencing</div>
+          <p>The probability of landing exactly in category $j$ is the difference of consecutive cumulative probabilities:</p>
+          <div class="math-display">
+            $$\pi_{ij} = P(Y_i = j) = P(Y_i \le j) - P(Y_i \le j - 1) = \text{logit}^{-1}(\alpha_j - \eta_i) - \text{logit}^{-1}(\alpha_{j-1} - \eta_i)$$
+          </div>
+          <p style="margin-bottom: 0;">
+            The ordering constraint $\alpha_1 < \alpha_2 < \alpha_3$ guarantees every $\pi_{ij} > 0$,
+            because $\text{logit}^{-1}$ is strictly increasing.
+          </p>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 3: Likelihood of One Observation</div>
+          <p>
+            Each observation contributes the probability of the category it actually fell in.
+            Using the indicator $\mathbb{1}(y_i = j)$, which is 1 when patient $i$ reported
+            category $j$ and 0 otherwise:
+          </p>
+          <div class="math-display">
+            $$L_i(\boldsymbol{\alpha}, \boldsymbol{\beta}) = \prod_{j=1}^{J} \pi_{ij}^{\,\mathbb{1}(y_i = j)}$$
+          </div>
+          <p style="margin-bottom: 0;">
+            This is one draw from a multinomial distribution &mdash; but with the $\pi_{ij}$
+            structured through the shared thresholds and slopes.
+          </p>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 4: Take Logs and Sum Over Observations</div>
+          <div class="math-display">
+            $$\ell(\boldsymbol{\alpha}, \boldsymbol{\beta}) = \sum_{i=1}^{n} \sum_{j=1}^{J} \mathbb{1}(y_i = j)\, \ln\!\big[ P(Y_i \le j) - P(Y_i \le j-1) \big]$$
+          </div>
+        </div>
+      </div>
+
+      <div class="math-display key">
+        <strong>The Full Log-Likelihood:</strong><br><br>
+        $$\ell(\boldsymbol{\alpha}, \boldsymbol{\beta}) = \sum_{i=1}^{n} \sum_{j=1}^{J} \mathbb{1}(y_i = j)\, \ln\!\Big[ \text{logit}^{-1}(\alpha_j - \mathbf{x}_i'\boldsymbol{\beta}) - \text{logit}^{-1}(\alpha_{j-1} - \mathbf{x}_i'\boldsymbol{\beta}) \Big]$$
+        <br>
+        $$\text{with } \alpha_0 = -\infty \;(\text{so logit}^{-1} = 0) \text{ and } \alpha_J = +\infty \;(\text{so logit}^{-1} = 1)$$
+      </div>
+
+      <h3>The Score for $\boldsymbol{\beta}$</h3>
+
+      <p>
+        Write $F(z) = \text{logit}^{-1}(z)$ for the logistic CDF and $f(z) = F(z)\big(1 - F(z)\big)$
+        for its density. For an observation with $y_i = j$, the chain rule gives:
+      </p>
+
+      <div class="math-display">
+        $$\frac{\partial \ell_i}{\partial \boldsymbol{\beta}} = -\,\frac{f(\alpha_j - \eta_i) - f(\alpha_{j-1} - \eta_i)}{F(\alpha_j - \eta_i) - F(\alpha_{j-1} - \eta_i)}\; \mathbf{x}_i$$
+      </div>
+
+      <p>
+        Unlike the Poisson or binomial cases, this does not simplify to a tidy
+        $\sum_i (y_i - \mu_i)\mathbf{x}_i$ form &mdash; each observation's contribution involves a
+        ratio of density differences to CDF differences. That is why <code>polr</code> and
+        <code>OrderedModel</code> reach for general-purpose optimisers (Newton-Raphson, BFGS)
+        rather than the IRLS algorithm used by standard GLMs.
+      </p>
+
+      <div class="insight-box warning">
+        <h4>Keeping the Thresholds Ordered</h4>
+        <p style="margin-bottom: 0;">
+          The log-likelihood is only defined while $\alpha_1 < \alpha_2 < \alpha_3$ &mdash; cross
+          two thresholds and some $\pi_{ij}$ goes negative, so its log is undefined. Optimisers
+          handle this by re-parameterising: statsmodels estimates
+          $(\alpha_1, \ln(\alpha_2 - \alpha_1), \ln(\alpha_3 - \alpha_2))$, so any unconstrained
+          parameter values map back to validly ordered thresholds. That is exactly the
+          "log-increment" output we decoded on the code page.
+        </p>
+      </div>
+    </div>
+
+    <!-- Proportional odds -->
+    <div class="panel">
+      <h2>The Proportional Odds Assumption</h2>
+
+      <p>
+        Why is this called the <em>proportional odds</em> model? Take the log cumulative odds at
+        threshold $j$ for two patients with covariates $\mathbf{x}_1$ and $\mathbf{x}_2$:
+      </p>
+
+      <div class="math-display">
+        $$\text{logit}\,P(Y \le j \mid \mathbf{x}_1) - \text{logit}\,P(Y \le j \mid \mathbf{x}_2) = (\alpha_j - \mathbf{x}_1'\boldsymbol{\beta}) - (\alpha_j - \mathbf{x}_2'\boldsymbol{\beta}) = -(\mathbf{x}_1 - \mathbf{x}_2)'\boldsymbol{\beta}$$
+      </div>
+
+      <p>
+        The threshold $\alpha_j$ <strong>cancels</strong>. The log odds ratio between any two
+        covariate profiles is the same at every threshold $j$ &mdash; the cumulative odds curves are
+        parallel on the logit scale, differing only by a constant shift. One $\boldsymbol{\beta}$,
+        one story, at every split of the scale.
+      </p>
+
+      <div class="insight-box key">
+        <h4>What the Assumption Buys (and Costs)</h4>
+        <p>
+          <strong>Parsimony:</strong> with $J = 4$ categories and $p = 4$ predictors, the
+          proportional odds model uses $3 + 4 = 7$ parameters. An unordered multinomial logit
+          would use $(J-1)(p+1) = 15$. Fewer parameters means more precise estimates and a single
+          interpretable odds ratio per predictor.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>The cost:</strong> if a predictor genuinely affects the None/Mild split
+          differently from the Moderate/Severe split (for example, a drug that prevents severe
+          pain but does nothing for mild discomfort), the single-$\boldsymbol{\beta}$ model is
+          misspecified and will average the two effects.
+        </p>
+      </div>
+
+      <h3>Checking the Assumption</h3>
+
+      <p>
+        A practical diagnostic is to fit $J - 1$ separate <strong>binary logistic regressions</strong>,
+        one per split: $\mathbb{1}(Y > 1)$, $\mathbb{1}(Y > 2)$, $\mathbb{1}(Y > 3)$. Under
+        proportional odds each predictor's coefficient should be roughly the same across all
+        three fits. Formal versions of this comparison include:
+      </p>
+
+      <ul style="margin: 0 0 12px 20px;">
+        <li><strong>Brant test</strong> (R package <code>brant</code>) &mdash; tests each predictor's coefficient stability across thresholds;</li>
+        <li><strong>Likelihood ratio test</strong> against the unordered multinomial model &mdash; a large improvement in fit suggests the ordering constraint is too restrictive;</li>
+        <li><strong>Partial proportional odds models</strong> (R package <code>VGAM</code>, <code>ordinal</code>) &mdash; relax the assumption only for the predictors that violate it.</li>
+      </ul>
+
+      <p>
+        For our synthetic pain data the assumption holds by construction &mdash; the
+        data-generating process used one $\boldsymbol{\beta}$ at every threshold. Real data are
+        rarely so obliging, so this check belongs in any serious ordinal analysis.
+      </p>
+    </div>
+
+    <!-- Comparison across tutorials -->
+    <div class="panel">
+      <h2>Log-Likelihood Comparison Across GLM Families</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Tutorial</th>
+          <th>Distribution</th>
+          <th>Log-Likelihood (simplified)</th>
+          <th>Parameters</th>
+        </tr>
+        <tr>
+          <td>1 (Gaussian)</td>
+          <td>Normal</td>
+          <td>$-\frac{n}{2}\log\sigma^2 - \frac{1}{2\sigma^2}\sum(y_i - \mu_i)^2$</td>
+          <td>$\boldsymbol{\beta}, \sigma^2$</td>
+        </tr>
+        <tr>
+          <td>2 (Logistic)</td>
+          <td>Binomial</td>
+          <td>$\sum[y_i\log\mu_i + (1-y_i)\log(1-\mu_i)]$</td>
+          <td>$\boldsymbol{\beta}$</td>
+        </tr>
+        <tr>
+          <td>3 (Poisson)</td>
+          <td>Poisson</td>
+          <td>$\sum[y_i\log\mu_i - \mu_i]$</td>
+          <td>$\boldsymbol{\beta}$</td>
+        </tr>
+        <tr>
+          <td>4 (NegBin)</td>
+          <td>Negative Binomial</td>
+          <td>$\sum[\log\Gamma(y_i+\theta) + y_i\log\mu_i - (y_i+\theta)\log(\theta+\mu_i)]$<br>$\;+\; n[\theta\log\theta - \log\Gamma(\theta)]$</td>
+          <td>$\boldsymbol{\beta}, \theta$</td>
+        </tr>
+        <tr>
+          <td>5 (Gamma)</td>
+          <td>Gamma</td>
+          <td>$\sum[\nu\log(\nu y_i/\mu_i) - \nu y_i/\mu_i - \log y_i - \log\Gamma(\nu)]$</td>
+          <td>$\boldsymbol{\beta}, \nu$</td>
+        </tr>
+        <tr>
+          <td>6 (Beta)</td>
+          <td>Beta</td>
+          <td>$\sum[\log\Gamma(\phi) - \log\Gamma(\mu_i\phi) - \log\Gamma((1-\mu_i)\phi) + \cdots]$</td>
+          <td>$\boldsymbol{\beta}, \phi$</td>
+        </tr>
+        <tr style="background: #eaf2f8;">
+          <td><strong>7 (Ordinal)</strong></td>
+          <td><strong>Cumulative logit</strong></td>
+          <td>$\sum_i\sum_j \mathbb{1}(y_i = j)\ln[F(\alpha_j - \eta_i) - F(\alpha_{j-1} - \eta_i)]$</td>
+          <td>$\boldsymbol{\beta}, \alpha_1, \ldots, \alpha_{J-1}$</td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>The Pattern Breaks &mdash; Productively</h4>
+        <p style="margin-bottom: 0;">
+          Tutorials 1&ndash;6 each modelled a single number per observation through one mean
+          $\mu_i$. The ordinal model is our first example where each observation is modelled as a
+          <strong>whole probability distribution over categories</strong>, held together by shared
+          slopes and ordered thresholds. It stretches the GLM template &mdash; multiple intercepts,
+          a difference of two inverse links &mdash; while keeping its core logic: a linear
+          predictor, a link, and maximum likelihood.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tutorial complete -->
+    <div class="success-panel">
+      <h3>Tutorial 7 Complete!</h3>
+      <p>
+        You've learned how the cumulative logit model handles ordered categories: a latent scale,
+        ordered thresholds, one set of slopes, and a log-likelihood built from differences of
+        cumulative probabilities.
+      </p>
+      <p style="margin-top: 15px;">
+        <strong>Next:</strong> Tutorial 8 covers zero-inflated Poisson models &mdash; what to do
+        when your count data have far more zeros than any Poisson can explain.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Code</a>
+      <a href="../08-zeroinfl/systematic.html" class="btn btn-primary">Continue to Tutorial 8 &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // ----- Interactive latent-scale demo -----
+    (function() {
+      const canvas = document.getElementById('latentCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const sliders = {
+        eta: document.getElementById('etaSlider'),
+        a1: document.getElementById('a1Slider'),
+        a2: document.getElementById('a2Slider'),
+        a3: document.getElementById('a3Slider')
+      };
+      const readouts = {
+        eta: document.getElementById('etaVal'),
+        a1: document.getElementById('a1Val'),
+        a2: document.getElementById('a2Val'),
+        a3: document.getElementById('a3Val')
+      };
+      const probSpans = [
+        document.getElementById('p1'),
+        document.getElementById('p2'),
+        document.getElementById('p3'),
+        document.getElementById('p4')
+      ];
+
+      const colours = ['#27ae60', '#f39c12', '#e67e22', '#c0392b'];
+      const labels = ['None', 'Mild', 'Moderate', 'Severe'];
+      const GAP = 0.1;       // minimum spacing between thresholds
+      const XMIN = -7, XMAX = 7;
+
+      function invLogit(z) { return 1 / (1 + Math.exp(-z)); }
+      // Standard logistic density, centred at eta
+      function dens(x, eta) {
+        const p = invLogit(x - eta);
+        return p * (1 - p);
+      }
+
+      function clampThresholds(changed) {
+        // Enforce a1 + GAP <= a2 <= a3 - GAP, pushing neighbours of the moved slider
+        let a1 = parseFloat(sliders.a1.value);
+        let a2 = parseFloat(sliders.a2.value);
+        let a3 = parseFloat(sliders.a3.value);
+        if (changed === 'a1') {
+          a1 = Math.min(a1, parseFloat(sliders.a1.max));
+          if (a2 < a1 + GAP) a2 = a1 + GAP;
+          if (a3 < a2 + GAP) a3 = a2 + GAP;
+        } else if (changed === 'a2') {
+          if (a1 > a2 - GAP) a1 = a2 - GAP;
+          if (a3 < a2 + GAP) a3 = a2 + GAP;
+        } else if (changed === 'a3') {
+          if (a2 > a3 - GAP) a2 = a3 - GAP;
+          if (a1 > a2 - GAP) a1 = a2 - GAP;
+        }
+        sliders.a1.value = a1.toFixed(2);
+        sliders.a2.value = a2.toFixed(2);
+        sliders.a3.value = a3.toFixed(2);
+      }
+
+      function draw() {
+        const eta = parseFloat(sliders.eta.value);
+        const alphas = [
+          parseFloat(sliders.a1.value),
+          parseFloat(sliders.a2.value),
+          parseFloat(sliders.a3.value)
+        ];
+
+        readouts.eta.textContent = eta.toFixed(2);
+        readouts.a1.textContent = alphas[0].toFixed(2);
+        readouts.a2.textContent = alphas[1].toFixed(2);
+        readouts.a3.textContent = alphas[2].toFixed(2);
+
+        // Category probabilities: P(Y=j) = F(a_j - eta) - F(a_{j-1} - eta)
+        const cum = [0,
+          invLogit(alphas[0] - eta),
+          invLogit(alphas[1] - eta),
+          invLogit(alphas[2] - eta),
+          1];
+        const probs = [];
+        for (let j = 0; j < 4; j++) probs.push(cum[j + 1] - cum[j]);
+        probs.forEach((p, j) => { probSpans[j].textContent = p.toFixed(3); });
+
+        // --- Render ---
+        const W = canvas.width, H = canvas.height;
+        const padL = 40, padR = 20, padT = 30, padB = 40;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const xToPx = x => padL + (x - XMIN) / (XMAX - XMIN) * plotW;
+        const yMax = 0.30;  // density max is 0.25; leave headroom
+        const yToPx = y => padT + plotH - (y / yMax) * plotH;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Shaded category regions under the density curve
+        const bounds = [XMIN, alphas[0], alphas[1], alphas[2], XMAX];
+        for (let j = 0; j < 4; j++) {
+          ctx.beginPath();
+          ctx.moveTo(xToPx(bounds[j]), yToPx(0));
+          const steps = 60;
+          for (let s = 0; s <= steps; s++) {
+            const x = bounds[j] + (bounds[j + 1] - bounds[j]) * s / steps;
+            ctx.lineTo(xToPx(x), yToPx(dens(x, eta)));
+          }
+          ctx.lineTo(xToPx(bounds[j + 1]), yToPx(0));
+          ctx.closePath();
+          ctx.fillStyle = colours[j] + '55';  // translucent
+          ctx.fill();
+        }
+
+        // Density curve outline
+        ctx.beginPath();
+        for (let s = 0; s <= 280; s++) {
+          const x = XMIN + (XMAX - XMIN) * s / 280;
+          const px = xToPx(x), py = yToPx(dens(x, eta));
+          if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Baseline axis
+        ctx.beginPath();
+        ctx.moveTo(padL, yToPx(0));
+        ctx.lineTo(W - padR, yToPx(0));
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Axis ticks
+        ctx.fillStyle = '#666';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        for (let t = -6; t <= 6; t += 2) {
+          ctx.fillText(t.toString(), xToPx(t), yToPx(0) + 16);
+        }
+        ctx.fillText('latent pain scale  Y*', xToPx(0), H - 6);
+
+        // Threshold lines + labels
+        const thLabels = ['α₁', 'α₂', 'α₃'];
+        alphas.forEach((a, k) => {
+          ctx.beginPath();
+          ctx.moveTo(xToPx(a), padT);
+          ctx.lineTo(xToPx(a), yToPx(0));
+          ctx.strokeStyle = '#555';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#333';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.fillText(thLabels[k], xToPx(a), padT - 8);
+        });
+
+        // Eta marker
+        ctx.beginPath();
+        ctx.moveTo(xToPx(eta), yToPx(0));
+        ctx.lineTo(xToPx(eta), yToPx(dens(eta, eta)));
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.fillText('η', xToPx(eta), yToPx(dens(eta, eta)) - 6);
+
+        // Category labels inside their regions (if wide enough)
+        ctx.font = 'bold 12px sans-serif';
+        for (let j = 0; j < 4; j++) {
+          const lo = Math.max(bounds[j], XMIN), hi = Math.min(bounds[j + 1], XMAX);
+          if (xToPx(hi) - xToPx(lo) > 56) {
+            ctx.fillStyle = colours[j];
+            ctx.fillText(labels[j], (xToPx(lo) + xToPx(hi)) / 2, yToPx(0) - 8);
+          }
+        }
+      }
+
+      sliders.eta.addEventListener('input', draw);
+      ['a1', 'a2', 'a3'].forEach(key => {
+        sliders[key].addEventListener('input', () => {
+          clampThresholds(key);
+          draw();
+        });
+      });
+
+      draw();
+    })();
+
+    // ----- KaTeX -----
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>
