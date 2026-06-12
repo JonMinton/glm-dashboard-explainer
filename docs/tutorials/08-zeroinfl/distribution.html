@@ -560,8 +560,9 @@
           </div>
 
           <div class="verdict partial">
-            Better, but NegBin still underpredicts the number of zeros.
-            The extra dispersion parameter helps, but the fundamental problem remains:
+            Closer, but NegBin still falls short of the observed zeros &mdash; and it only
+            gets this close by inflating the variance everywhere, distorting its fit to the
+            non-zero counts. The fundamental problem remains:
             the data has zeros from TWO different processes, and no single-component model
             can capture both.
           </div>
@@ -650,18 +651,20 @@
   </div>
 
   <script>
-    // Simulated data summary (based on DGP with seed=42)
-    // These are approximate values from the zero-inflated Poisson generating process
+    // Data summary from the generating script (seed=42, n=500):
+    // scripts/py/generate_zeroinfl_data.py
+    // Expected-zero counts come from the fitted Poisson and NegBin models
+    // (validated in R and Python: sum of P(Y=0 | fitted mu_i) over all observations)
     const DATA = {
       totalN: 500,
-      observedZeros: 210,
-      observedZeroPct: 42.0,
-      poissonExpectedZeros: 130,
-      poissonExpectedPct: 26.0,
-      negbinExpectedZeros: 170,
-      negbinExpectedPct: 34.0,
-      // Histogram counts (doctor_visits 0-12+)
-      histCounts: [210, 85, 65, 48, 35, 22, 15, 9, 5, 3, 1, 1, 1]
+      observedZeros: 206,
+      observedZeroPct: 41.2,
+      poissonExpectedZeros: 137,
+      poissonExpectedPct: 27.4,
+      negbinExpectedZeros: 190,
+      negbinExpectedPct: 38.0,
+      // Histogram counts (doctor_visits 0-9)
+      histCounts: [206, 98, 89, 59, 27, 12, 5, 3, 0, 1]
     };
 
     // State machine

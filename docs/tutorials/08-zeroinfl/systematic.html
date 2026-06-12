@@ -634,7 +634,7 @@
   <script>
     // Dataset variables - Doctor Visits (zero-inflated)
     const variables = [
-      { name: 'doctor_visits', label: 'Doctor Visits', type: 'count', desc: 'Number of doctor visits in past year (0-15+)' },
+      { name: 'doctor_visits', label: 'Doctor Visits', type: 'count', desc: 'Number of doctor visits in past year (0-9)' },
       { name: 'age', label: 'Age', type: 'continuous', desc: 'Patient age (18-80)' },
       { name: 'income', label: 'Income', type: 'continuous', desc: 'Annual income in pounds (15k-120k)' },
       { name: 'has_insurance', label: 'Has Insurance', type: 'binary', desc: 'Has health insurance (0/1)' },
@@ -804,7 +804,7 @@
       interceptChip.innerHTML = `
         <span class="chip-label">&beta;<sub>0</sub></span>
         <span class="intercept-value">1</span>
-        <span class="chip-hint">(intercept)</span>
+        <span class="chip-hint">(count intercept &mdash; the zero-inflation component gets its own intercept &gamma;<sub>0</sub>)</span>
       `;
       predictorList.appendChild(interceptChip);
 

@@ -545,42 +545,44 @@ zeroinfl(formula = doctor_visits ~ age + income_10k + chronic_condition |
     has_insurance + distance_to_clinic, data = visits_data, dist = "poisson")
 
 Count model coefficients (poisson with log link):
-                   Estimate Std. Error z value Pr(>|z|)
-(Intercept)       -0.090933   0.277528  -0.328  0.74317
-age                0.012635   0.004055   3.116  0.00183 **
-income_10k        -0.019497   0.026740  -0.729  0.46592
-chronic_condition  0.658502   0.151784   4.338 1.44e-05 ***
+                    Estimate Std. Error z value Pr(>|z|)
+(Intercept)       -0.0003443  0.1631295  -0.002    0.998
+age                0.0098413  0.0023100   4.260 2.04e-05 ***
+income_10k         0.0005878  0.0141243   0.042    0.967
+chronic_condition  0.5586556  0.0890589   6.273 3.54e-10 ***
 
 Zero-inflation model coefficients (binomial with logit link):
                    Estimate Std. Error z value Pr(>|z|)
-(Intercept)         0.97652    0.30602   3.191  0.00142 **
-has_insurance      -0.99492    0.26004  -3.826  0.00013 ***
-distance_to_clinic  0.04174    0.01455   2.868  0.00413 **
+(Intercept)        -0.69962    0.31883  -2.194   0.0282 *
+has_insurance      -1.22733    0.27194  -4.513 6.38e-06 ***
+distance_to_clinic  0.03098    0.01571   1.972   0.0486 *
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Number of iterations in BFGS optimization: 13
-Log-likelihood: -415.6 on 7 Df
+Number of iterations in BFGS optimization: 14
+Log-likelihood: -752.7 on 7 Df
 
 > AIC(fit_poisson, fit_nb, fit_zip)
-            df       AIC
-fit_poisson  4 1124.0306
-fit_nb       5  908.9033
-fit_zip      7  845.1238
+            df      AIC
+fit_poisson  4 1659.911
+fit_nb       5 1586.244
+fit_zip      7 1519.395
 
 > vuong(fit_zip, fit_poisson)
 Vuong Non-Nested Hypothesis Test-Statistic:
               Vuong z-statistic             H_A    p-value
-Raw                    8.396849 model1 > model2 < 2.22e-16</pre>
+Raw                    5.811884 model1 > model2 3.0887e-09</pre>
       </div>
 
       <div class="note-box">
         <h4>R and Python Agree</h4>
         <p style="margin-bottom: 0;">
-          The Python fit converges to the same solution: log-likelihood &minus;415.56 with identical
-          coefficients (e.g. <code>inflate_has_insurance</code> = &minus;0.9949,
-          <code>chronic_condition</code> = 0.6585). In the statsmodels summary the zero-inflation
-          coefficients appear first, prefixed with <code>inflate_</code>.
+          The Python fit converges to the same solution: log-likelihood &minus;752.70 with identical
+          coefficients (e.g. <code>inflate_has_insurance</code> = &minus;1.2273,
+          <code>chronic_condition</code> = 0.5587). In the statsmodels summary the zero-inflation
+          coefficients appear first, prefixed with <code>inflate_</code>. statsmodels may print a
+          convergence warning even though the optimiser has in fact reached the same maximum as R
+          &mdash; check that the reported log-likelihood matches.
         </p>
       </div>
     </div>
@@ -589,9 +591,9 @@ Raw                    8.396849 model1 > model2 < 2.22e-16</pre>
     <div class="key-result">
       <h4>The Key Result: ZIP Wins the Model Comparison</h4>
       <p>
-        AIC drops from 1124.0 (Poisson) to 908.9 (NegBin) to <strong>845.1 (ZIP)</strong> &mdash; exactly
+        AIC drops from 1659.9 (Poisson) to 1586.2 (NegBin) to <strong>1519.4 (ZIP)</strong> &mdash; exactly
         the diagnostic journey from the Distribution page, now in numbers. The Vuong test confirms it
-        formally: z = 8.40, p &lt; 2.2&times;10<sup>&minus;16</sup>, decisively favouring ZIP over plain Poisson.
+        formally: z = 5.81, p = 3.1&times;10<sup>&minus;9</sup>, decisively favouring ZIP over plain Poisson.
       </p>
     </div>
 
@@ -609,19 +611,19 @@ Raw                    8.396849 model1 > model2 < 2.22e-16</pre>
         <tr>
           <td>Poisson</td>
           <td>4</td>
-          <td class="bad">1124.0</td>
+          <td class="bad">1659.9</td>
           <td>Cannot explain the excess zeros</td>
         </tr>
         <tr>
           <td>Negative Binomial</td>
           <td>5</td>
-          <td>908.9</td>
+          <td>1586.2</td>
           <td>Extra dispersion absorbs some, but not the mechanism</td>
         </tr>
         <tr class="highlight-row">
           <td><strong>Zero-Inflated Poisson</strong></td>
           <td>7</td>
-          <td class="good">845.1</td>
+          <td class="good">1519.4</td>
           <td><strong>Models both zero-generating processes explicitly</strong></td>
         </tr>
       </table>
@@ -640,16 +642,16 @@ Raw                    8.396849 model1 > model2 < 2.22e-16</pre>
         <strong>Count component</strong> (log link &mdash; same interpretation as Tutorials 3 and 4):
       </p>
       <ul style="margin: 10px 0 12px 20px;">
-        <li><strong>exp(0.659) = 1.93:</strong> a chronic condition nearly doubles the expected number of visits, among people who can visit</li>
-        <li><strong>exp(0.0126) = 1.013:</strong> each additional year of age increases expected visits by about 1.3%</li>
+        <li><strong>exp(0.559) = 1.75:</strong> a chronic condition raises the expected number of visits by about 75%, among people who can visit</li>
+        <li><strong>exp(0.0098) = 1.010:</strong> each additional year of age increases expected visits by about 1%</li>
       </ul>
       <p>
         <strong>Zero-inflation component</strong> (logit link &mdash; same interpretation as Tutorial 2,
         but predicting <em>structural-zero membership</em>):
       </p>
       <ul style="margin: 10px 0 12px 20px;">
-        <li><strong>exp(&minus;0.995) = 0.37:</strong> having insurance cuts the odds of being a structural zero by 63%</li>
-        <li><strong>exp(0.042) = 1.043:</strong> each extra kilometre to the clinic raises the odds of being a structural zero by about 4%</li>
+        <li><strong>exp(&minus;1.227) = 0.29:</strong> having insurance cuts the odds of being a structural zero by 71%</li>
+        <li><strong>exp(0.031) = 1.031:</strong> each extra kilometre to the clinic raises the odds of being a structural zero by about 3%</li>
       </ul>
       <p style="margin-bottom: 0;">
         <strong>The payoff:</strong> two different stories from one model. Health drives <em>how many</em>

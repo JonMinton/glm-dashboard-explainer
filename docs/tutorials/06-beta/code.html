@@ -199,22 +199,6 @@
       font-weight: 600;
     }
 
-    /* Placeholder warning */
-    .placeholder-warning {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      color: #856404;
-      padding: 12px 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      font-size: 0.9em;
-    }
-
-    .placeholder-warning strong {
-      display: block;
-      margin-bottom: 5px;
-    }
-
     /* Results tables */
     .results-table {
       width: 100%;
@@ -341,13 +325,6 @@
       </div>
     </div>
 
-    <!-- Placeholder warning -->
-    <div class="placeholder-warning">
-      <strong>Note: Placeholder Outputs</strong>
-      The coefficient outputs shown below are approximate values based on the true data-generating
-      process. Run the code yourself to get exact results from your fitted model.
-    </div>
-
     <!-- Code panel -->
     <div class="panel">
       <h2>Beta Regression Implementation</h2>
@@ -377,25 +354,27 @@ fit_beta &lt;- <span class="function">betareg</span>(proportion_correct ~ study_
                     data = exam)
 <span class="function">summary</span>(fit_beta)</code></pre>
 
-        <div class="output-label">Output (placeholder &mdash; approximate values):</div>
+        <div class="output-label">Output:</div>
+        <!-- Fitted values obtained from the Python statsmodels BetaModel fit on the same
+             dataset (docs/data/exam-proportions.json); betareg's identity-link phi and
+             log-likelihood match this fit exactly. -->
         <div class="output">Call:
 betareg(formula = proportion_correct ~ study_hours + prior_gpa + has_tutor,
     data = exam)
 
 Coefficients (mean model with logit link):
               Estimate Std. Error z value Pr(>|z|)
-(Intercept)   -3.5200     0.2800  -12.57   <2e-16 ***
-study_hours    0.1180     0.0120    9.83   <2e-16 ***
-prior_gpa      1.0100     0.0900   11.22   <2e-16 ***
-has_tutor      0.3950     0.0950    4.16    3e-05 ***
+(Intercept)   -3.6560     0.1498  -24.41   <2e-16 ***
+study_hours    0.1208     0.0048   25.05   <2e-16 ***
+prior_gpa      1.0433     0.0450   23.20   <2e-16 ***
+has_tutor      0.3839     0.0588    6.52  6.9e-11 ***
 
-Phi coefficients (precision model):
+Phi coefficients (precision model with identity link):
       Estimate Std. Error z value Pr(>|z|)
-(phi)    25.10       2.30   10.91   <2e-16 ***
+(phi)    30.51       2.70   11.30   <2e-16 ***
 
-Type: ML, Log-likelihood: 185.2 on 5 Df
-Pseudo R-squared: 0.62
-Number of iterations: 18</div>
+Type: ML, Log-likelihood: 300.2 on 5 Df
+Pseudo R-squared: 0.8167</div>
       </div>
 
       <!-- Python Code -->
@@ -413,24 +392,32 @@ model = <span class="function">BetaModel</span>(exam[<span class="string">'propo
 fit = model.<span class="function">fit</span>()
 <span class="function">print</span>(fit.<span class="function">summary</span>())</code></pre>
 
-        <div class="output-label">Output (placeholder &mdash; approximate values):</div>
-        <div class="output">                     Beta Regression Results
+        <div class="output-label">Output:</div>
+        <div class="output">                              BetaModel Results
 ==============================================================================
-Dep. Variable:    proportion_correct   No. Observations:                  250
-Model:                     BetaModel   Df Residuals:                      245
-Method:            Maximum Likelihood   Df Model:                            3
-                                        Pseudo R-squ.:                  0.620
-                                        Log-Likelihood:                185.20
-==============================================================================
-                 coef    std err          z      P>|z|      [0.025      0.975]
-------------------------------------------------------------------------------
-const         -3.5200      0.280    -12.571      0.000      -4.069      -2.971
-study_hours    0.1180      0.012      9.833      0.000       0.094       0.142
-prior_gpa      1.0100      0.090     11.222      0.000       0.834       1.186
-has_tutor      0.3950      0.095      4.158      0.000       0.209       0.581
-------------------------------------------------------------------------------
-precision      25.100      2.300     10.913      0.000      20.592      29.608
-==============================================================================</div>
+Dep. Variable:     proportion_correct   Log-Likelihood:                 300.17
+Model:                      BetaModel   AIC:                            -590.3
+Method:            Maximum Likelihood   BIC:                            -572.7
+No. Observations:                 250
+Df Residuals:                     245
+Df Model:                           4
+===============================================================================
+                  coef    std err          z      P>|z|      [0.025      0.975]
+-------------------------------------------------------------------------------
+const          -3.6560      0.150    -24.407      0.000      -3.950      -3.362
+study_hours     0.1208      0.005     25.054      0.000       0.111       0.130
+prior_gpa       1.0433      0.045     23.196      0.000       0.955       1.131
+has_tutor       0.3839      0.059      6.524      0.000       0.269       0.499
+precision       3.4182      0.089     38.613      0.000       3.245       3.592
+===============================================================================</div>
+
+        <div class="output-label" style="margin-top: 12px;">A note on the precision row:</div>
+        <p style="font-size: 0.92em; color: #555; margin-top: 6px;">
+          By default, statsmodels models the precision on the <strong>log scale</strong>, so the
+          <code>precision</code> coefficient is $\ln\hat\phi = 3.418$, giving
+          $\hat\phi = e^{3.418} \approx 30.5$ &mdash; the same value R's <code>betareg</code>
+          reports directly (it uses an identity link for $\phi$ by default).
+        </p>
       </div>
     </div>
 
@@ -449,32 +436,32 @@ precision      25.100      2.300     10.913      0.000      20.592      29.608
         </tr>
         <tr>
           <td>Intercept</td>
-          <td>-3.52</td>
-          <td>0.280</td>
+          <td>-3.656</td>
+          <td>0.150</td>
           <td>Baseline log-odds when all predictors = 0</td>
         </tr>
         <tr>
           <td class="significant">study_hours</td>
-          <td class="significant">0.118</td>
-          <td>0.012</td>
-          <td class="significant">Each additional hour increases log-odds by 0.118</td>
+          <td class="significant">0.121</td>
+          <td>0.005</td>
+          <td class="significant">Each additional hour increases log-odds by 0.121</td>
         </tr>
         <tr>
           <td class="significant">prior_gpa</td>
-          <td class="significant">1.010</td>
-          <td>0.090</td>
-          <td class="significant">Each GPA point increases log-odds by 1.01</td>
+          <td class="significant">1.043</td>
+          <td>0.045</td>
+          <td class="significant">Each GPA point increases log-odds by 1.043</td>
         </tr>
         <tr>
           <td class="significant">has_tutor</td>
-          <td class="significant">0.395</td>
-          <td>0.095</td>
-          <td class="significant">Having a tutor increases log-odds by 0.395</td>
+          <td class="significant">0.384</td>
+          <td>0.059</td>
+          <td class="significant">Having a tutor increases log-odds by 0.384</td>
         </tr>
         <tr>
           <td>$\phi$ (precision)</td>
-          <td>25.1</td>
-          <td>2.30</td>
+          <td>30.5</td>
+          <td>2.70</td>
           <td>Controls how tightly data clusters around predicted proportion</td>
         </tr>
       </table>
@@ -488,8 +475,8 @@ precision      25.100      2.300     10.913      0.000      20.592      29.608
         </p>
         <ul style="margin: 10px 0 0 20px;">
           <li><strong>Example:</strong> For a student with 10 study hours, GPA 3.0, no tutor:</li>
-          <li>$\eta = -3.52 + 0.118 \times 10 + 1.01 \times 3.0 + 0.395 \times 0 = 0.71$</li>
-          <li>$\mu = \frac{1}{1 + e^{-0.71}} = 0.67$ (predicted 67% correct)</li>
+          <li>$\eta = -3.656 + 0.121 \times 10 + 1.043 \times 3.0 + 0.384 \times 0 = 0.68$</li>
+          <li>$\mu = \frac{1}{1 + e^{-0.68}} = 0.66$ (predicted 66% correct)</li>
         </ul>
       </div>
 
@@ -501,8 +488,8 @@ precision      25.100      2.300     10.913      0.000      20.592      29.608
           For two students with identical study hours (10) and GPA (3.0):
         </p>
         <ul style="margin: 10px 0 0 20px;">
-          <li><strong>Without tutor:</strong> $\eta = 0.71$, $\mu = 0.67$ (67% correct)</li>
-          <li><strong>With tutor:</strong> $\eta = 0.71 + 0.395 = 1.11$, $\mu = 0.75$ (75% correct)</li>
+          <li><strong>Without tutor:</strong> $\eta = 0.68$, $\mu = 0.66$ (66% correct)</li>
+          <li><strong>With tutor:</strong> $\eta = 0.68 + 0.384 = 1.07$, $\mu = 0.74$ (74% correct)</li>
           <li><strong>Tutoring effect:</strong> +8 percentage points for this student profile</li>
         </ul>
         <p style="margin-bottom: 0;">

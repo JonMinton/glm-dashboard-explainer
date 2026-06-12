@@ -109,7 +109,7 @@
       </div>
       <div class="insight-box key">
         <h4>Key Observation: Two Sets of Parameters</h4>
-        <p>Unlike standard GLMs where dispersion is often nuisance, Beta regression estimates <strong>both</strong> $\beta$ (mean model) and $\phi$ (precision) via MLE simultaneously.</p>
+        <p>Unlike standard GLMs where dispersion is often a nuisance parameter, Beta regression estimates <strong>both</strong> $\beta$ (mean model) and $\phi$ (precision) via MLE simultaneously.</p>
         <p style="margin-bottom: 0;">This is why Beta regression uses direct numerical optimisation rather than IRLS.</p>
       </div>
     </div>
@@ -132,8 +132,8 @@
       <div class="math-display">$$\text{Var}(Y) = \frac{\mu(1-\mu)}{1+\phi}$$</div>
       <div class="insight-box key">
         <h4>For Our Exam Proportions Model</h4>
-        <p><strong>Precision:</strong> $\hat{\phi} \approx 25$</p>
-        <p>For a predicted proportion of $\mu = 0.7$: SD $= \sqrt{0.7 \times 0.3 / 26} \approx 0.090$ (about 9 percentage points).</p>
+        <p><strong>Precision:</strong> $\hat{\phi} \approx 30.5$</p>
+        <p>For a predicted proportion of $\mu = 0.7$: SD $= \sqrt{0.7 \times 0.3 / 31.5} \approx 0.082$ (about 8 percentage points).</p>
         <p style="margin-bottom: 0;">Unlike Gaussian, the variance <em>automatically</em> decreases near the boundaries (0 and 1).</p>
       </div>
     </div>
@@ -144,8 +144,8 @@
     </div>
 
     <div class="panel">
-      <h2>Tutorial Series Summary</h2>
-      <p>Congratulations! You've completed all six GLM tutorials:</p>
+      <h2>Tutorials So Far</h2>
+      <p>Six tutorials down, two to go:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
         <tr style="background: #f8f9fa;">
           <th style="padding: 10px; border: 1px solid #dee2e6;">Tutorial</th>
@@ -190,12 +190,12 @@
           <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>Logit</strong></td>
         </tr>
       </table>
-      <p>You now have a comprehensive foundation in GLMs and can choose the appropriate model for different types of data!</p>
+      <p>Two more specialised models remain: ordered categories (Tutorial 7, Ordinal) and zero-heavy counts (Tutorial 8, Zero-Inflated Poisson).</p>
     </div>
 
     <div class="nav-buttons">
       <a href="code.html" class="btn btn-secondary">&larr; Back to Code</a>
-      <a href="../../index.html" class="btn btn-success">&#10003; Back to Tutorial Index</a>
+      <a href="../07-ordinal/systematic.html" class="btn btn-success">Continue to Tutorial 7 &rarr;</a>
     </div>
   </div>
 

@@ -645,7 +645,7 @@
         <tr>
           <td>1 (Gaussian)</td>
           <td>Normal</td>
-          <td>$-\frac{1}{2\sigma^2}\sum(y_i - \mu_i)^2$</td>
+          <td>$-\frac{n}{2}\log\sigma^2 - \frac{1}{2\sigma^2}\sum(y_i - \mu_i)^2$</td>
           <td>$\boldsymbol{\beta}, \sigma^2$</td>
         </tr>
         <tr>
@@ -663,7 +663,7 @@
         <tr>
           <td>4 (NegBin)</td>
           <td>Negative Binomial</td>
-          <td>$\sum[\log\Gamma(y_i+\theta) + y_i\log\mu_i - (y_i+\theta)\log(\theta+\mu_i)]$</td>
+          <td>$\sum[\log\Gamma(y_i+\theta) + y_i\log\mu_i - (y_i+\theta)\log(\theta+\mu_i)]$<br>$\;+\; n[\theta\log\theta - \log\Gamma(\theta)]$</td>
           <td>$\boldsymbol{\beta}, \theta$</td>
         </tr>
         <tr>
