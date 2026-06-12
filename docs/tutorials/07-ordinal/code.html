@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Code (Ordinal)</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #2c3e50;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 80%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #34495e;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(52, 73, 94, 0.3);
+    }
+
+    /* Panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 20px 0 10px 0;
+      font-size: 1.1em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-bottom: none;
+      cursor: pointer;
+      font-weight: 500;
+      border-radius: 8px 8px 0 0;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      background: #e9ecef;
+    }
+
+    .tab.active {
+      background: #2c3e50;
+      color: white;
+      border-color: #2c3e50;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    pre {
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9em;
+      color: #f8f8f2;
+      line-height: 1.5;
+    }
+
+    .comment { color: #6272a4; }
+    .string { color: #f1fa8c; }
+    .keyword { color: #ff79c6; }
+    .function { color: #50fa7b; }
+    .number { color: #bd93f9; }
+
+    /* Output panel */
+    .output-panel {
+      background: #1e1e1e;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 15px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 0.85em;
+      color: #d4d4d4;
+      overflow-x: auto;
+    }
+
+    .output-panel .header {
+      color: #569cd6;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .output-block {
+      display: none;
+    }
+
+    .output-block.active {
+      display: block;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 10px 12px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Insight boxes */
+    .insight-box {
+      background: #eaf2f8;
+      border-left: 4px solid #2c3e50;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box.warning {
+      background: #fdedec;
+      border-left-color: #e74c3c;
+    }
+
+    .insight-box h4 {
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    .insight-box.warning h4 {
+      color: #922b21;
+    }
+
+    /* Interpretation section */
+    .interpretation {
+      background: #eaf2f8;
+      border-left: 4px solid #34495e;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .interpretation h4 {
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #2c3e50;
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #1a252f;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+      border: none;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 7: Ordered Categories</h1>
+      <p>Step 5: R and Python Implementation</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">5</div>
+        <div class="step-dot">6</div>
+      </div>
+    </div>
+
+    <!-- Code panel -->
+    <div class="panel">
+      <h2>Fitting the Proportional Odds Model in R and Python</h2>
+
+      <p>
+        Our model: <code style="color: #2c3e50; background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">pain_level ~ treatment + dose_mg + age</code>
+        with a cumulative logit link. The dataset has $n = 350$ patients, with pain recorded as an
+        ordered factor (None &lt; Mild &lt; Moderate &lt; Severe) and treatment as a three-level
+        factor (A, B, Placebo &mdash; A is the reference level).
+      </p>
+
+      <div class="tabs">
+        <div class="tab active" data-tab="r">R</div>
+        <div class="tab" data-tab="python">Python</div>
+      </div>
+
+      <!-- R Code -->
+      <div class="tab-content active" id="r-content">
+        <pre><code><span class="comment"># Load required library (polr lives in MASS, not base R)</span>
+<span class="keyword">library</span>(<span class="function">MASS</span>)
+
+<span class="comment"># Load the pain levels dataset</span>
+pain_data <- <span class="function">read.csv</span>(<span class="string">"pain_levels.csv"</span>)
+
+<span class="comment"># CRUCIAL: declare the response as an ORDERED factor</span>
+pain_data$pain_level <- <span class="function">factor</span>(pain_data$pain_level, levels = <span class="number">1</span>:<span class="number">4</span>,
+                               labels = <span class="function">c</span>(<span class="string">"None"</span>, <span class="string">"Mild"</span>, <span class="string">"Moderate"</span>, <span class="string">"Severe"</span>),
+                               ordered = <span class="keyword">TRUE</span>)
+pain_data$treatment <- <span class="function">factor</span>(pain_data$treatment,
+                              levels = <span class="function">c</span>(<span class="string">"A"</span>, <span class="string">"B"</span>, <span class="string">"Placebo"</span>))
+
+<span class="comment"># Fit the proportional odds model (cumulative logit)</span>
+fit <- <span class="function">polr</span>(pain_level ~ treatment + dose_mg + age,
+            data = pain_data,
+            method = <span class="string">"logistic"</span>,   <span class="comment"># cumulative logit link</span>
+            Hess = <span class="keyword">TRUE</span>)           <span class="comment"># keep Hessian for standard errors</span>
+
+<span class="comment"># View model summary</span>
+<span class="function">summary</span>(fit)
+
+<span class="comment"># polr reports t values but no p-values - compute them ourselves</span>
+ctable <- <span class="function">coef</span>(<span class="function">summary</span>(fit))
+p <- <span class="function">pnorm</span>(<span class="function">abs</span>(ctable[, <span class="string">"t value"</span>]), lower.tail = <span class="keyword">FALSE</span>) * <span class="number">2</span>
+<span class="function">cbind</span>(ctable, <span class="string">"p value"</span> = <span class="function">round</span>(p, <span class="number">4</span>))
+
+<span class="comment"># Odds ratios with confidence intervals</span>
+<span class="function">exp</span>(<span class="function">coef</span>(fit))
+<span class="function">exp</span>(<span class="function">confint</span>(fit))</code></pre>
+      </div>
+
+      <!-- Python Code -->
+      <div class="tab-content" id="python-content">
+        <pre><code><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
+<span class="keyword">import</span> numpy <span class="keyword">as</span> np
+<span class="keyword">from</span> statsmodels.miscmodels.ordinal_model <span class="keyword">import</span> OrderedModel
+
+<span class="comment"># Load the pain levels dataset</span>
+pain_data = pd.<span class="function">read_csv</span>(<span class="string">"pain_levels.csv"</span>)
+
+<span class="comment"># CRUCIAL: declare the response as an ORDERED categorical</span>
+pain_data[<span class="string">"pain_cat"</span>] = pd.<span class="function">Categorical</span>(
+    pain_data[<span class="string">"pain_level"</span>], categories=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>], ordered=<span class="keyword">True</span>
+)
+
+<span class="comment"># Build the design matrix: dummy-code treatment (A = reference)</span>
+<span class="comment"># NOTE: no intercept column - the thresholds play that role</span>
+X = pd.<span class="function">get_dummies</span>(pain_data[<span class="string">"treatment"</span>],
+                   prefix=<span class="string">"treatment"</span>, drop_first=<span class="keyword">True</span>).<span class="function">astype</span>(<span class="keyword">float</span>)
+X[<span class="string">"dose_mg"</span>] = pain_data[<span class="string">"dose_mg"</span>].<span class="function">astype</span>(<span class="keyword">float</span>)
+X[<span class="string">"age"</span>] = pain_data[<span class="string">"age"</span>].<span class="function">astype</span>(<span class="keyword">float</span>)
+
+<span class="comment"># Fit the proportional odds model (cumulative logit)</span>
+model = <span class="function">OrderedModel</span>(pain_data[<span class="string">"pain_cat"</span>], X, distr=<span class="string">"logit"</span>)
+fit = model.<span class="function">fit</span>(method=<span class="string">"bfgs"</span>)
+
+<span class="comment"># View model summary</span>
+<span class="function">print</span>(fit.<span class="function">summary</span>())
+
+<span class="comment"># Recover the actual thresholds (statsmodels reports increments)</span>
+thresholds = model.<span class="function">transform_threshold_params</span>(fit.params[-<span class="number">3</span>:])
+<span class="function">print</span>(thresholds)  <span class="comment"># [-inf, -2.538, -0.095, 1.773, inf]</span>
+
+<span class="comment"># Odds ratios</span>
+<span class="function">print</span>(np.<span class="function">exp</span>(fit.params[:<span class="number">4</span>]))</code></pre>
+      </div>
+
+      <!-- Output -->
+      <div class="output-panel">
+        <div class="output-block active" id="r-output">
+        <div class="header">Model Output (R)</div>
+<pre>Call:
+polr(formula = pain_level ~ treatment + dose_mg + age, data = pain_data,
+    Hess = TRUE, method = "logistic")
+
+Coefficients:
+                    Value Std. Error t value
+treatmentB       -1.15340   0.232486 -4.9612
+treatmentPlacebo  0.19841   0.355735  0.5577
+dose_mg          -0.01730   0.004191 -4.1266
+age               0.02126   0.007323  2.9036
+
+Intercepts:
+                Value   Std. Error t value
+None|Mild       -2.5375  0.4816    -5.2688
+Mild|Moderate   -0.0947  0.4514    -0.2098
+Moderate|Severe  1.7731  0.4607     3.8483
+
+Residual Deviance: 809.0148
+AIC: 823.0148
+
+&gt; exp(coef(fit))
+      treatmentB treatmentPlacebo          dose_mg              age
+          0.3156           1.2195           0.9829           1.0215</pre>
+        </div>
+        <div class="output-block" id="python-output">
+        <div class="header">Model Output (Python)</div>
+<pre>                             OrderedModel Results
+==============================================================================
+Dep. Variable:               pain_cat   Log-Likelihood:                -404.51
+Model:                   OrderedModel   AIC:                             823.0
+Method:            Maximum Likelihood   BIC:                             850.0
+No. Observations:                 350
+Df Residuals:                     343
+Df Model:                           7
+=====================================================================================
+                        coef    std err          z      P&gt;|z|      [0.025      0.975]
+-------------------------------------------------------------------------------------
+treatment_B          -1.1534      0.232     -4.961      0.000      -1.609      -0.698
+treatment_Placebo     0.1984      0.356      0.558      0.577      -0.499       0.896
+dose_mg              -0.0173      0.004     -4.127      0.000      -0.026      -0.009
+age                   0.0213      0.007      2.904      0.004       0.007       0.036
+1/2                  -2.5375      0.482     -5.269      0.000      -3.481      -1.594
+2/3                   0.8932      0.079     11.272      0.000       0.738       1.048
+3/4                   0.6248      0.086      7.280      0.000       0.457       0.793
+=====================================================================================
+
+&gt;&gt;&gt; model.transform_threshold_params(fit.params[-3:])
+[      -inf -2.5375 -0.0947  1.7731       inf]</pre>
+        </div>
+      </div>
+
+      <div class="insight-box warning">
+        <h4>Gotcha: The Two Packages Report Thresholds Differently</h4>
+        <p>
+          R's <code>polr</code> reports the three thresholds directly as "Intercepts":
+          $\hat{\alpha}_1 = -2.538$, $\hat{\alpha}_2 = -0.095$, $\hat{\alpha}_3 = 1.773$.
+        </p>
+        <p style="margin-bottom: 0;">
+          Python's <code>OrderedModel</code> reports the <em>first</em> threshold (row <code>1/2</code>)
+          directly, but the remaining rows are <strong>log-increments</strong>:
+          $\hat{\alpha}_2 = -2.5375 + e^{0.8932} = -0.095$ and
+          $\hat{\alpha}_3 = -0.095 + e^{0.6248} = 1.773$. This parameterisation guarantees the
+          thresholds stay ordered during optimisation. Use
+          <code>transform_threshold_params()</code> to recover the actual cut-points &mdash;
+          both packages then agree exactly (same log-likelihood: $-404.51$).
+        </p>
+      </div>
+    </div>
+
+    <!-- Coefficient interpretation -->
+    <div class="panel">
+      <h2>Interpreting the Output</h2>
+
+      <p>
+        Remember the model: $\text{logit}\, P(Y \le j) = \alpha_j - \mathbf{x}'\boldsymbol{\beta}$.
+        A <strong>positive</strong> $\beta$ pushes probability towards <em>higher</em> (worse) pain
+        categories; a <strong>negative</strong> $\beta$ pushes towards <em>lower</em> pain.
+        Because of proportional odds, $e^{\beta}$ is a single odds ratio that applies at
+        <em>every</em> threshold.
+      </p>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Term</th>
+          <th>Estimate</th>
+          <th>Odds Ratio $e^{\hat\beta}$</th>
+          <th>95% CI</th>
+          <th>Interpretation</th>
+        </tr>
+        <tr>
+          <td>treatmentB</td>
+          <td>&minus;1.153</td>
+          <td>0.316</td>
+          <td>(0.199, 0.496)</td>
+          <td>Treatment B cuts the odds of being in a higher pain category to about a third of Treatment A's, at any threshold</td>
+        </tr>
+        <tr>
+          <td>treatmentPlacebo</td>
+          <td>0.198</td>
+          <td>1.220</td>
+          <td>(0.608, 2.456)</td>
+          <td>Placebo patients lean towards more pain than Treatment A, but the CI comfortably spans 1 &mdash; no clear effect (note: placebo patients also receive zero dose)</td>
+        </tr>
+        <tr>
+          <td>dose_mg</td>
+          <td>&minus;0.0173</td>
+          <td>0.983</td>
+          <td>(0.975, 0.991)</td>
+          <td>Each extra mg of dose multiplies the odds of higher pain by 0.983 &mdash; about 16% lower odds per 10 mg ($0.983^{10} \approx 0.84$)</td>
+        </tr>
+        <tr>
+          <td>age</td>
+          <td>0.0213</td>
+          <td>1.021</td>
+          <td>(1.007, 1.036)</td>
+          <td>Each extra year of age raises the odds of higher pain by about 2%</td>
+        </tr>
+      </table>
+
+      <div class="insight-box key">
+        <h4>Sanity Check Against the True Parameters</h4>
+        <p>
+          This dataset is synthetic, so we know the data-generating truth: thresholds
+          $(-2.0, 0.5, 2.5)$ and slopes $\beta_B = -0.8$, $\beta_{\text{Placebo}} = 0.6$,
+          $\beta_{\text{dose}} = -0.02$, $\beta_{\text{age}} = 0.03$.
+        </p>
+        <p style="margin-bottom: 0;">
+          The fitted values $(-1.15, 0.20, -0.017, 0.021)$ have the correct signs and plausible
+          magnitudes, and every 95% CI on the natural scale is consistent with the truth.
+          The placebo effect is hardest to pin down ($n = 68$ placebo patients, and placebo is
+          entangled with dose $= 0$) &mdash; exactly the kind of honest uncertainty a wide CI should report.
+        </p>
+      </div>
+
+      <h3>Predicting Category Probabilities</h3>
+
+      <p>
+        For a 50-year-old patient on Treatment A with a 50 mg dose, the linear predictor is
+        $\mathbf{x}'\hat{\boldsymbol{\beta}} = -0.0173 \times 50 + 0.0213 \times 50 \approx 0.20$, giving:
+      </p>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Pain Level</th>
+          <th>Calculation</th>
+          <th>Probability</th>
+        </tr>
+        <tr>
+          <td>None</td>
+          <td>$\text{logit}^{-1}(-2.538 - 0.20)$</td>
+          <td>0.061</td>
+        </tr>
+        <tr>
+          <td>Mild</td>
+          <td>$\text{logit}^{-1}(-0.095 - 0.20) - 0.061$</td>
+          <td>0.366</td>
+        </tr>
+        <tr>
+          <td>Moderate</td>
+          <td>$\text{logit}^{-1}(1.773 - 0.20) - 0.427$</td>
+          <td>0.401</td>
+        </tr>
+        <tr>
+          <td>Severe</td>
+          <td>$1 - \text{logit}^{-1}(1.773 - 0.20)$</td>
+          <td>0.172</td>
+        </tr>
+      </table>
+
+      <p>
+        In R: <code>predict(fit, newdata, type = "probs")</code>.
+        In Python: <code>fit.predict(X_new)</code> returns one column per category.
+        The four probabilities always sum to 1 &mdash; the model distributes one unit of probability
+        across the ordered categories.
+      </p>
+
+      <div class="interpretation">
+        <h4>Why Not Just lm() / OLS on 1&ndash;4?</h4>
+        <p style="margin-bottom: 0;">
+          A linear model on the numeric codes would happily predict "pain = 2.7" or "pain = 4.3",
+          and it assumes the None&rarr;Mild gap equals the Moderate&rarr;Severe gap. The ordinal model makes
+          neither mistake: it only ever produces a proper probability distribution over the four
+          actual categories, and it lets the fitted thresholds determine how "wide" each category is.
+        </p>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="fitting.html" class="btn btn-secondary">&larr; Back to Fitting</a>
+      <a href="advanced.html" class="btn btn-primary">Continue to Advanced &rarr;</a>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching (also swaps the matching output block)
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-content`).classList.add('active');
+
+        document.querySelectorAll('.output-block').forEach(o => o.classList.remove('active'));
+        document.getElementById(`${tab.dataset.tab}-output`).classList.add('active');
+      });
+    });
+
+    // KaTeX
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>

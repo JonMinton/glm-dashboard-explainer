@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM Tutorial: Advanced - ZIP Log-Likelihood</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%);
+      color: white;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5em;
+      margin-bottom: 5px;
+    }
+
+    header p {
+      opacity: 0.9;
+      font-size: 0.95em;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 15px;
+    }
+
+    .progress-bar::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #e0e0e0;
+      transform: translateY(-50%);
+      z-index: 1;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      height: 3px;
+      background: #e67e22;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 100%;
+    }
+
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.85em;
+      z-index: 3;
+    }
+
+    .step-dot.completed {
+      background: #e67e22;
+      color: white;
+    }
+
+    .step-dot.current {
+      background: #f39c12;
+      color: white;
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.3);
+    }
+
+    /* Content panels */
+    .panel {
+      background: white;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel h2 {
+      color: #e67e22;
+      margin-bottom: 15px;
+      font-size: 1.3em;
+    }
+
+    .panel h3 {
+      color: #2c3e50;
+      margin: 25px 0 15px 0;
+      font-size: 1.15em;
+    }
+
+    .panel p {
+      margin-bottom: 12px;
+    }
+
+    /* Math display */
+    .math-display {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+
+    .math-display.highlight {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+    }
+
+    .math-display.key {
+      background: #d4edda;
+      border-left: 4px solid #27ae60;
+    }
+
+    /* Derivation steps */
+    .derivation {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .derivation-step {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border-left: 3px solid #f39c12;
+    }
+
+    .derivation-step .step-label {
+      font-weight: 600;
+      color: #e67e22;
+      margin-bottom: 8px;
+    }
+
+    /* Insight boxes */
+    .insight-box {
+      background: #fef5e7;
+      border-left: 4px solid #f39c12;
+      padding: 15px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+    }
+
+    .insight-box.key {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .insight-box h4 {
+      color: #e67e22;
+      margin-bottom: 8px;
+    }
+
+    .insight-box.key h4 {
+      color: #155724;
+    }
+
+    /* Two routes diagram */
+    .two-routes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .route-card {
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .route-card.structural {
+      background: #ebdef0;
+      border: 2px solid #8e44ad;
+    }
+
+    .route-card.sampling {
+      background: #d4efdf;
+      border: 2px solid #27ae60;
+    }
+
+    .route-card h4 {
+      margin-bottom: 8px;
+    }
+
+    .route-card.structural h4 { color: #8e44ad; }
+    .route-card.sampling h4 { color: #27ae60; }
+
+    .route-card p {
+      font-size: 0.9em;
+      margin-bottom: 8px;
+    }
+
+    .route-card .formula {
+      background: white;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin: 8px 0;
+    }
+
+    /* Interactive demo */
+    .demo-container {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .demo-container canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      background: white;
+      border-radius: 8px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+    }
+
+    .slider-row label {
+      min-width: 220px;
+      font-weight: 600;
+      color: #2c3e50;
+      font-size: 0.95em;
+    }
+
+    .slider-row input[type="range"] {
+      flex: 1;
+      min-width: 150px;
+      accent-color: #e67e22;
+    }
+
+    .slider-row .value-display {
+      min-width: 60px;
+      text-align: right;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-weight: 600;
+      color: #e67e22;
+    }
+
+    .demo-readout {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      border: 2px solid #dee2e6;
+    }
+
+    .readout-card.structural { border-color: #8e44ad; }
+    .readout-card.sampling { border-color: #27ae60; }
+    .readout-card.total { border-color: #e67e22; }
+
+    .readout-card .label {
+      font-size: 0.75em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .readout-card .value {
+      font-size: 1.4em;
+      font-weight: 700;
+      font-family: 'Monaco', 'Menlo', monospace;
+    }
+
+    .readout-card.structural .value { color: #8e44ad; }
+    .readout-card.sampling .value { color: #27ae60; }
+    .readout-card.total .value { color: #e67e22; }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 10px;
+      font-size: 0.85em;
+      color: #555;
+      flex-wrap: wrap;
+    }
+
+    .legend .swatch {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    /* Comparison table */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .comparison-table tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    /* Success panel */
+    .success-panel {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .success-panel h3 {
+      color: #155724;
+      margin-bottom: 10px;
+    }
+
+    .success-panel p {
+      color: #155724;
+      margin-bottom: 0;
+    }
+
+    /* Navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      border: none;
+      font-size: 1em;
+    }
+
+    .btn-primary {
+      background: #e67e22;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #d35400;
+    }
+
+    .btn-secondary {
+      background: #ecf0f1;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #bdc3c7;
+    }
+
+    .btn-success {
+      background: #27ae60;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #219a52;
+    }
+
+    .back-to-index {
+      display: inline-block;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+      transition: color 0.2s;
+    }
+    .back-to-index:hover {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="../../index.html" class="back-to-index">&larr; All Tutorials</a>
+      <h1>Tutorial 8: Zero-Heavy Counts</h1>
+      <p>Step 6: The ZIP Log-Likelihood</p>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Progress -->
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot completed">&#10003;</div>
+        <div class="step-dot current">6</div>
+      </div>
+    </div>
+
+    <!-- Mixture decomposition -->
+    <div class="panel">
+      <h2>The ZIP Distribution: A Mixture</h2>
+
+      <p>
+        The Zero-Inflated Poisson is built from two ingredients: a hidden Bernoulli "gate" that decides
+        whether person $i$ is a structural zero (probability $\pi_i$), and a Poisson distribution
+        with mean $\mu_i$ for those who pass the gate. Both quantities are driven by their own
+        linear predictors:
+      </p>
+
+      <div class="math-display">
+        $$\pi_i = \text{logit}^{-1}(z_i\gamma) = \frac{1}{1 + e^{-z_i\gamma}}
+        \qquad\qquad
+        \mu_i = \exp(x_i\beta)$$
+      </div>
+
+      <h3>Why $y = 0$ Has Two Routes</h3>
+
+      <p>
+        A zero can be produced by <strong>either</strong> branch of the mixture, so its probability is
+        the <strong>sum</strong> of the two routes:
+      </p>
+
+      <div class="two-routes">
+        <div class="route-card structural">
+          <h4>Route 1: Structural</h4>
+          <p>The gate closes: person $i$ is a structural zero. The count is $0$ with certainty.</p>
+          <div class="formula">$P(\text{route 1}) = \pi_i$</div>
+        </div>
+        <div class="route-card sampling">
+          <h4>Route 2: Sampling</h4>
+          <p>The gate opens (probability $1-\pi_i$), but the Poisson happens to draw $0$.</p>
+          <div class="formula">$P(\text{route 2}) = (1-\pi_i)\, e^{-\mu_i}$</div>
+        </div>
+      </div>
+
+      <p>This gives the full probability mass function:</p>
+
+      <div class="math-display highlight">
+        $$P(Y_i = y_i) = \begin{cases}
+        \pi_i + (1-\pi_i)\, e^{-\mu_i} & \text{if } y_i = 0 \\[8pt]
+        (1-\pi_i)\, \dfrac{e^{-\mu_i}\mu_i^{y_i}}{y_i!} & \text{if } y_i > 0
+        \end{cases}$$
+      </div>
+
+      <div class="insight-box">
+        <h4>Why $y > 0$ Has Only One Route</h4>
+        <p style="margin-bottom: 0;">
+          A positive count <em>proves</em> the gate was open &mdash; structural zeros can never produce
+          $y = 3$. So the $y_i > 0$ case is simply the Poisson probability multiplied by the
+          probability $(1-\pi_i)$ of being in the at-risk population at all. Observing $y_i > 0$
+          resolves the hidden label completely; observing $y_i = 0$ leaves it ambiguous, which is
+          exactly why the E-step on the Fitting page only had to soft-assign the zeros.
+        </p>
+      </div>
+
+      <h3>Try It: How the Mixture Builds the Zero Spike</h3>
+
+      <p>
+        Drag the sliders to see how the structural-zero probability $\pi$ and the Poisson mean $\mu$
+        combine. The bar at $y = 0$ is a <strong>stack of the two routes</strong>; the remaining bars are
+        the Poisson scaled down by $(1-\pi)$.
+      </p>
+
+      <div class="demo-container">
+        <div class="slider-row">
+          <label for="piSlider">Structural zero probability $\pi$</label>
+          <input type="range" id="piSlider" min="0" max="0.9" step="0.01" value="0.4">
+          <span class="value-display" id="piValue">0.40</span>
+        </div>
+        <div class="slider-row">
+          <label for="muSlider">Poisson mean $\mu$</label>
+          <input type="range" id="muSlider" min="0.2" max="8" step="0.1" value="2">
+          <span class="value-display" id="muValue">2.0</span>
+        </div>
+
+        <canvas id="mixtureCanvas" width="640" height="320"></canvas>
+
+        <div class="legend">
+          <span><span class="swatch" style="background: #8e44ad;"></span>Structural zeros: $\pi$</span>
+          <span><span class="swatch" style="background: #27ae60;"></span>Sampling zeros: $(1-\pi)e^{-\mu}$</span>
+          <span><span class="swatch" style="background: #f39c12;"></span>Counts: $(1-\pi)\,\text{Pois}(y;\mu)$</span>
+        </div>
+
+        <div class="demo-readout">
+          <div class="readout-card structural">
+            <div class="label">Structural part</div>
+            <div class="value" id="structuralReadout">0.400</div>
+          </div>
+          <div class="readout-card sampling">
+            <div class="label">Sampling part</div>
+            <div class="value" id="samplingReadout">0.081</div>
+          </div>
+          <div class="readout-card total">
+            <div class="label">Total P(Y = 0)</div>
+            <div class="value" id="totalReadout">0.481</div>
+          </div>
+        </div>
+      </div>
+
+      <p>
+        Notice two things. First, even with $\pi = 0$ there are <em>some</em> zeros &mdash; that's plain
+        Poisson. Second, with a large $\mu$, nearly all zeros are structural: the green sliver
+        vanishes because an at-risk person with a high visit rate almost never records zero visits.
+      </p>
+    </div>
+
+    <!-- Log-likelihood derivation -->
+    <div class="panel">
+      <h2>Deriving the Log-Likelihood</h2>
+
+      <p>
+        As in every tutorial, the log-likelihood is the sum of the log-probabilities the model assigns
+        to each observed data point. The only novelty is that the formula differs depending on
+        whether $y_i$ is zero or positive.
+      </p>
+
+      <div class="derivation">
+        <div class="derivation-step">
+          <div class="step-label">Step 1: Take Logs of the PMF, Case by Case</div>
+          <p>For a zero observation, we must take the log of the <em>sum</em> of the two routes &mdash; it does not split further:</p>
+          <div class="math-display">
+            $$\ell_i = \ln\!\left[\pi_i + (1-\pi_i)\, e^{-\mu_i}\right] \qquad (y_i = 0)$$
+          </div>
+          <p>For a positive observation, the log of the product separates into a sum:</p>
+          <div class="math-display">
+            $$\ell_i = \ln(1-\pi_i) + y_i \ln\mu_i - \mu_i - \ln(y_i!) \qquad (y_i > 0)$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 2: Sum Over All Observations</div>
+          <div class="math-display">
+            $$\ell(\beta, \gamma) = \sum_{i=1}^{n}
+            \begin{cases}
+            \ln\!\left[\pi_i + (1-\pi_i)\, e^{-\mu_i}\right] & \text{if } y_i = 0 \\[6pt]
+            \ln(1-\pi_i) + y_i\ln\mu_i - \mu_i - \ln(y_i!) & \text{if } y_i > 0
+            \end{cases}$$
+          </div>
+        </div>
+
+        <div class="derivation-step">
+          <div class="step-label">Step 3: Substitute the Linear Predictors</div>
+          <p>
+            Writing $\pi_i = \text{logit}^{-1}(z_i\gamma)$ and $\mu_i = e^{x_i\beta}$ makes
+            $\ell$ a function of the seven coefficients alone. Splitting the sum into the zero
+            and positive observations:
+          </p>
+          <div class="math-display">
+            $$\ell(\beta, \gamma) = \sum_{i:\, y_i = 0} \ln\!\left[\pi_i + (1-\pi_i)\, e^{-e^{x_i\beta}}\right]
+            \;+\; \sum_{i:\, y_i > 0} \left[\ln(1-\pi_i) + y_i x_i\beta - e^{x_i\beta} - \ln(y_i!)\right]$$
+          </div>
+        </div>
+      </div>
+
+      <div class="math-display key">
+        <strong>The ZIP Log-Likelihood:</strong><br><br>
+        $$\ell(\beta, \gamma) = \sum_{i=1}^{n}
+        \begin{cases}
+        \ln\!\left[\pi_i + (1-\pi_i)\, e^{-\mu_i}\right] & \text{if } y_i = 0 \\[6pt]
+        \ln(1-\pi_i) + y_i\ln\mu_i - \mu_i - \ln(y_i!) & \text{if } y_i > 0
+        \end{cases}$$
+        <br>
+        $$\text{with } \pi_i = \text{logit}^{-1}(z_i\gamma), \qquad \mu_i = \exp(x_i\beta)$$
+      </div>
+
+      <h3>Reading the Two Cases</h3>
+
+      <p>
+        The two cases play different roles in estimation:
+      </p>
+
+      <ul style="margin: 0 0 12px 20px;">
+        <li>
+          <strong>The $y_i = 0$ case couples $\gamma$ and $\beta$.</strong> The log-of-a-sum term
+          $\ln[\pi_i + (1-\pi_i)e^{-\mu_i}]$ cannot be separated into a "$\gamma$ part" plus a
+          "$\beta$ part" &mdash; both components compete to explain each zero. This term is why ZIP is
+          not an exponential-family GLM and why IRLS alone cannot fit it.
+        </li>
+        <li>
+          <strong>The $y_i > 0$ case cleanly separates.</strong> The term $\ln(1-\pi_i)$ involves
+          only $\gamma$, while $y_i\ln\mu_i - \mu_i - \ln(y_i!)$ is exactly the Poisson
+          log-likelihood from Tutorial 3, involving only $\beta$.
+        </li>
+      </ul>
+
+      <div class="insight-box key">
+        <h4>Connection to the EM Algorithm</h4>
+        <p style="margin-bottom: 0;">
+          The soft weight from the Fitting page, $w_i = \pi_i / [\pi_i + (1-\pi_i)e^{-\mu_i}]$,
+          is just <strong>Bayes' theorem applied to the two routes</strong>: the structural route's share of the
+          total $P(Y_i = 0)$. The awkward log-of-a-sum is exactly the term EM tames &mdash; given the soft
+          labels, the likelihood splits into a logistic piece for $\gamma$ and a Poisson piece for
+          $\beta$, each fittable with the standard machinery.
+        </p>
+      </div>
+
+      <h3>Gradient Sketch</h3>
+
+      <p>
+        Direct optimisers like BFGS need the gradient. For the count coefficients, differentiating gives:
+      </p>
+
+      <div class="math-display">
+        $$\frac{\partial \ell}{\partial \beta_j}
+        = \sum_{i:\, y_i = 0} \frac{-(1-\pi_i)\, e^{-\mu_i}\,\mu_i}{\pi_i + (1-\pi_i)\, e^{-\mu_i}}\, x_{ij}
+        \;+\; \sum_{i:\, y_i > 0} (y_i - \mu_i)\, x_{ij}$$
+      </div>
+
+      <p>
+        The positive-count part is the familiar Poisson score $\sum (y_i - \mu_i)x_{ij}$.
+        The zero part is new: each zero pulls $\mu_i$ <em>down</em>, but the pull is scaled by
+        $1 - w_i$, the probability the zero is a <em>sampling</em> zero. Zeros the model attributes
+        to the structural route barely influence $\beta$ at all &mdash; the mixture automatically
+        discounts them.
+      </p>
+    </div>
+
+    <!-- Comparison across tutorials -->
+    <div class="panel">
+      <h2>Log-Likelihood Comparison: The Count-Model Family</h2>
+
+      <table class="comparison-table">
+        <tr>
+          <th>Tutorial</th>
+          <th>Distribution</th>
+          <th>Log-Likelihood (one observation, simplified)</th>
+          <th>Handles</th>
+        </tr>
+        <tr>
+          <td>3 (Poisson)</td>
+          <td>Poisson</td>
+          <td>$y_i\ln\mu_i - \mu_i$</td>
+          <td>Counts, variance $=$ mean</td>
+        </tr>
+        <tr>
+          <td>4 (NegBin)</td>
+          <td>Negative Binomial</td>
+          <td>$\ln\Gamma(y_i+\theta) + y_i\ln\mu_i - (y_i+\theta)\ln(\theta+\mu_i) + \dots$</td>
+          <td>Overdispersion</td>
+        </tr>
+        <tr style="background: #fef5e7;">
+          <td><strong>8 (ZIP)</strong></td>
+          <td><strong>Zero-Inflated Poisson</strong></td>
+          <td>$\ln[\pi_i + (1-\pi_i)e^{-\mu_i}]$ or $\ln(1-\pi_i) + y_i\ln\mu_i - \mu_i$</td>
+          <td><strong>Excess zeros (mixture)</strong></td>
+        </tr>
+      </table>
+
+      <div class="insight-box">
+        <h4>The Pattern Completed</h4>
+        <p style="margin-bottom: 0;">
+          NegBin generalised Poisson by letting the <em>rate</em> vary (a Poisson-Gamma mixture over a
+          continuous range). ZIP generalises it differently: a <strong>two-point mixture</strong> where one
+          component is degenerate at zero. The same recipe extends further &mdash; replace the Poisson
+          branch with NegBin and you get ZINB, handling overdispersion <em>and</em> excess zeros at once.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tutorial complete -->
+    <div class="success-panel">
+      <h3>&#10003; Tutorial 8 Complete &mdash; You've Finished All Eight Tutorials!</h3>
+      <p>
+        You have travelled from a straight line through a Gaussian cloud (Tutorial 1) to a two-component
+        mixture model with hidden labels (Tutorial 8). Along the way: link functions, distribution
+        families, IRLS, maximum likelihood, overdispersion, and now mixtures &mdash; the full GLM toolkit
+        and a first step beyond it.
+      </p>
+      <p style="margin-top: 15px;">
+        <strong>Where next?</strong> Revisit any tutorial from the index, or explore the
+        <a href="../../optimization/" style="color: #155724; font-weight: 600;">optimisation visualisations</a>
+        to see the fitting algorithms in action.
+      </p>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="code.html" class="btn btn-secondary">&larr; Back to Code</a>
+      <a href="../../index.html" class="btn btn-success">&#10003; All Tutorials Complete! Back to Index</a>
+    </div>
+  </div>
+
+  <script>
+    // ===== Interactive ZIP mixture demo =====
+    const piSlider = document.getElementById('piSlider');
+    const muSlider = document.getElementById('muSlider');
+    const piValue = document.getElementById('piValue');
+    const muValue = document.getElementById('muValue');
+    const canvas = document.getElementById('mixtureCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const COLORS = {
+      structural: '#8e44ad',
+      sampling: '#27ae60',
+      count: '#f39c12',
+      axis: '#666',
+      text: '#2c3e50'
+    };
+
+    function poissonPmf(y, mu) {
+      // exp(-mu) * mu^y / y! computed in log space for stability
+      let logP = -mu + y * Math.log(mu);
+      for (let k = 2; k <= y; k++) logP -= Math.log(k);
+      return Math.exp(logP);
+    }
+
+    function drawMixture() {
+      const pi = parseFloat(piSlider.value);
+      const mu = parseFloat(muSlider.value);
+
+      piValue.textContent = pi.toFixed(2);
+      muValue.textContent = mu.toFixed(1);
+
+      const maxY = 14;
+      const padding = { top: 30, right: 20, bottom: 45, left: 55 };
+      const plotW = canvas.width - padding.left - padding.right;
+      const plotH = canvas.height - padding.top - padding.bottom;
+      const slotW = plotW / (maxY + 1);
+      const barW = slotW - 6;
+
+      // Probabilities
+      const structuralPart = pi;                          // route 1 at y=0
+      const samplingPart = (1 - pi) * poissonPmf(0, mu);  // route 2 at y=0
+      const probs = [];
+      for (let y = 0; y <= maxY; y++) {
+        probs.push((1 - pi) * poissonPmf(y, mu));
+      }
+      const zeroTotal = structuralPart + samplingPart;
+      const maxProb = Math.max(zeroTotal, ...probs.slice(1), 0.05);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Title
+      ctx.fillStyle = COLORS.text;
+      ctx.font = 'bold 14px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('ZIP Probability Mass Function', canvas.width / 2, 20);
+
+      // Gridlines + y axis labels
+      ctx.font = '11px -apple-system, sans-serif';
+      const nTicks = 4;
+      for (let t = 0; t <= nTicks; t++) {
+        const p = (maxProb * t) / nTicks;
+        const yPix = padding.top + plotH - (p / maxProb) * plotH;
+        ctx.strokeStyle = '#e9ecef';
+        ctx.beginPath();
+        ctx.moveTo(padding.left, yPix);
+        ctx.lineTo(padding.left + plotW, yPix);
+        ctx.stroke();
+        ctx.fillStyle = COLORS.axis;
+        ctx.textAlign = 'right';
+        ctx.fillText(p.toFixed(2), padding.left - 6, yPix + 4);
+      }
+
+      // Bars
+      for (let y = 0; y <= maxY; y++) {
+        const x = padding.left + y * slotW + 3;
+
+        if (y === 0) {
+          // Stacked bar: sampling (bottom), structural (top)
+          const sampH = (samplingPart / maxProb) * plotH;
+          const strucH = (structuralPart / maxProb) * plotH;
+          const baseY = padding.top + plotH;
+
+          ctx.fillStyle = COLORS.sampling;
+          ctx.fillRect(x, baseY - sampH, barW, sampH);
+          ctx.fillStyle = COLORS.structural;
+          ctx.fillRect(x, baseY - sampH - strucH, barW, strucH);
+
+          // Total label
+          ctx.fillStyle = COLORS.text;
+          ctx.font = 'bold 11px -apple-system, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(zeroTotal.toFixed(2), x + barW / 2, baseY - sampH - strucH - 5);
+        } else {
+          const barH = (probs[y] / maxProb) * plotH;
+          ctx.fillStyle = COLORS.count;
+          ctx.fillRect(x, padding.top + plotH - barH, barW, barH);
+        }
+
+        // X labels
+        ctx.fillStyle = COLORS.axis;
+        ctx.font = '11px -apple-system, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(y === maxY ? y + '+' : y.toString(), x + barW / 2, padding.top + plotH + 16);
+      }
+
+      // Axis labels
+      ctx.fillStyle = COLORS.axis;
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('y (number of visits)', canvas.width / 2, canvas.height - 8);
+
+      ctx.save();
+      ctx.translate(14, padding.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('P(Y = y)', 0, 0);
+      ctx.restore();
+
+      // Readouts
+      document.getElementById('structuralReadout').textContent = structuralPart.toFixed(3);
+      document.getElementById('samplingReadout').textContent = samplingPart.toFixed(3);
+      document.getElementById('totalReadout').textContent = zeroTotal.toFixed(3);
+    }
+
+    piSlider.addEventListener('input', drawMixture);
+    muSlider.addEventListener('input', drawMixture);
+    drawMixture();
+
+    // ===== KaTeX =====
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof renderMathInElement !== 'undefined') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+          ]
+        });
+      }
+    });
+  </script>
+
+  <script src="../../js/feedback.js"></script>
+</body>
+</html>
