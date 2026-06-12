@@ -385,8 +385,10 @@
       </div>
 
       <p>
-        Setting equal to zero gives the same estimating equations as Poisson with log link,
-        but scaled by the shape parameter $\alpha$.
+        Setting this equal to zero gives the Gamma estimating equations. Note the $1/\mu_i$ weights:
+        the Poisson score with a log link is $\sum (y_i - \mu_i) X_i = 0$, so the two families weight
+        observations differently and will generally give <em>different</em> estimates $\hat{\beta}$,
+        even with the same link function.
       </p>
 
       <h3>Why Shape Doesn't Affect $\hat{\beta}$</h3>
@@ -400,8 +402,9 @@
       </div>
 
       <p>
-        This is identical to Poisson! The shape parameter $\alpha$ <strong>doesn't affect the point estimates</strong>
-        of $\beta$, only the standard errors and likelihood-based inference.
+        The shape parameter $\alpha$ cancels out, so it <strong>doesn't affect the point estimates</strong>
+        of $\beta$, only the standard errors and likelihood-based inference. This is why $\hat{\beta}$
+        and $\hat{\alpha}$ can be estimated separately.
       </p>
 
       <div class="insight-box">
@@ -436,7 +439,9 @@
       </div>
 
       <p>
-        For a well-fitting model, the scaled deviance $D/\alpha$ should be approximately $\chi^2_{n-p}$.
+        For a well-fitting model, the scaled deviance $D/\phi = D \cdot \alpha$ should be approximately
+        $\chi^2_{n-p}$ (recall that the dispersion is $\phi = 1/\alpha$, so dividing by $\phi$ means
+        multiplying by $\alpha$).
       </p>
 
       <h3>Estimating Shape from Deviance</h3>
@@ -446,11 +451,13 @@
       </p>
 
       <div class="math-display">
-        $$\hat{\phi} = \frac{1}{\hat{\alpha}} \approx \frac{\text{Pearson } \chi^2}{n - p}$$
+        $$\hat{\phi} = \frac{1}{\hat{\alpha}} \approx \frac{1}{n - p} \sum_{i=1}^{n} \frac{(y_i - \mu_i)^2}{\mu_i^2}$$
       </div>
 
       <p>
-        Where Pearson $\chi^2 = \sum \frac{(y_i - \mu_i)^2}{\text{Var}(\mu_i)} = \sum \frac{(y_i - \mu_i)^2}{\mu_i^2 / \alpha}$
+        This is the Pearson statistic computed with the <em>unit</em> variance function $V(\mu) = \mu^2$
+        (i.e. the variance with the dispersion left out). Each term $(y_i - \mu_i)^2 / \mu_i^2$ is a squared
+        relative residual, so $\hat{\phi}$ is roughly the average squared coefficient of variation.
       </p>
 
       <div class="insight-box key">
