@@ -71,15 +71,30 @@ export function stepGradientAscent(state, terrainData, getElev, config = {}) {
 
   const newX = clamp(state.x + stepX);
   const newY = clamp(state.y + stepY);
+  const newElevation = getElev(newX, newY);
+
+  // Update best if improved
+  let bestX = state.bestX;
+  let bestY = state.bestY;
+  let bestElevation = state.bestElevation;
+
+  if (newElevation > bestElevation) {
+    bestX = newX;
+    bestY = newY;
+    bestElevation = newElevation;
+  }
 
   return {
     ...state,
     x: newX,
     y: newY,
-    elevation: getElev(newX, newY),
+    elevation: newElevation,
     iteration: state.iteration + 1,
     stepSize: opts.stepSize,
     gradientMagnitude: magnitude,
+    bestX,
+    bestY,
+    bestElevation,
   };
 }
 
@@ -462,7 +477,7 @@ export function stepMCMC(state, terrainData, getElev, config = {}) {
   // Compute acceptance ratio
   let logAcceptRatio;
   if (opts.useLogPosterior) {
-    // Use log(elevation) as log-posterior for more realistic MCMC behavior
+    // Use logScale * log(elevation) as log-posterior (target ∝ elevation^logScale)
     const logProposalPosterior = Math.log(Math.max(1, proposedElevation));
     const logCurrentPosterior = Math.log(Math.max(1, currentElevation));
     logAcceptRatio = (logProposalPosterior - logCurrentPosterior) * opts.logScale;

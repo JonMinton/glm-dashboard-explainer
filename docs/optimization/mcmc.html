@@ -447,6 +447,10 @@
         <div class="viz-card">
           <h3>Posterior Density (Emerging from Exploration)</h3>
           <canvas id="posterior-canvas"></canvas>
+          <p style="font-size: 0.8em; color: #888; margin-top: 8px; text-align: center;">
+            Visits are accumulated from iteration 0 with no burn-in discarded, so early transient
+            positions are included in this map.
+          </p>
 
           <div class="blind-insight">
             <h4>The Profound Point</h4>
@@ -525,15 +529,20 @@
               <li><strong style="color: #ff9800;">1.1 &le; R-hat &lt; 1.2</strong> &mdash; Nearly converged</li>
               <li><strong style="color: #f44336;">R-hat &ge; 1.2</strong> &mdash; Chains haven't converged yet</li>
             </ul>
+            <p style="margin-top: 8px;">
+              Here R-hat is computed on the log-elevation trace only, so it tracks agreement in
+              "height" rather than in position.
+            </p>
           </div>
         </div>
 
         <!-- Traceplots -->
         <div class="viz-card">
-          <h3>Traceplots (Log-posterior)</h3>
+          <h3>Traceplots (Log-elevation)</h3>
           <canvas id="traceplot-canvas"></canvas>
           <p style="font-size: 0.8em; color: #888; margin-top: 8px; text-align: center;">
-            Watch for burn-in (initial climb) then stable mixing around high-probability regions
+            Watch for burn-in (initial climb) then stable mixing around high-probability regions.
+            The actual log-posterior is 5 &times; this trace, so the shape is identical up to scale.
           </p>
         </div>
 
@@ -547,9 +556,16 @@
               which parameter values are plausible given our data.
             </p>
             <p>
-              We use log(elevation) as the log-posterior density: higher = more plausible parameters.
-              This creates more realistic traceplot behaviour &mdash; watch for the initial "burn-in"
-              climb as chains find high-probability regions, then stable mixing once they've converged.
+              We use 5 &times; log(elevation) as the log-posterior density &mdash; equivalent to raising
+              the terrain to the 5th power. Sharpening the peaks like this makes the chains' preference
+              for high ground easier to see, and creates more realistic traceplot behaviour: watch for
+              the initial "burn-in" climb as chains find high-probability regions, then stable mixing
+              once they've converged.
+            </p>
+            <p>
+              One subtlety: the prior ellipse only sets where the chains <em>start</em>. It doesn't enter
+              the target distribution, so the long-run distribution the chains settle into is unaffected
+              by where you place it.
             </p>
           </div>
         </div>

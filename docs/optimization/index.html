@@ -489,7 +489,7 @@
             <select id="algorithm-select">
               <option value="analytic">Analytic (one-shot)</option>
               <option value="newton">Newton-Raphson</option>
-              <option value="gradient">Gradient Descent</option>
+              <option value="gradient">Gradient Ascent</option>
             </select>
           </div>
 
@@ -541,7 +541,7 @@
         <ul>
           <li><strong>Analytic:</strong> Jumps directly to the solution (when a formula exists)</li>
           <li><strong>Newton-Raphson:</strong> Uses curvature information for fast convergence</li>
-          <li><strong>Gradient Descent:</strong> Follows the slope uphill, step by step</li>
+          <li><strong>Gradient Ascent:</strong> Follows the slope uphill, step by step</li>
         </ul>
 
         <h3 style="margin-top: 20px;">Why This Matters</h3>
@@ -1109,7 +1109,7 @@
           break;
 
         case 'gradient':
-          // Gradient descent with adaptive step size
+          // Gradient ascent with adaptive step size
           if (currentEstimate === null) {
             currentEstimate = paramRange.min + (paramRange.max - paramRange.min) * 0.2;
             history = [{ theta: currentEstimate, ll: logLikelihood(currentEstimate) }];
@@ -1118,7 +1118,7 @@
           const grad = gradient(currentEstimate);
           const rangeSize = paramRange.max - paramRange.min;
 
-          // True gradient descent: step proportional to gradient magnitude
+          // True gradient ascent: step proportional to gradient magnitude
           // Learning rate scales with range² to handle different parameter scales
           const learningRate = 0.0001 * rangeSize * rangeSize;
           const rawStep = learningRate * grad;
@@ -1322,7 +1322,7 @@
           break;
         case 'gradient':
           info.innerHTML = `
-            <h4>Gradient Descent</h4>
+            <h4>Gradient Ascent</h4>
             <p>Follows the slope uphill: $\\theta_{new} = \\theta + \\alpha \\cdot \\ell'(\\theta)$.
             Simple but slow &mdash; takes many small steps to reach the peak.</p>
           `;
