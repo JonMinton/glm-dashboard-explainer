@@ -341,6 +341,15 @@ docs/tutorials/08-zeroinfl/
 
 ## Hypothesis Testing Section
 
+> **STATUS (2026-07-13):** Partially built as `docs/inference/`. Pages 1–2 of this spec exist as
+> `inference/index.html` (From the Peak to the Error Bar) and `inference/curvature.html`
+> (Standard Errors from Curvature), plus a page beyond this spec: `inference/bayes.html`
+> (Beyond the Quadratic: Bayesian Uncertainty — quadratic-approximation failures, flat-prior grid
+> posteriors, Wald vs credible intervals). Pages 3–5 (wald.html, lr-test.html,
+> model-comparison.html) remain UNBUILT. Data: `docs/data/inference-rest-hr.json`,
+> `docs/data/inference-logistic.json`; validation: `scripts/py/generate_inference_data.py`,
+> `scripts/R/validate-inference.R`; shared JS: `docs/js/inference/inference-math.js`.
+
 ### Overview
 A new section (parallel to Tutorials and Optimisation) that teaches statistical inference — not "where is the peak?" but "how confident are we about the peak?" and "does this predictor matter?"
 

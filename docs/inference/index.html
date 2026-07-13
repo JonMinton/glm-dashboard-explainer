@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statistical Inference: From the Peak to the Error Bar | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card h3 {
+      font-size: 1.05em;
+      margin: 18px 0 8px 0;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .aside-box {
+      background: #fdfaf3;
+      border: 1px dashed #d4b96a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 15px 0;
+      font-size: 0.93em;
+      color: #6b5d3f;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    #ll-canvas {
+      width: 100%;
+      height: 380px;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 180px;
+      accent-color: #667eea;
+    }
+
+    .controls-row .n-value {
+      font-weight: 700;
+      color: #667eea;
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 15px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.8em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.25em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.se .value { color: #9b59b6; }
+    .readout.info .value { color: #667eea; }
+    .readout.ci .value { color: #27ae60; font-size: 1.05em; }
+
+    .routes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .route-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 18px;
+      background: #fff;
+    }
+
+    .route-card.curvature { border-top: 4px solid #9b59b6; }
+    .route-card.bayes { border-top: 4px solid #1abc9c; }
+    .route-card.future { border-top: 4px solid #bdc3c7; }
+
+    .route-card h3 {
+      margin-top: 0;
+    }
+
+    .route-card a.route-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9em;
+    }
+
+    .route-card.curvature a.route-btn { background: #9b59b6; }
+    .route-card.bayes a.route-btn { background: #1abc9c; }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .cur::before { background: #667eea; }
+    .legend .ghost::before { background: #cfd4da; }
+    .legend .peak::before { background: #27ae60; border-radius: 50%; }
+    .legend .ci::before { background: #9b59b6; }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Statistical Inference: From the Peak to the Error Bar</h1>
+      <p>Optimisation finds the best estimate. Inference asks how much to trust it.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html" class="current">Why Uncertainty?</a>
+        <a href="curvature.html">Curvature &rarr; Standard Errors</a>
+        <a href="bayes.html">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>You found the summit. Now what?</h2>
+      <p>
+        In the <a href="../optimization/index.html">optimisation section</a>, likelihood plus data
+        defined a surface over parameter space, and algorithms &mdash; or your own sliders &mdash;
+        climbed it to find the peak. The coordinates of that summit are the maximum likelihood
+        estimates: the single best configuration of parameter values.
+      </p>
+      <p>
+        But a point estimate on its own is an answer without a confidence attached. Two studies can
+        agree exactly on where the summit is and still deserve very different levels of trust:
+        one climbed a needle-sharp pinnacle, the other wandered onto a broad, flat plateau where
+        hundreds of nearby parameter values explain the data almost as well.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The new question.</strong> Optimisation asked <em>&ldquo;where is the top?&rdquo;</em>
+          Inference asks <em>&ldquo;how quickly does the surface fall away from the top?&rdquo;</em>
+          The location of the peak gives the estimate; the <strong>shape</strong> of the peak gives
+          the uncertainty.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: same peak, sharper peak</h2>
+      <p>
+        Below is the log-likelihood curve for a single parameter &mdash; the mean resting heart rate
+        $\mu$ in a synthetic sample (the same dataset used throughout this section). Drag the slider
+        to change how many observations the model sees. Watch what happens to the curve, and to the
+        interval beneath it.
+      </p>
+      <div class="controls-row">
+        <label for="n-slider">Sample size $n$:</label>
+        <input type="range" id="n-slider" min="10" max="200" step="5" value="40">
+        <span class="n-value" id="n-display">40</span>
+      </div>
+      <canvas id="ll-canvas"></canvas>
+      <div class="legend">
+        <span class="cur">log-likelihood (current $n$)</span>
+        <span class="ghost">previous $n$ (ghost)</span>
+        <span class="peak">peak ($\hat\mu$)</span>
+        <span class="ci">95% interval</span>
+      </div>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label">Peak location &mu;&#770;</div>
+          <div class="value" id="mu-hat">&ndash;</div>
+        </div>
+        <div class="readout info">
+          <div class="label">Curvature &ell;&Prime;(&mu;&#770;)</div>
+          <div class="value" id="curvature">&ndash;</div>
+        </div>
+        <div class="readout se">
+          <div class="label">Standard error</div>
+          <div class="value" id="se">&ndash;</div>
+        </div>
+        <div class="readout ci">
+          <div class="label">95% interval for &mu;</div>
+          <div class="value" id="ci">&ndash;</div>
+        </div>
+      </div>
+      <p style="margin-top: 15px; font-size: 0.95em; color: #555;">
+        The dashed horizontal line sits 1.92 log-likelihood units below the peak. The stretch of
+        curve above that line &mdash; projected down to the axis as the purple bar &mdash; is the
+        95% interval. A sharper curve crosses the line sooner, so the bar shrinks.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Information is negative curvature</h2>
+      <p>
+        The quantity doing the work here is the second derivative of the log-likelihood at its peak
+        &mdash; the <strong>instantaneous curvature</strong>. At a maximum it is negative (the surface
+        bends downwards), and its negation is called the <strong>observed information</strong>:
+      </p>
+      <p>
+        $$I(\hat\theta) = -\,\ell''(\hat\theta) \qquad\qquad
+        \text{Var}(\hat\theta) \approx \frac{1}{I(\hat\theta)} \qquad\qquad
+        \text{SE}(\hat\theta) = \frac{1}{\sqrt{I(\hat\theta)}}$$
+      </p>
+      <p>
+        Uncertainty is inversely related to information. A <strong>flat</strong> peak &mdash; small
+        curvature, little information &mdash; means many parameter values fit the data nearly as well,
+        so intervals are wide. A <strong>sharp</strong> peak &mdash; large curvature, lots of
+        information &mdash; means the data strongly favour one value, so intervals are narrow.
+      </p>
+      <p>
+        And because each independent observation adds its own contribution to the log-likelihood,
+        curvatures accumulate: information grows in proportion to $n$, so the standard error shrinks
+        in proportion to $1/\sqrt{n}$. That is exactly the sharpening you watched above &mdash; for
+        this model, $\ell''(\hat\mu) = -n/\hat\sigma^2$.
+      </p>
+      <div class="aside-box">
+        <strong>Prefer valleys?</strong> Many texts minimise the <em>negative</em> log-likelihood (or
+        the deviance) instead of maximising the log-likelihood. The picture simply flips: the summit
+        becomes the floor of a basin &mdash; a nadir &mdash; and the curvature argument is identical,
+        with the basin's steepness playing the role of the peak's sharpness. We stay with peaks
+        throughout, to match the optimisation section.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Two routes from shape to uncertainty</h2>
+      <p>
+        Everything on this page was one-dimensional. Real models have many parameters, and their
+        likelihood surface can fall away at different rates in different directions &mdash; and the
+        directions can interact. The next two pages develop two complementary ways of turning the
+        shape of a multi-parameter peak into uncertainty statements.
+      </p>
+      <div class="routes-grid">
+        <div class="route-card curvature">
+          <h3>The curvature route</h3>
+          <p style="font-size: 0.95em;">
+            Measure the sharpness of the summit in every direction at once with the
+            <strong>Hessian matrix</strong>, then invert it to get standard errors and a confidence
+            ellipse. Fast, and exactly what R and Python's <code>summary()</code> tables do &mdash;
+            but it approximates the peak by an idealised quadratic shape.
+          </p>
+          <a class="route-btn" href="curvature.html">Standard errors from curvature &rarr;</a>
+        </div>
+        <div class="route-card bayes">
+          <h3>The sampling route</h3>
+          <p style="font-size: 0.95em;">
+            Don't assume a shape &mdash; <strong>walk the surface</strong> and record where you spend
+            your time, as the MCMC chains did on
+            <a href="../optimization/mcmc.html">Arthur's Seat</a>. The visit record captures joint
+            uncertainty of any shape, at the price of more computation.
+          </p>
+          <a class="route-btn" href="bayes.html">Bayesian uncertainty &rarr;</a>
+        </div>
+        <div class="route-card future">
+          <h3>Where this leads</h3>
+          <p style="font-size: 0.95em;">
+            Once standard errors exist, hypothesis tests follow: Wald tests, likelihood-ratio tests
+            and model comparison (AIC/BIC), plus assumption-free resampling methods (the bootstrap).
+            Planned future additions to this section.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Seen this before?</h2>
+      <p>
+        You have &mdash; twice, implicitly. Every tutorial's <code>summary()</code> output contains a
+        <code>Std. Error</code> column sitting right next to the coefficients: those numbers are
+        computed from the curvature described here. And in
+        <a href="../optimization/multi-optima.html">Multi-Optima</a>, an unexplained ellipse was
+        stamped around the MLE in the &ldquo;representativeness&rdquo; comparison. Both get their
+        explanations on the <a href="curvature.html">next page</a>.
+      </p>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong> the same argument, developed in R code with
+        hand-rolled likelihood functions, is in
+        <a href="https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/">Likelihood
+        and Simulation Theory</a> &mdash; including the memorable image of standing at the summit,
+        barefoot and blind, using your feet to sense how sharply the ground falls away.
+      </div>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    // Log-likelihood curve for the mean of resting heart rate, with a
+    // sample-size slider. Data: docs/data/inference-rest-hr.json (seed 42),
+    // validated in scripts/py/generate_inference_data.py.
+    const canvas = document.getElementById('ll-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const MU_MIN = 66, MU_MAX = 80;   // bpm, fixed so sharpening is visible
+    const LL_MIN = -8, LL_MAX = 0.6;  // normalised log-likelihood units
+    const CUT = -1.92;                // chi-squared(1)/2 at 95%
+    const margin = { top: 20, right: 20, bottom: 45, left: 55 };
+
+    let allY = [];
+    let ghost = null;   // previous curve, kept for comparison
+
+    function setupCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { w: rect.width, h: rect.height };
+    }
+
+    function stats(n) {
+      const ys = allY.slice(0, n);
+      const muHat = ys.reduce((s, v) => s + v, 0) / n;
+      const sigma2 = ys.reduce((s, v) => s + (v - muHat) ** 2, 0) / n;
+      return { muHat, sigma2, n };
+    }
+
+    // Normalised log-likelihood: ll(mu) - ll(muHat) = -n (mu - muHat)^2 / (2 sigma^2)
+    function deltaLL(mu, st) {
+      return -st.n * (mu - st.muHat) ** 2 / (2 * st.sigma2);
+    }
+
+    function curvePoints(st, w, h) {
+      const pts = [];
+      for (let px = 0; px <= 300; px++) {
+        const mu = MU_MIN + (MU_MAX - MU_MIN) * px / 300;
+        pts.push({ mu, dll: deltaLL(mu, st) });
+      }
+      return pts;
+    }
+
+    function draw(n) {
+      const { w, h } = setupCanvas();
+      const plotW = w - margin.left - margin.right;
+      const plotH = h - margin.top - margin.bottom;
+      const xPix = mu => margin.left + (mu - MU_MIN) / (MU_MAX - MU_MIN) * plotW;
+      const yPix = dll => margin.top + (LL_MAX - dll) / (LL_MAX - LL_MIN) * plotH;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Axes
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, margin.top);
+      ctx.lineTo(margin.left, margin.top + plotH);
+      ctx.lineTo(margin.left + plotW, margin.top + plotH);
+      ctx.stroke();
+
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let mu = MU_MIN; mu <= MU_MAX; mu += 2) {
+        ctx.fillText(mu, xPix(mu), margin.top + plotH + 18);
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.beginPath();
+        ctx.moveTo(xPix(mu), margin.top);
+        ctx.lineTo(xPix(mu), margin.top + plotH);
+        ctx.stroke();
+      }
+      ctx.fillText('candidate mean μ (bpm)', margin.left + plotW / 2, margin.top + plotH + 38);
+      ctx.save();
+      ctx.translate(15, margin.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('log-likelihood below peak', 0, 0);
+      ctx.restore();
+      ctx.textAlign = 'right';
+      for (let dll = 0; dll >= LL_MIN; dll -= 2) {
+        ctx.fillStyle = '#666';
+        ctx.fillText(dll, margin.left - 8, yPix(dll) + 4);
+      }
+
+      const st = stats(n);
+
+      // 95% cut line at deltaLL = -1.92
+      ctx.strokeStyle = '#aaa';
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, yPix(CUT));
+      ctx.lineTo(margin.left + plotW, yPix(CUT));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#999';
+      ctx.textAlign = 'left';
+      ctx.fillText('−1.92 (95% cut)', margin.left + 6, yPix(CUT) - 6);
+
+      // Ghost of the previous curve
+      if (ghost && ghost.n !== n) {
+        ctx.strokeStyle = '#cfd4da';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        curvePoints(ghost).forEach((p, i) => {
+          const px = xPix(p.mu), py = yPix(Math.max(p.dll, LL_MIN - 0.5));
+          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+      }
+
+      // Current curve
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      curvePoints(st).forEach((p, i) => {
+        const px = xPix(p.mu), py = yPix(Math.max(p.dll, LL_MIN - 0.5));
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      // 95% interval bar (curve above the cut line): muHat +/- 1.96 se
+      const se = Math.sqrt(st.sigma2 / st.n);
+      const lo = st.muHat - 1.96 * se;
+      const hi = st.muHat + 1.96 * se;
+      const barY = margin.top + plotH - 10;
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(xPix(Math.max(lo, MU_MIN)), barY);
+      ctx.lineTo(xPix(Math.min(hi, MU_MAX)), barY);
+      ctx.stroke();
+
+      // Peak marker
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.arc(xPix(st.muHat), yPix(0), 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Readouts
+      document.getElementById('mu-hat').textContent = st.muHat.toFixed(2) + ' bpm';
+      document.getElementById('curvature').textContent =
+        (-st.n / st.sigma2).toFixed(3) + ' per bpm²';
+      document.getElementById('se').textContent = se.toFixed(3) + ' bpm';
+      document.getElementById('ci').textContent =
+        '(' + lo.toFixed(2) + ', ' + hi.toFixed(2) + ')';
+    }
+
+    const slider = document.getElementById('n-slider');
+    const nDisplay = document.getElementById('n-display');
+
+    slider.addEventListener('input', () => {
+      const n = parseInt(slider.value, 10);
+      nDisplay.textContent = n;
+      draw(n);
+    });
+
+    slider.addEventListener('change', () => {
+      // Commit the current curve as the ghost when the user releases the slider
+      ghost = stats(parseInt(slider.value, 10));
+    });
+
+    window.addEventListener('resize', () => draw(parseInt(slider.value, 10)));
+
+    fetch('../data/inference-rest-hr.json')
+      .then(r => r.json())
+      .then(json => {
+        allY = json.data.map(d => d.y);
+        ghost = null;
+        draw(parseInt(slider.value, 10));
+      })
+      .catch(() => {
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('Could not load ../data/inference-rest-hr.json — serve the site over HTTP.', 30, 40);
+      });
+  </script>
+</body>
+</html>

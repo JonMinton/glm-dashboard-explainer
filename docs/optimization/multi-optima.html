@@ -616,6 +616,7 @@
         <a href="multi-optima.html" class="current">Multi-Optima</a>
         <a href="mcmc.html">Bayesian MCMC</a>
         <a href="bridge.html">Terrain = Likelihood</a>
+        <a href="../inference/index.html">Uncertainty</a>
       </div>
     </header>
 
@@ -878,7 +879,9 @@
           <p style="color: #5a3d6a;">
             <strong>Fast</strong>: One optimisation run + one matrix inversion.<br>
             <strong>Assumes</strong>: Landscape is roughly quadratic (bowl-shaped) near the peak.<br>
-            <strong>Fails when</strong>: Ridges, multiple modes, or heavy tails.
+            <strong>Fails when</strong>: Ridges, multiple modes, or heavy tails.<br>
+            Where this ellipse comes from, step by step:
+            <a href="../inference/curvature.html">Standard Errors from Curvature</a>.
           </p>
         </div>
         <div class="key-insight" style="margin: 0; background: #e8f6f3; border-color: #1abc9c;">
@@ -886,7 +889,9 @@
           <p style="color: #0e6655;">
             <strong>Slow</strong>: Thousands of iterations to explore.<br>
             <strong>Assumes</strong>: Very little — just needs to be able to evaluate likelihood.<br>
-            <strong>Reveals</strong>: True shape of uncertainty, including asymmetries and multiple modes.
+            <strong>Reveals</strong>: True shape of uncertainty, including asymmetries and multiple modes.<br>
+            Turning samples into credible intervals:
+            <a href="../inference/bayes.html">Bayesian Uncertainty</a>.
           </p>
         </div>
       </div>
@@ -1096,6 +1101,7 @@
     </div>
   </div>
 
+  <script src="../js/feedback.js"></script>
   <script type="module">
     // Import shared optimization modules
     import {

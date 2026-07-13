@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standard Errors from Curvature | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card h3 {
+      font-size: 1.05em;
+      margin: 18px 0 8px 0;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .warn-box {
+      background: #fdf3f0;
+      border-left: 4px solid #e74c3c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    .probe-layout {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 850px) {
+      .probe-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    canvas.surface {
+      width: 100%;
+      height: 400px;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .probe-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .probe-btn {
+      padding: 10px 14px;
+      border: 2px solid #9b59b6;
+      background: white;
+      color: #9b59b6;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.92em;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .probe-btn:hover:not(:disabled) {
+      background: #f7f0fb;
+    }
+
+    .probe-btn.done {
+      background: #9b59b6;
+      color: white;
+    }
+
+    .probe-btn:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .matrix-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .matrix-label {
+      font-size: 1.3em;
+      font-style: italic;
+      font-family: 'Times New Roman', serif;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(86px, auto));
+      gap: 6px;
+      padding: 8px 14px;
+      border-left: 2px solid #2c3e50;
+      border-right: 2px solid #2c3e50;
+    }
+
+    .matrix .cell {
+      background: #f4f0f8;
+      border: 1px solid #e0d4ec;
+      border-radius: 6px;
+      padding: 8px 6px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+      color: #9b59b6;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .matrix .cell .tag {
+      font-size: 0.65em;
+      color: #999;
+      font-weight: 400;
+    }
+
+    .matrix .cell.unknown {
+      color: #bbb;
+      font-size: 1.3em;
+    }
+
+    .probe-log {
+      font-size: 0.88em;
+      color: #555;
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 52px;
+    }
+
+    .pipeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .pipeline .step {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      min-width: 170px;
+    }
+
+    .pipeline .step .caption {
+      font-size: 0.8em;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    .pipeline .arrow {
+      font-size: 1.5em;
+      color: #9b59b6;
+      font-weight: 700;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 160px;
+      accent-color: #9b59b6;
+    }
+
+    .controls-row .n-value {
+      font-weight: 700;
+      color: #9b59b6;
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .conf-toggle {
+      display: inline-flex;
+      background: #e0e0e0;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .conf-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88em;
+      color: #666;
+    }
+
+    .conf-btn.active {
+      background: white;
+      color: #9b59b6;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #9b59b6;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .action-btn.secondary {
+      background: #e5e7eb;
+      color: #2c3e50;
+    }
+
+    .action-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.se .value { color: #9b59b6; }
+    .readout.ci .value { color: #27ae60; font-size: 1em; }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .peak::before { background: #27ae60; border-radius: 50%; }
+    .legend .ellipse::before { background: #9b59b6; }
+    .legend .ghostell::before { background: #d9c6e8; }
+    .legend .cloud::before { background: rgba(155, 89, 182, 0.5); border-radius: 50%; }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Standard Errors from Curvature</h1>
+      <p>Measure the sharpness of the summit in every direction at once &mdash; then invert it.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html">Why Uncertainty?</a>
+        <a href="curvature.html" class="current">Curvature &rarr; Standard Errors</a>
+        <a href="bayes.html">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>From one curvature to a matrix of them</h2>
+      <p>
+        On the <a href="index.html">previous page</a>, one parameter meant one curvature: a single
+        number describing how quickly the log-likelihood falls away from the peak. Now consider the
+        model from the <a href="../optimization/2d.html">2D optimisation page</a> &mdash; a straight
+        line through data, $y = \beta_0 + \beta_1 x$ &mdash; fitted to our synthetic resting heart
+        rate sample (heart rate in bpm against weekly exercise hours, $n = 60$).
+      </p>
+      <p>
+        The log-likelihood is now a surface over the $(\beta_0, \beta_1)$ plane, and a surface can
+        fall away at different rates in different directions. It can also fall away
+        <em>diagonally</em> in a coordinated way, which turns out to encode how the two estimates
+        co-vary. To capture all of this we need the curvature in every direction &mdash; the
+        <strong>Hessian matrix</strong> of second derivatives:
+      </p>
+      <p>
+        $$H = \begin{pmatrix}
+          \dfrac{\partial^2 \ell}{\partial \beta_0^2} & \dfrac{\partial^2 \ell}{\partial \beta_0 \partial \beta_1} \\[1em]
+          \dfrac{\partial^2 \ell}{\partial \beta_1 \partial \beta_0} & \dfrac{\partial^2 \ell}{\partial \beta_1^2}
+        \end{pmatrix}\Bigg|_{\beta = \hat\beta}$$
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: probing the summit, barefoot and blind</h2>
+      <p>
+        JonStats introduces the Hessian with a memorable image: you are standing at the summit,
+        barefoot and blindfolded, and your only instrument is your feet &mdash; you can step a little
+        way in a chosen direction and feel how far the ground drops. Three probes are enough to map
+        the local shape completely. Try them:
+      </p>
+      <div class="probe-layout">
+        <div>
+          <canvas id="probe-canvas" class="surface"></canvas>
+          <div class="legend">
+            <span class="peak">MLE (the summit)</span>
+            <span class="ellipse">probe direction</span>
+          </div>
+        </div>
+        <div>
+          <div class="probe-buttons">
+            <button class="probe-btn" id="probe-b0">Probe 1 &mdash; along &beta;&#8320; (0&deg;): hold the slope fixed, vary the intercept</button>
+            <button class="probe-btn" id="probe-b1">Probe 2 &mdash; along &beta;&#8321; (90&deg;): hold the intercept fixed, vary the slope</button>
+            <button class="probe-btn" id="probe-diag">Probe 3 &mdash; diagonally (45&deg;): vary both together</button>
+          </div>
+          <div class="matrix-wrap">
+            <span class="matrix-label">H&nbsp;=</span>
+            <div class="matrix" id="hessian-matrix">
+              <div class="cell unknown" id="cell-fxx">?</div>
+              <div class="cell unknown" id="cell-fxy1">?</div>
+              <div class="cell unknown" id="cell-fxy2">?</div>
+              <div class="cell unknown" id="cell-fyy">?</div>
+            </div>
+          </div>
+          <div class="probe-log" id="probe-log">
+            Each probe steps &plusmn;0.5 units from the summit and measures the drop in
+            log-likelihood. Click a probe to begin.
+          </div>
+        </div>
+      </div>
+      <div class="explanation" style="margin-top: 20px;">
+        <p>
+          The two <strong>on-axis probes</strong> give the diagonal entries: curvature along
+          $\beta_0$ alone and along $\beta_1$ alone. Here the surface is far sharper along
+          $\beta_1$ (&asymp; &minus;51.8) than along $\beta_0$ (&asymp; &minus;1.5): the data pin
+          down the slope much more tightly than the intercept.
+        </p>
+        <p style="margin-bottom: 0;">
+          The <strong>diagonal probe</strong> reveals the off-diagonal entry. If the two directions
+          were independent, the diagonal curvature would just be the average of the two on-axis
+          curvatures. It isn't &mdash; the surplus is exactly $\partial^2\ell / \partial\beta_0\,\partial\beta_1$,
+          the term that records how the estimates <em>co-vary</em>: raise the intercept and the
+          best-fitting slope must fall to compensate.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The pipeline: Hessian &rarr; information &rarr; variance &rarr; standard errors</h2>
+      <p>
+        Once the Hessian is measured at the peak, standard errors follow in three mechanical steps.
+        This is the multi-parameter version of $\text{SE} = 1/\sqrt{-\ell''}$, and it is the
+        computation running behind every <code>summary()</code> table you have seen in the tutorials
+        (numbers below: our heart rate model at $n=60$):
+      </p>
+      <div class="pipeline">
+        <div class="step">
+          $$H = \begin{pmatrix} -1.48 & -7.71 \\ -7.71 & -51.82 \end{pmatrix}$$
+          <div class="caption">Hessian at the peak<br>(curvatures: all negative)</div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">
+          $$I(\hat\beta) = -H$$
+          <div class="caption">negate: <strong>observed<br>information</strong> matrix</div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">
+          $$\Sigma = I^{-1} = \begin{pmatrix} 2.97 & -0.44 \\ -0.44 & 0.085 \end{pmatrix}$$
+          <div class="caption">invert: <strong>variance&ndash;<br>covariance</strong> matrix</div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="step">
+          $$\text{SE} = \sqrt{\text{diag}\,\Sigma} = \begin{pmatrix} 1.72 \\ 0.29 \end{pmatrix}$$
+          <div class="caption">square-root the diagonal:<br><strong>standard errors</strong></div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p>
+          $$\widehat{\text{Var}}(\hat\beta) = \left[-\frac{\partial^2 \ell}{\partial \beta\, \partial \beta^{\top}}\right]^{-1}_{\beta = \hat\beta}$$
+        </p>
+        <p style="margin-bottom: 0;">
+          In words: <em>our best estimate of the uncertainty in the estimates is a function of how
+          much the likelihood surface curves at its highest point</em> (King 1998). The diagonal of
+          $\Sigma$ gives each parameter's variance; the off-diagonal gives their covariance
+          (here negative: overestimate the intercept and you will underestimate the slope). The
+          expected value of this information matrix has its own name &mdash; the
+          <strong>Fisher information</strong>.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: the confidence ellipse</h2>
+      <p>
+        The variance&ndash;covariance matrix has a direct picture: an ellipse around the summit
+        containing the parameter values compatible with the data. Its width in each direction comes
+        from the diagonal of $\Sigma$; its tilt comes from the covariance. Change the sample size
+        and watch the ellipse shrink &mdash; standard errors fall as $1/\sqrt{n}$. Then scatter
+        simulated draws from $\text{MVN}(\hat\beta, \Sigma)$ &mdash; the sampling distribution that
+        the curvature approximation implies.
+      </p>
+      <div class="controls-row">
+        <label for="ell-n-slider">Sample size $n$:</label>
+        <input type="range" id="ell-n-slider" min="10" max="200" step="5" value="60">
+        <span class="n-value" id="ell-n-display">60</span>
+        <span class="conf-toggle">
+          <button class="conf-btn" data-level="0.90">90%</button>
+          <button class="conf-btn active" data-level="0.95">95%</button>
+          <button class="conf-btn" data-level="0.99">99%</button>
+        </span>
+        <button class="action-btn" id="draw-cloud">Scatter 500 draws</button>
+        <button class="action-btn secondary" id="clear-cloud">Clear</button>
+      </div>
+      <canvas id="ellipse-canvas" class="surface" style="height: 440px;"></canvas>
+      <div class="legend">
+        <span class="peak">MLE $\hat\beta$</span>
+        <span class="ellipse">confidence ellipse (current)</span>
+        <span class="ghostell">previous $n$ (ghost)</span>
+        <span class="cloud">draws from MVN($\hat\beta$, $\Sigma$)</span>
+      </div>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label">&beta;&#770;&#8320; (intercept)</div>
+          <div class="value" id="ro-b0">&ndash;</div>
+        </div>
+        <div class="readout">
+          <div class="label">&beta;&#770;&#8321; (slope)</div>
+          <div class="value" id="ro-b1">&ndash;</div>
+        </div>
+        <div class="readout se">
+          <div class="label">SE(&beta;&#770;&#8320;)</div>
+          <div class="value" id="ro-se0">&ndash;</div>
+        </div>
+        <div class="readout se">
+          <div class="label">SE(&beta;&#770;&#8321;)</div>
+          <div class="value" id="ro-se1">&ndash;</div>
+        </div>
+        <div class="readout ci">
+          <div class="label">95% CI for &beta;&#8321;</div>
+          <div class="value" id="ro-ci1">&ndash;</div>
+        </div>
+        <div class="readout">
+          <div class="label">Draws inside ellipse</div>
+          <div class="value" id="ro-inside">&ndash;</div>
+        </div>
+      </div>
+      <div class="explanation" style="margin-top: 15px;">
+        <p style="margin-bottom: 0;">
+          <strong>Joint region vs single-parameter interval.</strong> The ellipse is a <em>joint</em>
+          confidence region for both parameters together, scaled by a $\chi^2_2$ quantile. The
+          familiar per-parameter interval, $\hat\beta_1 \pm 1.96\,\text{SE}(\hat\beta_1)$, is the
+          shadow the (95%) picture casts onto one axis &mdash; slightly narrower than the ellipse's
+          full extent, because pinning down one parameter is an easier ask than pinning down both
+          at once.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The optimiser already knew</h2>
+      <p>
+        Here is the elegant part. On the <a href="../optimization/4d.html">4D+ page</a>,
+        Newton&ndash;Raphson used the Hessian to decide how far to step: sharp curvature &rarr; the
+        peak is close &rarr; small steps; gentle curvature &rarr; a long plateau &rarr; stride out.
+        The <em>same matrix</em>, evaluated at the summit it helped find, prices the uncertainty of
+        the estimates. Fitting and inference are two uses of one object:
+        <strong>the curvature that guides the climb also calibrates the confidence.</strong>
+      </p>
+      <p style="margin-bottom: 0;">
+        And the purple ellipse stamped without explanation on the
+        <a href="../optimization/multi-optima.html">Multi-Optima page</a>'s representativeness
+        comparison? It was this confidence ellipse all along.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>In code: extract the Hessian, invert, done</h2>
+      <p>
+        Both snippets fit the resting heart rate line by hand-rolled maximum likelihood, then read
+        the standard errors straight off the inverted (negated) Hessian. Outputs are from real runs
+        on <code>docs/data/inference-rest-hr.json</code> ($n=60$) &mdash; validation scripts:
+        <code>scripts/R/validate-inference.R</code>, <code>scripts/py/generate_inference_data.py</code>.
+      </p>
+      <div>
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre>llNormal &lt;- function(pars, y, X) {
+  beta   &lt;- pars[1:ncol(X)]
+  sigma2 &lt;- exp(pars[ncol(X) + 1])        # keep sigma^2 positive
+  -1/2 * sum(log(2 * pi * sigma2) + (y - (X %*% beta))^2 / sigma2)
+}
+
+fit &lt;- optim(par = c(0, 0, 0), fn = llNormal, method = "BFGS",
+             control = list(fnscale = -1),   # maximise, not minimise
+             hessian = TRUE,                 # &lt;-- ask for the curvature
+             y = y, X = cbind(1, x))
+
+vcov_ml &lt;- solve(-fit$hessian)   # negate, then invert
+sqrt(diag(vcov_ml))              # standard errors
+
+# Simulate the implied sampling distribution (JonStats-style):
+draws &lt;- MASS::mvrnorm(n = 10000, mu = fit$par[1:2],
+                       Sigma = vcov_ml[1:2, 1:2])</pre>
+        <pre class="output"># point estimates:      71.7714  -1.2710   (log sigma^2: 3.6995)
+# solve(-fit$hessian):
+#           [,1]    [,2]
+# [1,]    2.9675 -0.4415
+# [2,]   -0.4415  0.0850
+# standard errors:       1.7226   0.2915
+#
+# cross-check with lm(y ~ x): coef 71.7714, -1.2711; SEs 1.7521, 0.2965
+# (lm's SEs are slightly larger: lm divides the residual variance by
+#  n - 2 where maximum likelihood divides by n)</pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>import numpy as np
+import statsmodels.api as sm
+from scipy import optimize
+
+X = sm.add_constant(x)
+
+# The convenience route: statsmodels computes vcov from the curvature
+ols = sm.OLS(y, X).fit()
+print(ols.params, ols.bse)         # estimates and standard errors
+print(ols.cov_params())            # the full variance-covariance matrix
+
+# The by-hand route: minimise the negative log-likelihood ...
+def negll(pars):
+    b0, b1, eta = pars
+    s2 = np.exp(eta)
+    mu = b0 + b1 * x
+    return 0.5 * np.sum(np.log(2 * np.pi * s2) + (y - mu)**2 / s2)
+
+fit = optimize.minimize(negll, x0=np.zeros(3), method="BFGS")
+
+# ... then invert the Hessian of the negative log-likelihood
+# (already the information matrix, so no negation needed here)
+H = numeric_hessian(negll, fit.x)      # central finite differences
+vcov = np.linalg.inv(H)
+print(np.sqrt(np.diag(vcov)))</pre>
+        <pre class="output"># OLS  coefficients:  b0 = 71.7714, b1 = -1.2711
+# OLS  std errors:    se(b0) = 1.7521, se(b1) = 0.2965
+# ML   std errors from inverse Hessian:
+#                     se(b0) = 1.7226, se(b1) = 0.2915
+# vcov (ML):
+#   [[ 2.9675, -0.4415],
+#    [-0.4415,  0.0850]]</pre>
+      </div>
+      <div class="explanation" style="margin-top: 15px;">
+        <p style="margin-bottom: 0;">
+          <strong>One sign trap.</strong> If your function returns the <em>log-likelihood</em>
+          (maximised), negate the Hessian before inverting: <code>solve(-hessian)</code>. If it
+          returns the <em>negative</em> log-likelihood (minimised), its Hessian already <em>is</em>
+          the information matrix: invert it directly. Getting this wrong produces negative
+          variances &mdash; a loud, if confusing, alarm.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The small print</h2>
+      <div class="warn-box">
+        <p style="margin-bottom: 0;">
+          Everything on this page rests on one simplifying assumption: that near its peak, the
+          log-likelihood surface is well described by a <strong>quadratic</strong> &mdash;
+          equivalently, that the uncertainty is shaped like a single multivariate normal hill
+          centred on the MLE. For large samples and well-behaved models this is an excellent
+          approximation. But when it fails &mdash; small samples, parameters near boundaries,
+          skewed or ridge-shaped surfaces &mdash; the ellipse becomes a poor portrait of the real
+          uncertainty. The <a href="bayes.html">next page</a> shows it failing, and what to do
+          instead.
+        </p>
+      </div>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong>
+        <a href="https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/">Likelihood
+        and Simulation Theory</a> develops this same pipeline in R, from <code>optim(hessian = TRUE)</code>
+        to <code>mvrnorm()</code>; the
+        <a href="https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/">Complete
+        Simulation Example</a> then applies it end-to-end with <code>coefficients()</code>,
+        <code>vcov()</code> and <code>sigma()</code> to produce honest quantities of interest.
+      </div>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    import {
+      mulberry32, olsFit, gaussianProfileHessian, gaussianLL,
+      hessianToVcov, mvnDraws,
+    } from '../js/inference/inference-math.js';
+    import {
+      hessianToEllipse, generateEllipsePoints,
+    } from '../js/optimization/terrain.js';
+
+    // Fixed parameter-space window (so the ellipse visibly shrinks with n)
+    const B0_MIN = 63, B0_MAX = 81;
+    const B1_MIN = -3.4, B1_MAX = 0.9;
+    const margin = { top: 15, right: 15, bottom: 45, left: 60 };
+
+    let xs = [], ys = [];          // full dataset (n = 200)
+
+    // ---------- shared drawing helpers ----------
+
+    function setupCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    function makeScales(w, h) {
+      const plotW = w - margin.left - margin.right;
+      const plotH = h - margin.top - margin.bottom;
+      return {
+        plotW, plotH,
+        xPix: b0 => margin.left + (b0 - B0_MIN) / (B0_MAX - B0_MIN) * plotW,
+        yPix: b1 => margin.top + (B1_MAX - b1) / (B1_MAX - B1_MIN) * plotH,
+      };
+    }
+
+    // Banded log-likelihood heatmap: colour by depth below the peak
+    const BANDS = [-0.5, -1.15, -2.3, -3.0, -4.6, -7, -10, -15, -25, -40];
+    const BAND_COLOURS = [
+      '#f3eefa', '#e9e0f5', '#ded1ef', '#d2c1e8', '#c4b0e0',
+      '#b59ed7', '#a58ccd', '#9579c2', '#8467b6', '#7355a9', '#62449b',
+    ];
+
+    function drawSurface(ctx, sc, subset, sigma2, peakLL) {
+      const cellsX = 130, cellsY = 100;
+      const cw = sc.plotW / cellsX, ch = sc.plotH / cellsY;
+      for (let i = 0; i < cellsX; i++) {
+        const b0 = B0_MIN + (B0_MAX - B0_MIN) * (i + 0.5) / cellsX;
+        for (let j = 0; j < cellsY; j++) {
+          const b1 = B1_MAX - (B1_MAX - B1_MIN) * (j + 0.5) / cellsY;
+          const dll = gaussianLL(subset.xs, subset.ys, b0, b1, sigma2) - peakLL;
+          let band = BANDS.length;
+          for (let k = 0; k < BANDS.length; k++) {
+            if (dll >= BANDS[k]) { band = k; break; }
+          }
+          ctx.fillStyle = BAND_COLOURS[band];
+          ctx.fillRect(margin.left + i * cw, margin.top + j * ch, cw + 0.5, ch + 0.5);
+        }
+      }
+    }
+
+    function drawAxes(ctx, sc) {
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(margin.left, margin.top, sc.plotW, sc.plotH);
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let b0 = 64; b0 <= 80; b0 += 4) {
+        ctx.fillText(b0, sc.xPix(b0), margin.top + sc.plotH + 18);
+      }
+      ctx.fillText('β₀ (intercept, bpm)', margin.left + sc.plotW / 2, margin.top + sc.plotH + 38);
+      ctx.textAlign = 'right';
+      for (let b1 = -3; b1 <= 0.5; b1 += 1) {
+        ctx.fillText(b1.toFixed(0), margin.left - 8, sc.yPix(b1) + 4);
+      }
+      ctx.save();
+      ctx.translate(16, margin.top + sc.plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('β₁ (slope, bpm per hour)', 0, 0);
+      ctx.restore();
+    }
+
+    function drawPeak(ctx, sc, fit) {
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.arc(sc.xPix(fit.b0), sc.yPix(fit.b1), 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function drawEllipseOn(ctx, sc, fit, hess, level, colour, lineWidth) {
+      const ell = hessianToEllipse(hess, level);
+      if (!ell) return null;
+      const pts = generateEllipsePoints(fit.b0, fit.b1, ell.semiMajor, ell.semiMinor, ell.rotation);
+      ctx.strokeStyle = colour;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      pts.forEach((p, i) => {
+        const px = sc.xPix(p.x), py = sc.yPix(p.y);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.stroke();
+      return ell;
+    }
+
+    function subsetFit(n) {
+      const sx = xs.slice(0, n), sy = ys.slice(0, n);
+      const fit = olsFit(sx, sy);
+      const hess = gaussianProfileHessian(fit, fit.sigma2ML);
+      const vcov = hessianToVcov(hess);
+      const peakLL = gaussianLL(sx, sy, fit.b0, fit.b1, fit.sigma2ML);
+      return { xs: sx, ys: sy, fit, hess, vcov, peakLL, sigma2: fit.sigma2ML };
+    }
+
+    // ---------- Interactive A: barefoot probes (fixed n = 60) ----------
+
+    const probeCanvas = document.getElementById('probe-canvas');
+    const PROBE_H = 0.5;                       // step length in parameter units
+    let probeState = null;                     // {fit, hess, ...} at n = 60
+    let probeAnim = null;                      // {dir, t} while animating
+    const probesDone = { b0: null, b1: null, diag: null };
+
+    function directionalCurvature(dir) {
+      // Second difference along unit vector dir with step h
+      const { fit, sigma2 } = probeState;
+      const f = (a, b) => gaussianLL(probeState.xs, probeState.ys, a, b, sigma2);
+      const c = f(fit.b0, fit.b1);
+      const p = f(fit.b0 + PROBE_H * dir[0], fit.b1 + PROBE_H * dir[1]);
+      const m = f(fit.b0 - PROBE_H * dir[0], fit.b1 - PROBE_H * dir[1]);
+      return (p + m - 2 * c) / (PROBE_H * PROBE_H);
+    }
+
+    function drawProbeScene(markerPos) {
+      const { ctx, w, h } = setupCanvas(probeCanvas);
+      const sc = makeScales(w, h);
+      ctx.clearRect(0, 0, w, h);
+      drawSurface(ctx, sc, probeState, probeState.sigma2, probeState.peakLL);
+      drawAxes(ctx, sc);
+      drawPeak(ctx, sc, probeState.fit);
+      if (markerPos) {
+        const { fit } = probeState;
+        ctx.strokeStyle = '#9b59b6';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(sc.xPix(fit.b0 - markerPos.dir[0] * PROBE_H),
+                   sc.yPix(fit.b1 - markerPos.dir[1] * PROBE_H));
+        ctx.lineTo(sc.xPix(fit.b0 + markerPos.dir[0] * PROBE_H),
+                   sc.yPix(fit.b1 + markerPos.dir[1] * PROBE_H));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(sc.xPix(fit.b0 + markerPos.dir[0] * markerPos.offset),
+                sc.yPix(fit.b1 + markerPos.dir[1] * markerPos.offset), 5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+    }
+
+    function runProbe(key, dir, btn, onDone) {
+      if (probeAnim) return;
+      btn.disabled = true;
+      const start = performance.now();
+      const DURATION = 1400;
+      function frame(now) {
+        const t = Math.min((now - start) / DURATION, 1);
+        // Oscillate: centre -> +h -> -h -> centre
+        const phase = Math.sin(t * Math.PI * 2);
+        drawProbeScene({ dir, offset: phase * PROBE_H });
+        if (t < 1) {
+          probeAnim = requestAnimationFrame(frame);
+        } else {
+          probeAnim = null;
+          btn.disabled = false;
+          btn.classList.add('done');
+          drawProbeScene(null);
+          onDone(directionalCurvature(dir));
+        }
+      }
+      probeAnim = requestAnimationFrame(frame);
+    }
+
+    function setCell(id, value) {
+      const cell = document.getElementById(id);
+      cell.classList.remove('unknown');
+      cell.innerHTML = value.toFixed(2) +
+        '<span class="tag">' + (id === 'cell-fxx' ? '∂²ℓ/∂β₀²'
+          : id === 'cell-fyy' ? '∂²ℓ/∂β₁²' : '∂²ℓ/∂β₀∂β₁') + '</span>';
+    }
+
+    const probeLog = document.getElementById('probe-log');
+
+    document.getElementById('probe-b0').addEventListener('click', function() {
+      runProbe('b0', [1, 0], this, c => {
+        probesDone.b0 = c;
+        setCell('cell-fxx', c);
+        probeLog.innerHTML = 'Along &beta;&#8320;: the ground falls gently &mdash; curvature ' +
+          '<strong>' + c.toFixed(2) + '</strong>. A flat direction: the intercept is weakly pinned down.';
+      });
+    });
+
+    document.getElementById('probe-b1').addEventListener('click', function() {
+      runProbe('b1', [0, 1], this, c => {
+        probesDone.b1 = c;
+        setCell('cell-fyy', c);
+        probeLog.innerHTML = 'Along &beta;&#8321;: a steep drop &mdash; curvature ' +
+          '<strong>' + c.toFixed(2) + '</strong>. A sharp direction: the data hold the slope tightly.';
+      });
+    });
+
+    document.getElementById('probe-diag').addEventListener('click', function() {
+      if (probesDone.b0 === null || probesDone.b1 === null) {
+        probeLog.innerHTML = 'Run the two on-axis probes first &mdash; the diagonal probe is ' +
+          'interpreted <em>against</em> them.';
+        return;
+      }
+      const s = Math.SQRT1_2;
+      runProbe('diag', [s, s], this, c => {
+        const expected = (probesDone.b0 + probesDone.b1) / 2;
+        const fxy = c - expected;
+        setCell('cell-fxy1', fxy);
+        setCell('cell-fxy2', fxy);
+        probeLog.innerHTML = 'Diagonal curvature: <strong>' + c.toFixed(2) + '</strong>. ' +
+          'If the directions were independent we would expect the average of the on-axis probes, ' +
+          expected.toFixed(2) + '. The surplus, <strong>' + fxy.toFixed(2) +
+          '</strong>, is the off-diagonal (covariance) term.';
+      });
+    });
+
+    // ---------- Interactive B: confidence ellipse ----------
+
+    const ellCanvas = document.getElementById('ellipse-canvas');
+    const ellSlider = document.getElementById('ell-n-slider');
+    const ellNDisplay = document.getElementById('ell-n-display');
+    let confLevel = 0.95;
+    let ghostEllipse = null;     // {fit, hess} from the previous n
+    let cloud = [];              // MVN draws
+    let cloudRng = mulberry32(42);
+
+    function drawEllipseScene() {
+      const n = parseInt(ellSlider.value, 10);
+      const st = subsetFit(n);
+      const { ctx, w, h } = setupCanvas(ellCanvas);
+      const sc = makeScales(w, h);
+      ctx.clearRect(0, 0, w, h);
+      drawSurface(ctx, sc, st, st.sigma2, st.peakLL);
+      drawAxes(ctx, sc);
+
+      if (ghostEllipse && ghostEllipse.n !== n) {
+        drawEllipseOn(ctx, sc, ghostEllipse.fit, ghostEllipse.hess, confLevel, '#d9c6e8', 2);
+      }
+
+      // MVN cloud
+      let inside = 0;
+      if (cloud.length > 0) {
+        const ell = hessianToEllipse(st.hess, confLevel);
+        ctx.fillStyle = 'rgba(155, 89, 182, 0.35)';
+        for (const d of cloud) {
+          ctx.beginPath();
+          ctx.arc(sc.xPix(d.x), sc.yPix(d.y), 2, 0, 2 * Math.PI);
+          ctx.fill();
+          if (ell) {
+            // Point-in-ellipse test in the ellipse's own frame
+            const dx = d.x - st.fit.b0, dy = d.y - st.fit.b1;
+            const ca = Math.cos(-ell.rotation), sa = Math.sin(-ell.rotation);
+            const u = dx * ca - dy * sa, v = dx * sa + dy * ca;
+            if ((u / ell.semiMajor) ** 2 + (v / ell.semiMinor) ** 2 <= 1) inside++;
+          }
+        }
+      }
+
+      drawEllipseOn(ctx, sc, st.fit, st.hess, confLevel, '#9b59b6', 2.5);
+      drawPeak(ctx, sc, st.fit);
+
+      // Readouts
+      document.getElementById('ro-b0').textContent = st.fit.b0.toFixed(3);
+      document.getElementById('ro-b1').textContent = st.fit.b1.toFixed(3);
+      document.getElementById('ro-se0').textContent = st.vcov.se0.toFixed(3);
+      document.getElementById('ro-se1').textContent = st.vcov.se1.toFixed(3);
+      document.getElementById('ro-ci1').textContent =
+        '(' + (st.fit.b1 - 1.96 * st.vcov.se1).toFixed(2) + ', ' +
+        (st.fit.b1 + 1.96 * st.vcov.se1).toFixed(2) + ')';
+      document.getElementById('ro-inside').textContent = cloud.length
+        ? inside + ' / ' + cloud.length + ' (' + (100 * inside / cloud.length).toFixed(0) + '%)'
+        : '–';
+      return st;
+    }
+
+    ellSlider.addEventListener('input', () => {
+      ellNDisplay.textContent = ellSlider.value;
+      cloud = [];               // draws belong to a particular n
+      drawEllipseScene();
+    });
+
+    ellSlider.addEventListener('change', () => {
+      const n = parseInt(ellSlider.value, 10);
+      const st = subsetFit(n);
+      ghostEllipse = { n, fit: st.fit, hess: st.hess };
+    });
+
+    document.querySelectorAll('.conf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.conf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        confLevel = parseFloat(btn.dataset.level);
+        drawEllipseScene();
+      });
+    });
+
+    document.getElementById('draw-cloud').addEventListener('click', () => {
+      const n = parseInt(ellSlider.value, 10);
+      const st = subsetFit(n);
+      cloud = mvnDraws({ x: st.fit.b0, y: st.fit.b1 }, st.vcov, 500, cloudRng);
+      drawEllipseScene();
+    });
+
+    document.getElementById('clear-cloud').addEventListener('click', () => {
+      cloud = [];
+      cloudRng = mulberry32(42);
+      drawEllipseScene();
+    });
+
+    window.addEventListener('resize', () => {
+      if (probeState) drawProbeScene(null);
+      drawEllipseScene();
+    });
+
+    // ---------- boot ----------
+
+    fetch('../data/inference-rest-hr.json')
+      .then(r => r.json())
+      .then(json => {
+        xs = json.data.map(d => d.x);
+        ys = json.data.map(d => d.y);
+        probeState = subsetFit(60);
+        drawProbeScene(null);
+        drawEllipseScene();
+      })
+      .catch(() => {
+        const { ctx } = setupCanvas(probeCanvas);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('Could not load ../data/inference-rest-hr.json — serve the site over HTTP.', 30, 40);
+      });
+  </script>
+</body>
+</html>

@@ -37,6 +37,17 @@ Suggested links:
   - Gaussian LL derivation → `tutorials/01-gaussian/advanced.html`
   - Poisson LL derivation → `tutorials/03-poisson/advanced.html`
 
+### (2b) Likelihood and Simulation Theory → Inference section (PLANNED, not yet added to JonStats)
+Where the King (1998) variance formula and `optim(..., hessian = TRUE)` are introduced, link to the interactive versions:
+> *"Probe the curvature of a likelihood surface yourself, and watch the Hessian become a confidence ellipse: [Standard Errors from Curvature](https://jonminton.github.io/glm-dashboard-explainer/inference/curvature.html)"*
+
+Where the "barefoot and blind" metaphor appears:
+> *"An interactive version of this exact exercise — three probes filling in the Hessian matrix — is on the [GLM Dashboard](https://jonminton.github.io/glm-dashboard-explainer/inference/curvature.html)"*
+
+### (3b) Complete Simulation Example → Inference section (PLANNED, not yet added to JonStats)
+Where the marble-vs-jumping-bean contrast is introduced:
+> *"See the two portraits side by side — Hessian ellipse vs Metropolis walker, with Wald and credible intervals compared numerically: [Beyond the Quadratic: Bayesian Uncertainty](https://jonminton.github.io/glm-dashboard-explainer/inference/bayes.html)"*
+
 ### (0) Statistics as Circuit Boards
 `pages/main-course/statistics-as-circuits/index.qmd`
 
@@ -79,6 +90,22 @@ End of explanation panel: "For the theory behind these surfaces — likelihood, 
 
 ### MCMC page (`docs/optimization/mcmc.html`)
 Further-reading note at the end of "The Bayesian Perspective" card: the marble-vs-jumping-bean analogy in [Statistical Simulation: A Complete Example](https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/) on JonStats, and the blog version, [Part Thirteen — On Marbles and Jumping Beans](https://jonminton.github.io/jon-blog/posts/glms/complete-simulation-example/lms-are-glms-part-13/).
+
+### Inference section (`docs/inference/`, added 2026-07)
+- `index.html` (crosslink box): [Likelihood and Simulation Theory](https://jonminton.github.io/JonStats/pages/main-course/likelihood-and-simulation-theory/) — "the same argument in R code", citing the barefoot-and-blind summit metaphor.
+- `curvature.html` (crosslink box): Likelihood and Simulation Theory (the `optim(hessian = TRUE)` → `solve(-hessian)` → `mvrnorm()` pipeline) and the [Complete Simulation Example](https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/) (`coefficients()`/`vcov()`/`sigma()` applied end-to-end).
+- `bayes.html` (crosslink box): Complete Simulation Example — noting it tells the frequentist-vs-Bayesian contrast "in valley form" (marble vs jumping bean; the dashboard keeps its peak/walker framing).
+
+### Tutorial code pages (all eight, added 2026-07)
+Cross-link before the nav buttons (list item in tutorials 1–2, teal box in 3–8):
+> *"Where do the `Std. Error` columns in these outputs come from? See [Standard Errors from Curvature](../../inference/curvature.html)"*
+
+### Optimisation → Inference internal links (added 2026-07)
+- All optimisation nav bars now end with an **Uncertainty** item → `../inference/index.html` (and 2d/3d/4d regained the missing MCMC nav item).
+- `2d.html`: foreshadowing line — the steepness of the surface "turns out to be the standard error".
+- `multi-optima.html` (representativeness boxes): Hessian-ellipse box → `inference/curvature.html`; MCMC box → `inference/bayes.html`.
+- `mcmc.html` (Bayesian Perspective card): "visit-maps into numbers" → `inference/bayes.html`.
+- `bridge.html` (after concept table): the information/ellipse/standard-error rows → `inference/index.html`.
 
 ---
 

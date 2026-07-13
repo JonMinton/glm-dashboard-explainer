@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beyond the Quadratic: Bayesian Uncertainty | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 140px;
+      accent-color: #1abc9c;
+    }
+
+    .controls-row .slider-value {
+      font-weight: 700;
+      color: #16a085;
+      min-width: 42px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #1abc9c;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .action-btn.secondary {
+      background: #e5e7eb;
+      color: #2c3e50;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      filter: brightness(1.05);
+    }
+
+    .portrait-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 850px) {
+      .portrait-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .portrait-panel h3 {
+      text-align: center;
+      font-size: 1em;
+      margin-bottom: 8px;
+    }
+
+    .portrait-panel.quad h3 { color: #9b59b6; }
+    .portrait-panel.walked h3 { color: #16a085; }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.92em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .compare-table th, .compare-table td {
+      padding: 8px 10px;
+      text-align: center;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .compare-table th {
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.88em;
+    }
+
+    .compare-table th.quad-side { color: #9b59b6; }
+    .compare-table th.walk-side { color: #16a085; }
+    .compare-table td.divider, .compare-table th.divider {
+      border-left: 2px solid #dfe3e8;
+    }
+
+    .compare-table td.hot {
+      background: #fdf6ec;
+      font-weight: 700;
+    }
+
+    .readout-note {
+      font-size: 0.9em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .post::before { background: #1abc9c; }
+    .legend .quad::before { background: #9b59b6; }
+    .legend .impossible::before { background: #fbe0da; }
+    .legend .peak::before { background: #27ae60; border-radius: 50%; }
+    .legend .cloud::before { background: rgba(155, 89, 182, 0.5); border-radius: 50%; }
+    .legend .walkdot::before { background: rgba(26, 188, 156, 0.55); border-radius: 50%; }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Beyond the Quadratic: Bayesian Uncertainty</h1>
+      <p>When the summit isn't shaped like an ellipse, stop assuming &mdash; and start walking.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html">Why Uncertainty?</a>
+        <a href="curvature.html">Curvature &rarr; Standard Errors</a>
+        <a href="bayes.html" class="current">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>The hidden assumption</h2>
+      <p>
+        The <a href="curvature.html">curvature method</a> does something subtle: it measures the
+        surface only <em>at</em> the peak, then extrapolates. From three numbers &mdash; two
+        curvatures and a cross-term &mdash; it reconstructs an entire uncertainty picture, as if the
+        summit's immediate steepness continued forever in a perfect quadratic bowl. Equivalently: it
+        assumes the uncertainty is shaped like a single multivariate normal hill, symmetric about
+        the MLE.
+      </p>
+      <p>
+        For large samples this is usually an excellent bargain &mdash; three numbers instead of
+        mapping a whole surface. But the assumption can fail, and it fails most often exactly where
+        GLMs live: parameters with <strong>boundaries</strong> (probabilities near 0 or 1, rates
+        near 0), <strong>small samples</strong>, and <strong>skewed surfaces</strong> where the
+        likelihood falls gently on one side of the peak and steeply on the other.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: when the parabola lies</h2>
+      <p>
+        A pilot safety study observes <strong>2 adverse events among 20 patients</strong>, so
+        $\hat{p} = 0.1$. The teal curve is the actual (normalised) likelihood of $p$ &mdash; with a
+        flat prior, also the posterior density. The purple dashed curve is what the curvature method
+        assumes instead: a normal distribution centred at $\hat p$. Move the sliders and watch when
+        the two stories agree and when they don't.
+      </p>
+      <div class="controls-row">
+        <label for="y-slider">Events $y$:</label>
+        <input type="range" id="y-slider" min="0" max="20" step="1" value="2">
+        <span class="slider-value" id="y-display">2</span>
+        <label for="nb-slider">Patients $n$:</label>
+        <input type="range" id="nb-slider" min="10" max="200" step="5" value="20">
+        <span class="slider-value" id="nb-display">20</span>
+      </div>
+      <canvas id="binom-canvas" class="chart" style="height: 380px;"></canvas>
+      <div class="legend">
+        <span class="post">true likelihood / flat-prior posterior</span>
+        <span class="quad">quadratic (normal) approximation</span>
+        <span class="impossible">impossible values ($p &lt; 0$)</span>
+      </div>
+      <div id="binom-readout" class="readout-note"></div>
+      <div class="explanation" style="margin-top: 15px;">
+        <p style="margin-bottom: 0;">
+          At $y=2, n=20$ the Wald interval is $0.100 \pm 1.96 \times 0.067 = (-0.031,\ 0.231)$
+          &mdash; its lower end is a <em>negative probability</em>. The true likelihood knows
+          better: it is right-skewed, squashed against the boundary at zero, and its 95% interval
+          $(0.030,\ 0.304)$ stays where probabilities live. Now raise $n$ with the event rate held
+          roughly constant: the likelihood sharpens, the skew fades, and the parabola becomes an
+          honest summary &mdash; the quadratic approximation <em>earns</em> its keep as data
+          accumulate.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Walking instead of assuming</h2>
+      <p>
+        What is the alternative when the surface isn't quadratic? Measure it &mdash; all of it that
+        matters. You have already seen the machinery: on the
+        <a href="../optimization/mcmc.html">MCMC page</a>, chains wandered across Arthur's Seat,
+        preferring higher ground but never settling, and the fraction of time they spent in each
+        place converged to the posterior distribution. There the visit-map was a picture; here it
+        becomes the <strong>uncertainty estimate itself</strong>. Percentiles of the visited values
+        give <strong>credible intervals</strong>, their spread gives posterior standard deviations
+        &mdash; and none of it assumes the surface is a single symmetric MVN-shaped hill around the
+        peak. Skewed, squashed against a boundary, even ridge-shaped: the walker's record captures
+        the joint uncertainty as it actually is.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Where does the prior fit in?</strong> Bayesian inference walks the
+          <em>posterior</em> surface: likelihood plus prior. With a flat prior the posterior is
+          proportional to the likelihood, so the surface being walked is exactly the one the
+          optimisation pages built &mdash; which is why this page can compare the two routes
+          directly. Real analyses usually add weakly-informative priors (and check convergence with
+          the diagnostics from the <a href="../optimization/mcmc.html">MCMC page</a>: trace plots,
+          burn-in, $\hat{R}$).
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: two portraits of the same summit</h2>
+      <p>
+        Now a two-parameter case where the difference matters. A small trial ($n=30$) models
+        treatment response against a standardised biomarker score:
+        $\text{logit}(p) = \beta_0 + \beta_1 x$. Both panels show the same log-likelihood surface.
+        The left panel prices uncertainty the <a href="curvature.html">curvature way</a>; on the
+        right, a Metropolis walker builds the posterior the Bayesian way (flat prior). Set it
+        walking, then compare the numbers below.
+      </p>
+      <div class="controls-row">
+        <button class="action-btn" id="walk-btn">Walk 3,000 steps</button>
+        <button class="action-btn secondary" id="walk-reset">Reset walker</button>
+        <span class="readout-note" id="walk-status">Walker idle &mdash; 0 samples.</span>
+      </div>
+      <div class="portrait-grid">
+        <div class="portrait-panel quad">
+          <h3>Curvature portrait: ellipse + MVN cloud</h3>
+          <canvas id="quad-canvas" class="chart" style="height: 360px;"></canvas>
+        </div>
+        <div class="portrait-panel walked">
+          <h3>Walked portrait: Metropolis samples</h3>
+          <canvas id="walk-canvas" class="chart" style="height: 360px;"></canvas>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="peak">MLE</span>
+        <span class="quad">95% ellipse</span>
+        <span class="cloud">MVN draws</span>
+        <span class="walkdot">walker samples</span>
+      </div>
+
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="quad-side" colspan="3">Curvature route (quadratic approximation)</th>
+            <th class="walk-side divider" colspan="3">Sampling route (flat-prior grid posterior)</th>
+          </tr>
+          <tr>
+            <th>Parameter</th>
+            <th class="quad-side">MLE</th>
+            <th class="quad-side">SE</th>
+            <th class="quad-side">Wald 95% CI</th>
+            <th class="walk-side divider">Median</th>
+            <th class="walk-side">Posterior SD</th>
+            <th class="walk-side">95% credible interval</th>
+          </tr>
+        </thead>
+        <tbody id="compare-body">
+          <tr><td colspan="7">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+      <p class="readout-note">
+        Highlighted cells mark where the two routes disagree. The posterior columns come from a
+        fine grid evaluation of the posterior (240&times;240 points) &mdash; a &ldquo;walk
+        everywhere, carefully&rdquo; version of what the Metropolis walker approximates; both are
+        validated against <code>scripts/py/generate_inference_data.py</code>.
+      </p>
+
+      <h3 style="margin-top: 20px; font-size: 1.05em;">The marginal story for $\beta_1$</h3>
+      <canvas id="marg-canvas" class="chart" style="height: 260px;"></canvas>
+      <div class="legend">
+        <span class="post">posterior for $\beta_1$ (grid)</span>
+        <span class="quad">quadratic approximation N($\hat\beta_1$, SE&sup2;)</span>
+      </div>
+      <div class="explanation" style="margin-top: 15px;">
+        <p>
+          The surface falls <em>steeply</em> downhill of $\hat\beta_1$ (small slopes are quickly
+          ruled out) but <em>gently</em> uphill: with only 30 patients, very large biomarker effects
+          remain hard to exclude. The ellipse cannot express that asymmetry &mdash; it is symmetric
+          by construction &mdash; so it borrows width from the short side and lends it to the long
+          side: its upper limit (4.12) sits far below the posterior's (5.53), while the posterior
+          median (2.89) is pulled above the MLE (2.43).
+        </p>
+        <p style="margin-bottom: 0;">
+          Note what the two portraits share: <em>both</em> are honest descriptions of the same
+          surface near its peak. They diverge only where the quadratic extrapolation and the real
+          shape part company &mdash; which is precisely the information the comparison gives you.
+          <strong>If the two routes agree, the cheap one was fine. If they disagree, believe the
+          walker &mdash; and be glad you checked.</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Choosing a route</h2>
+      <p>
+        Neither method is simply &ldquo;better&rdquo;. The curvature route is instant, deterministic
+        and baked into every regression <code>summary()</code>; for large samples away from
+        boundaries it is essentially exact. The sampling route costs computation and care (
+        convergence diagnostics, priors) but keeps working when the quadratic story breaks: small
+        $n$, bounded parameters, skewed or multi-modal surfaces &mdash; and it extends naturally to
+        quantities the curvature method struggles with, such as uncertainty about
+        <em>predictions</em> passed through non-linear link functions.
+      </p>
+      <p style="margin-bottom: 0;">
+        A practical habit: <strong>run the cheap route always, the expensive route when it matters,
+        and compare</strong>. Agreement is reassurance; disagreement is information.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>In code</h2>
+      <p>
+        The Python output is a real run on <code>docs/data/inference-logistic.json</code>
+        ($n=30$, seed 42). The R panel shows the standard workflow &mdash; <code>rstanarm</code>
+        fits in seconds but is not run here, so no output is reproduced.
+      </p>
+      <div>
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre># Curvature route: glm() + Wald SEs from the inverse information
+fit_ml &lt;- glm(response ~ biomarker, family = binomial(), data = trial)
+summary(fit_ml)          # coefficients, curvature-based Std. Errors
+confint(fit_ml)          # profile-likelihood intervals: R's middle path —
+                         # it re-walks the surface along each axis rather
+                         # than trusting the quadratic
+
+# Sampling route: rstanarm (Bayesian, weakly-informative default priors)
+library(rstanarm)
+fit_bayes &lt;- stan_glm(response ~ biomarker, family = binomial(),
+                      data = trial)
+posterior_interval(fit_bayes, prob = 0.95)   # credible intervals
+draws &lt;- as.matrix(fit_bayes)   # the walker's record: one row per visit</pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>import numpy as np
+import statsmodels.api as sm
+
+# Curvature route
+fit = sm.Logit(y, sm.add_constant(x)).fit(disp=0)
+print(fit.params)        # MLE
+print(fit.bse)           # SEs from the inverse information matrix
+print(fit.conf_int())    # Wald 95% intervals
+
+# Sampling route (flat-prior grid posterior; PyMC/emcee for real problems)
+# -- evaluate the log-likelihood over a fine (b0, b1) grid, exponentiate,
+#    normalise, then read quantiles off the marginals.
+# Full implementation: scripts/py/generate_inference_data.py</pre>
+        <pre class="output"># MLE:                b0 = 0.9059,  b1 = 2.4329
+# Wald SEs:           se(b0) = 0.6618, se(b1) = 0.8625
+# Wald 95% CI:        b0: (-0.3911, 2.2030)   b1: (0.7425, 4.1233)
+#
+# Grid posterior (flat prior, 240x240):
+#   b0: median 1.0555, sd 0.7473, 95% CrI (-0.2404, 2.7168)
+#   b1: median 2.8876, sd 1.0606, 95% CrI ( 1.3720, 5.5291)</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Further connections</h2>
+      <div class="crosslink-box">
+        <p>
+          <strong>On this site:</strong> the <a href="../optimization/mcmc.html">Bayesian MCMC
+          page</a> covers the walker's mechanics (chains, burn-in, $\hat{R}$), and
+          <a href="../optimization/multi-optima.html">Multi-Optima</a> compares the two portraits
+          on real terrain under &ldquo;representativeness&rdquo;.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>On JonStats:</strong> the
+          <a href="https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/">Complete
+          Simulation Example</a> runs both routes end-to-end in R &mdash; <code>vcov()</code> +
+          <code>mvrnorm()</code>, then <code>rstanarm</code>. It tells this story in valley form:
+          a marble rolls to the lowest point and rests (the frequentist point estimate), while a
+          magical jumping bean never rests, and its bounce-marks converge to a distribution (the
+          Bayesian posterior). Same contrast, upside down.
+        </p>
+      </div>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    import {
+      mulberry32, binomialGridPosterior, gridQuantile, logisticFit,
+      logisticLL, logisticGridPosterior, mvnDraws, metropolis,
+    } from '../js/inference/inference-math.js';
+    import {
+      hessianToEllipse, generateEllipsePoints,
+    } from '../js/optimization/terrain.js';
+
+    function setupCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    // =========================================================
+    // Interactive A: binomial likelihood vs quadratic (1D)
+    // =========================================================
+
+    const binomCanvas = document.getElementById('binom-canvas');
+    const ySlider = document.getElementById('y-slider');
+    const nSlider = document.getElementById('nb-slider');
+    const bMargin = { top: 15, right: 15, bottom: 65, left: 15 };
+
+    function drawBinom() {
+      const yObs = parseInt(ySlider.value, 10);
+      const nObs = parseInt(nSlider.value, 10);
+      document.getElementById('y-display').textContent = yObs;
+      document.getElementById('nb-display').textContent = nObs;
+
+      // Window follows the estimate, so the demo works for p-hat near 1 too
+      // (where the Wald interval leaks ABOVE 1 instead of below 0)
+      const pHat0 = yObs / nObs;
+      const se0 = Math.sqrt(pHat0 * (1 - pHat0) / nObs);
+      const P_MIN = Math.min(-0.12, pHat0 - 4 * se0 - 0.03);
+      const P_MAX = Math.max(0.7, pHat0 + 4 * se0 + 0.03, 1.12 * (pHat0 > 0.6 ? 1 : 0));
+
+      const { ctx, w, h } = setupCanvas(binomCanvas);
+      const plotW = w - bMargin.left - bMargin.right;
+      const plotH = h - bMargin.top - bMargin.bottom;
+      const xPix = p => bMargin.left + (p - P_MIN) / (P_MAX - P_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      // Impossible regions p < 0 and p > 1
+      ctx.fillStyle = '#fbe0da';
+      ctx.fillRect(bMargin.left, bMargin.top, xPix(0) - bMargin.left, plotH);
+      ctx.fillStyle = '#c0392b';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('impossible', (bMargin.left + xPix(0)) / 2, bMargin.top + 14);
+      if (P_MAX > 1) {
+        ctx.fillStyle = '#fbe0da';
+        ctx.fillRect(xPix(1), bMargin.top, bMargin.left + plotW - xPix(1), plotH);
+        ctx.fillStyle = '#c0392b';
+        ctx.fillText('impossible', (xPix(1) + bMargin.left + plotW) / 2, bMargin.top + 14);
+      }
+
+      // Axis
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(bMargin.left, bMargin.top + plotH);
+      ctx.lineTo(bMargin.left + plotW, bMargin.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      const tickStep = (P_MAX - P_MIN) > 0.9 ? 0.2 : 0.1;
+      for (let p = 0; p <= Math.min(P_MAX, 1) + 0.001; p += tickStep) {
+        ctx.fillText(p.toFixed(1), xPix(p), bMargin.top + plotH + 16);
+      }
+      ctx.fillText('proportion p', bMargin.left + plotW / 2, bMargin.top + plotH + 32);
+
+      // Posterior (normalised likelihood) on a grid, scaled to mode = 1
+      const post = binomialGridPosterior(yObs, nObs, 2000);
+      const maxDens = Math.max(...post.dens);
+      const yPixD = d => bMargin.top + plotH - (d / maxDens) * (plotH - 30);
+
+      ctx.strokeStyle = '#1abc9c';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      let started = false;
+      for (let i = 0; i < post.ps.length; i++) {
+        if (post.ps[i] > P_MAX) break;
+        const px = xPix(post.ps[i]), py = yPixD(post.dens[i]);
+        started ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+        started = true;
+      }
+      ctx.stroke();
+
+      // Quadratic approximation: normal at pHat with Wald SE, same mode height
+      const pHat = yObs / nObs;
+      const seW = Math.sqrt(pHat * (1 - pHat) / nObs);
+      if (seW > 0) {
+        ctx.strokeStyle = '#9b59b6';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        started = false;
+        for (let px = 0; px <= 400; px++) {
+          const p = P_MIN + (P_MAX - P_MIN) * px / 400;
+          const dens = Math.exp(-((p - pHat) ** 2) / (2 * seW * seW));
+          const cx = xPix(p), cy = bMargin.top + plotH - dens * (plotH - 30);
+          started ? ctx.lineTo(cx, cy) : ctx.moveTo(cx, cy);
+          started = true;
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Interval bars beneath the axis
+      const waldLo = pHat - 1.96 * seW, waldHi = pHat + 1.96 * seW;
+      const crLo = gridQuantile(post.ps, post.dens, 0.025);
+      const crHi = gridQuantile(post.ps, post.dens, 0.975);
+
+      ctx.lineWidth = 5;
+      if (seW > 0) {
+        ctx.strokeStyle = '#9b59b6';
+        ctx.beginPath();
+        ctx.moveTo(xPix(Math.max(waldLo, P_MIN)), bMargin.top + plotH + 42);
+        ctx.lineTo(xPix(Math.min(waldHi, P_MAX)), bMargin.top + plotH + 42);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#1abc9c';
+      ctx.beginPath();
+      ctx.moveTo(xPix(crLo), bMargin.top + plotH + 52);
+      ctx.lineTo(xPix(Math.min(crHi, P_MAX)), bMargin.top + plotH + 52);
+      ctx.stroke();
+
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#9b59b6';
+      ctx.fillText('Wald', bMargin.left + plotW - 38, bMargin.top + plotH + 45);
+      ctx.fillStyle = '#16a085';
+      ctx.fillText('credible', bMargin.left + plotW - 38, bMargin.top + plotH + 56);
+
+      const readout = document.getElementById('binom-readout');
+      if (seW === 0) {
+        readout.innerHTML = 'p&#770; = ' + pHat.toFixed(3) +
+          ' &mdash; <strong style="color:#c0392b;">the Wald SE is exactly 0 here</strong>, so the ' +
+          'quadratic route collapses entirely (an interval of zero width at the boundary). The ' +
+          'posterior still gives a sensible interval: (' + crLo.toFixed(3) + ', ' + crHi.toFixed(3) + ').';
+      } else {
+        const leak = waldLo < 0 ? ' &mdash; <strong style="color:#c0392b;">the Wald interval crosses 0</strong>' : '';
+        readout.innerHTML = 'p&#770; = ' + pHat.toFixed(3) + ', Wald SE = ' + seW.toFixed(4) +
+          '. Wald 95%: (' + waldLo.toFixed(3) + ', ' + waldHi.toFixed(3) + ')' + leak +
+          '. Flat-prior 95% credible interval: (' + crLo.toFixed(3) + ', ' + crHi.toFixed(3) + ').';
+      }
+    }
+
+    nSlider.addEventListener('input', () => {
+      // Keep the observed event count feasible when n shrinks
+      const nObs = parseInt(nSlider.value, 10);
+      ySlider.max = nObs;
+      if (parseInt(ySlider.value, 10) > nObs) ySlider.value = nObs;
+      drawBinom();
+    });
+    ySlider.addEventListener('input', drawBinom);
+
+    // =========================================================
+    // Interactive B: two portraits of the logistic surface (2D)
+    // =========================================================
+
+    const quadCanvas = document.getElementById('quad-canvas');
+    const walkCanvas = document.getElementById('walk-canvas');
+    const margCanvas = document.getElementById('marg-canvas');
+    const pMargin = { top: 12, right: 12, bottom: 42, left: 46 };
+    const B0_MIN = -3.0, B0_MAX = 5.0;
+    const B1_MIN = -1.5, B1_MAX = 7.5;
+
+    let lx = [], ly = [];      // logistic data
+    let mle = null;            // logisticFit result
+    let gridPost = null;       // logisticGridPosterior result
+    let mvnCloud = [];
+    let walkSamples = [];
+    let walkRng = mulberry32(7);
+    let walking = false;
+
+    const BANDS = [-0.5, -1.15, -2.3, -3.0, -4.6, -7, -10, -15, -25, -40];
+    const QUAD_COLOURS = [
+      '#f3eefa', '#e9e0f5', '#ded1ef', '#d2c1e8', '#c4b0e0',
+      '#b59ed7', '#a58ccd', '#9579c2', '#8467b6', '#7355a9', '#62449b',
+    ];
+    const WALK_COLOURS = [
+      '#edfaf7', '#dcf5ef', '#c9efe6', '#b4e8dc', '#9de0d1',
+      '#84d7c5', '#69cdb8', '#4dc3aa', '#2eb89c', '#16a085', '#0e8a72',
+    ];
+
+    function makePScales(w, h) {
+      const plotW = w - pMargin.left - pMargin.right;
+      const plotH = h - pMargin.top - pMargin.bottom;
+      return {
+        plotW, plotH,
+        xPix: b0 => pMargin.left + (b0 - B0_MIN) / (B0_MAX - B0_MIN) * plotW,
+        yPix: b1 => pMargin.top + (B1_MAX - b1) / (B1_MAX - B1_MIN) * plotH,
+      };
+    }
+
+    function drawLogisticSurface(ctx, sc, colours, peakLL) {
+      const cellsX = 110, cellsY = 100;
+      const cw = sc.plotW / cellsX, ch = sc.plotH / cellsY;
+      for (let i = 0; i < cellsX; i++) {
+        const b0 = B0_MIN + (B0_MAX - B0_MIN) * (i + 0.5) / cellsX;
+        for (let j = 0; j < cellsY; j++) {
+          const b1 = B1_MAX - (B1_MAX - B1_MIN) * (j + 0.5) / cellsY;
+          const dll = logisticLL(lx, ly, b0, b1) - peakLL;
+          let band = BANDS.length;
+          for (let k = 0; k < BANDS.length; k++) {
+            if (dll >= BANDS[k]) { band = k; break; }
+          }
+          ctx.fillStyle = colours[band];
+          ctx.fillRect(pMargin.left + i * cw, pMargin.top + j * ch, cw + 0.5, ch + 0.5);
+        }
+      }
+    }
+
+    function drawPortraitAxes(ctx, sc) {
+      ctx.strokeStyle = '#ccc';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pMargin.left, pMargin.top, sc.plotW, sc.plotH);
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let b0 = -2; b0 <= 4; b0 += 2) {
+        ctx.fillText(b0, sc.xPix(b0), pMargin.top + sc.plotH + 15);
+      }
+      ctx.fillText('β₀', pMargin.left + sc.plotW / 2, pMargin.top + sc.plotH + 32);
+      ctx.textAlign = 'right';
+      for (let b1 = 0; b1 <= 7; b1 += 2) {
+        ctx.fillText(b1, pMargin.left - 6, sc.yPix(b1) + 4);
+      }
+      ctx.save();
+      ctx.translate(12, pMargin.top + sc.plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('β₁', 0, 0);
+      ctx.restore();
+    }
+
+    function drawMLEDot(ctx, sc) {
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.arc(sc.xPix(mle.b0), sc.yPix(mle.b1), 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    function drawQuadPortrait() {
+      const { ctx, w, h } = setupCanvas(quadCanvas);
+      const sc = makePScales(w, h);
+      ctx.clearRect(0, 0, w, h);
+      drawLogisticSurface(ctx, sc, QUAD_COLOURS, mle.peakLL);
+      drawPortraitAxes(ctx, sc);
+
+      ctx.fillStyle = 'rgba(155, 89, 182, 0.35)';
+      for (const d of mvnCloud) {
+        ctx.beginPath();
+        ctx.arc(sc.xPix(d.x), sc.yPix(d.y), 1.8, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
+      const ell = hessianToEllipse(mle.hessian, 0.95);
+      if (ell) {
+        const pts = generateEllipsePoints(mle.b0, mle.b1, ell.semiMajor, ell.semiMinor, ell.rotation);
+        ctx.strokeStyle = '#9b59b6';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        pts.forEach((p, i) => {
+          i === 0 ? ctx.moveTo(sc.xPix(p.x), sc.yPix(p.y)) : ctx.lineTo(sc.xPix(p.x), sc.yPix(p.y));
+        });
+        ctx.closePath();
+        ctx.stroke();
+      }
+      drawMLEDot(ctx, sc);
+    }
+
+    function drawWalkPortrait() {
+      const { ctx, w, h } = setupCanvas(walkCanvas);
+      const sc = makePScales(w, h);
+      ctx.clearRect(0, 0, w, h);
+      drawLogisticSurface(ctx, sc, WALK_COLOURS, mle.peakLL);
+      drawPortraitAxes(ctx, sc);
+
+      ctx.fillStyle = 'rgba(14, 120, 100, 0.4)';
+      for (const s of walkSamples) {
+        ctx.beginPath();
+        ctx.arc(sc.xPix(s.x), sc.yPix(s.y), 1.8, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      drawMLEDot(ctx, sc);
+    }
+
+    function drawMarginal() {
+      const { ctx, w, h } = setupCanvas(margCanvas);
+      const mm = { top: 12, right: 15, bottom: 48, left: 15 };
+      const plotW = w - mm.left - mm.right;
+      const plotH = h - mm.top - mm.bottom;
+      const xPix = b1 => mm.left + (b1 - B1_MIN) / (B1_MAX - B1_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(mm.left, mm.top + plotH);
+      ctx.lineTo(mm.left + plotW, mm.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let b1 = 0; b1 <= 7; b1 += 1) {
+        ctx.fillText(b1, xPix(b1), mm.top + plotH + 16);
+      }
+      ctx.fillText('β₁ (biomarker effect, log-odds)', mm.left + plotW / 2, mm.top + plotH + 32);
+
+      // Grid marginal for b1, scaled to mode 1
+      const marg = gridPost.b1.marg;
+      const maxM = Math.max(...marg);
+      ctx.fillStyle = 'rgba(26, 188, 156, 0.25)';
+      ctx.strokeStyle = '#1abc9c';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      gridPost.b1s.forEach((b1, i) => {
+        const px = xPix(b1);
+        const py = mm.top + plotH - (marg[i] / maxM) * (plotH - 20);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+      ctx.lineTo(xPix(gridPost.b1s[gridPost.b1s.length - 1]), mm.top + plotH);
+      ctx.lineTo(xPix(gridPost.b1s[0]), mm.top + plotH);
+      ctx.closePath();
+      ctx.fill();
+
+      // Quadratic approximation, same mode height
+      const se1 = mle.vcov.se1;
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 5]);
+      ctx.beginPath();
+      for (let px = 0; px <= 400; px++) {
+        const b1 = B1_MIN + (B1_MAX - B1_MIN) * px / 400;
+        const dens = Math.exp(-((b1 - mle.b1) ** 2) / (2 * se1 * se1));
+        const cx = xPix(b1), cy = mm.top + plotH - dens * (plotH - 20);
+        px === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Interval bars
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#9b59b6';
+      ctx.beginPath();
+      ctx.moveTo(xPix(mle.b1 - 1.96 * se1), mm.top + plotH + 38);
+      ctx.lineTo(xPix(mle.b1 + 1.96 * se1), mm.top + plotH + 38);
+      ctx.stroke();
+      ctx.strokeStyle = '#1abc9c';
+      ctx.beginPath();
+      ctx.moveTo(xPix(gridPost.b1.lo), mm.top + plotH + 46);
+      ctx.lineTo(xPix(gridPost.b1.hi), mm.top + plotH + 46);
+      ctx.stroke();
+    }
+
+    function fillCompareTable() {
+      const fmt = v => v.toFixed(3);
+      const ci = (lo, hi) => '(' + fmt(lo) + ', ' + fmt(hi) + ')';
+      const rows = [
+        {
+          name: 'β₀ (intercept)',
+          mle: mle.b0, se: mle.vcov.se0,
+          wald: ci(mle.b0 - 1.96 * mle.vcov.se0, mle.b0 + 1.96 * mle.vcov.se0),
+          med: gridPost.b0.med, psd: gridPost.b0.sd,
+          cri: ci(gridPost.b0.lo, gridPost.b0.hi),
+          hot: false,
+        },
+        {
+          name: 'β₁ (biomarker)',
+          mle: mle.b1, se: mle.vcov.se1,
+          wald: ci(mle.b1 - 1.96 * mle.vcov.se1, mle.b1 + 1.96 * mle.vcov.se1),
+          med: gridPost.b1.med, psd: gridPost.b1.sd,
+          cri: ci(gridPost.b1.lo, gridPost.b1.hi),
+          hot: true,
+        },
+      ];
+      document.getElementById('compare-body').innerHTML = rows.map(r =>
+        '<tr><td><strong>' + r.name + '</strong></td>' +
+        '<td>' + fmt(r.mle) + '</td><td>' + fmt(r.se) + '</td><td>' + r.wald + '</td>' +
+        '<td class="divider' + (r.hot ? ' hot' : '') + '">' + fmt(r.med) + '</td>' +
+        '<td' + (r.hot ? ' class="hot"' : '') + '>' + fmt(r.psd) + '</td>' +
+        '<td' + (r.hot ? ' class="hot"' : '') + '>' + r.cri + '</td></tr>'
+      ).join('');
+    }
+
+    const walkBtn = document.getElementById('walk-btn');
+    const walkStatus = document.getElementById('walk-status');
+
+    walkBtn.addEventListener('click', () => {
+      if (walking) return;
+      walking = true;
+      walkBtn.disabled = true;
+      const target = 3000;
+      const logDens = (b0, b1) => logisticLL(lx, ly, b0, b1);   // flat prior
+      const proposal = { x: mle.vcov.se0, y: mle.vcov.se1 };
+      let added = 0;
+      function chunk() {
+        // Continue from the walker's last position; burn in only on the very first chunk
+        const from = walkSamples.length
+          ? walkSamples[walkSamples.length - 1]
+          : { x: mle.b0, y: mle.b1 };
+        const step = metropolis(logDens, from, proposal, 150, walkRng,
+          walkSamples.length ? 0 : 200);
+        walkSamples.push(...step.samples);
+        added += 150;
+        drawWalkPortrait();
+        walkStatus.textContent = 'Walking… ' + walkSamples.length +
+          ' samples (acceptance ' + (100 * step.acceptanceRate).toFixed(0) + '%).';
+        if (added < target) {
+          requestAnimationFrame(chunk);
+        } else {
+          walking = false;
+          walkBtn.disabled = false;
+          walkStatus.textContent = walkSamples.length +
+            ' samples collected. Compare the two portraits — the walked cloud leans up-and-right ' +
+            'where the surface is gentle; the MVN cloud cannot.';
+        }
+      }
+      requestAnimationFrame(chunk);
+    });
+
+    document.getElementById('walk-reset').addEventListener('click', () => {
+      walkSamples = [];
+      walkRng = mulberry32(7);
+      walkStatus.textContent = 'Walker idle — 0 samples.';
+      drawWalkPortrait();
+    });
+
+    window.addEventListener('resize', () => {
+      drawBinom();
+      if (mle) {
+        drawQuadPortrait();
+        drawWalkPortrait();
+        drawMarginal();
+      }
+    });
+
+    // ---------- boot ----------
+
+    drawBinom();
+
+    fetch('../data/inference-logistic.json')
+      .then(r => r.json())
+      .then(json => {
+        lx = json.data.map(d => d.x);
+        ly = json.data.map(d => d.y);
+        mle = logisticFit(lx, ly);
+        mle.peakLL = logisticLL(lx, ly, mle.b0, mle.b1);
+        gridPost = logisticGridPosterior(
+          lx, ly, { b0: mle.b0, b1: mle.b1 },
+          { se0: mle.vcov.se0, se1: mle.vcov.se1 });
+        mvnCloud = mvnDraws({ x: mle.b0, y: mle.b1 }, mle.vcov, 500, mulberry32(42));
+        drawQuadPortrait();
+        drawWalkPortrait();
+        drawMarginal();
+        fillCompareTable();
+      })
+      .catch(() => {
+        document.getElementById('compare-body').innerHTML =
+          '<tr><td colspan="7" style="color:#e74c3c;">Could not load ' +
+          '../data/inference-logistic.json — serve the site over HTTP.</td></tr>';
+      });
+  </script>
+</body>
+</html>

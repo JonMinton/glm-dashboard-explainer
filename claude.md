@@ -179,6 +179,8 @@ glm-dashboard-explainer/
 │   ├── data/                 # JSON datasets (terrain, heart data, etc.)
 │   ├── js/
 │   │   ├── feedback.js       # Feedback widget
+│   │   ├── inference/        # Shared ES6 modules for inference section
+│   │   │   └── inference-math.js  # OLS/logistic fits, Hessian→vcov, grid posteriors, Metropolis (validated vs Python/R)
 │   │   └── optimization/     # Shared ES6 modules
 │   │       ├── algorithms.js # Optimization algorithms (gradient, Newton, MCMC)
 │   │       ├── terrain.js    # Elevation lookup, Hessian, ellipse functions
@@ -190,13 +192,17 @@ glm-dashboard-explainer/
 │   │   ├── 03-poisson/
 │   │   ├── 04-negbin/
 │   │   └── 05-gamma/
-│   └── optimization/         # Optimisation visualisation pages
-│       ├── index.html        # 1D mean-only
-│       ├── 2d.html           # 2D line fitting
-│       ├── 3d.html           # 3D multiple regression
-│       ├── 4d.html           # 4D+ beyond visualisation
-│       ├── multi-optima.html # Speed/Accuracy/Representativeness comparison
-│       └── mcmc.html         # Bayesian MCMC exploration
+│   ├── optimization/         # Optimisation visualisation pages
+│   │   ├── index.html        # 1D mean-only
+│   │   ├── 2d.html           # 2D line fitting
+│   │   ├── 3d.html           # 3D multiple regression
+│   │   ├── 4d.html           # 4D+ beyond visualisation
+│   │   ├── multi-optima.html # Speed/Accuracy/Representativeness comparison
+│   │   └── mcmc.html         # Bayesian MCMC exploration
+│   └── inference/            # Statistical inference section (follows optimisation)
+│       ├── index.html        # Why uncertainty: peak shape → error bar (1D)
+│       ├── curvature.html    # Hessian → vcov → SEs; barefoot probes; confidence ellipse
+│       └── bayes.html        # Quadratic-approx failures; credible intervals; Wald vs posterior
 ├── scripts/
 │   ├── build/                # Site processing scripts (Python)
 │   ├── R/                    # R validation scripts
