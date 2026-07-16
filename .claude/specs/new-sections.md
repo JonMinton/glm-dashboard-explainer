@@ -683,10 +683,10 @@ GLM Dashboard Explainer
 ### JonStats → GLM Dashboard (new links)
 
 **Hacker Stats supplementary course** → `docs/hacker-stats/`
-> *"See these resampling methods visualised interactively: [Bootstrap & Permutation Testing](https://jonminton.github.io/glm-dashboard-explainer/hacker-stats/)"*
+> *"See these resampling methods visualised interactively: [Bootstrap & Permutation Testing](https://stats-board.jonminton.net/hacker-stats/)"*
 
 **P-Values and Statistical Significance** → `docs/inference/`
-> *"For an interactive exploration of Wald tests, LR tests, and model comparison: [Statistical Inference](https://jonminton.github.io/glm-dashboard-explainer/inference/)"*
+> *"For an interactive exploration of Wald tests, LR tests, and model comparison: [Statistical Inference](https://stats-board.jonminton.net/inference/)"*
 
 ### GLM Dashboard → JonStats (new links)
 

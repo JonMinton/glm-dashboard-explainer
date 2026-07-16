@@ -2,7 +2,7 @@
 
 This document maps the natural connections between the two sites so links can be added in both directions.
 
-**GLM Dashboard**: https://jonminton.github.io/glm-dashboard-explainer/
+**GLM Dashboard**: https://stats-board.jonminton.net/
 **JonStats**: https://jonminton.github.io/JonStats/
 
 ---
@@ -14,7 +14,7 @@ This document maps the natural connections between the two sites so links can be
 
 Suggested links:
 - Where the two-part GLM framework (stochastic + systematic) is introduced, link to the **tutorial index page** which uses the same framework interactively:
-  > *"Try these interactive tutorials to practice choosing the right distribution and link function for different data types: [GLM Dashboard Tutorials](https://jonminton.github.io/glm-dashboard-explainer/)"*
+  > *"Try these interactive tutorials to practice choosing the right distribution and link function for different data types: [GLM Dashboard Tutorials](https://stats-board.jonminton.net/)"*
 - Where specific GLM families are mentioned (Gaussian, Binomial, Poisson), link to the corresponding tutorial:
   - Gaussian → `tutorials/01-gaussian/systematic.html`
   - Binomial/Logistic → `tutorials/02-logistic/systematic.html`
@@ -25,9 +25,9 @@ Suggested links:
 
 Suggested links:
 - Where likelihood is defined and the concept of "searching for the best parameters" is introduced, link to the **optimisation visualisations**:
-  > *"See these concepts in action — watch gradient ascent and Newton-Raphson navigate a likelihood surface: [Optimisation Visualised](https://jonminton.github.io/glm-dashboard-explainer/optimization/)"*
+  > *"See these concepts in action — watch gradient ascent and Newton-Raphson navigate a likelihood surface: [Optimisation Visualised](https://stats-board.jonminton.net/optimization/)"*
 - Where log-likelihood is introduced, link to the **bridge page** (once created):
-  > *"The log-likelihood surface is like a terrain that algorithms climb: [Terrain as Log-Likelihood](https://jonminton.github.io/glm-dashboard-explainer/optimization/bridge.html)"*
+  > *"The log-likelihood surface is like a terrain that algorithms climb: [Terrain as Log-Likelihood](https://stats-board.jonminton.net/optimization/bridge.html)"*
 
 ### (3) Complete Simulation Example
 `pages/main-course/complete-simulation-example/index.qmd`
@@ -39,20 +39,20 @@ Suggested links:
 
 ### (2b) Likelihood and Simulation Theory → Inference section (PLANNED, not yet added to JonStats)
 Where the King (1998) variance formula and `optim(..., hessian = TRUE)` are introduced, link to the interactive versions:
-> *"Probe the curvature of a likelihood surface yourself, and watch the Hessian become a confidence ellipse: [Standard Errors from Curvature](https://jonminton.github.io/glm-dashboard-explainer/inference/curvature.html)"*
+> *"Probe the curvature of a likelihood surface yourself, and watch the Hessian become a confidence ellipse: [Standard Errors from Curvature](https://stats-board.jonminton.net/inference/curvature.html)"*
 
 Where the "barefoot and blind" metaphor appears:
-> *"An interactive version of this exact exercise — three probes filling in the Hessian matrix — is on the [GLM Dashboard](https://jonminton.github.io/glm-dashboard-explainer/inference/curvature.html)"*
+> *"An interactive version of this exact exercise — three probes filling in the Hessian matrix — is on the [GLM Dashboard](https://stats-board.jonminton.net/inference/curvature.html)"*
 
 ### (3b) Complete Simulation Example → Inference section (PLANNED, not yet added to JonStats)
 Where the marble-vs-jumping-bean contrast is introduced:
-> *"See the two portraits side by side — Hessian ellipse vs Metropolis walker, with Wald and credible intervals compared numerically: [Beyond the Quadratic: Bayesian Uncertainty](https://jonminton.github.io/glm-dashboard-explainer/inference/bayes.html)"*
+> *"See the two portraits side by side — Hessian ellipse vs Metropolis walker, with Wald and credible intervals compared numerically: [Beyond the Quadratic: Bayesian Uncertainty](https://stats-board.jonminton.net/inference/bayes.html)"*
 
 ### (0) Statistics as Circuit Boards
 `pages/main-course/statistics-as-circuits/index.qmd`
 
 - The "circuit board" metaphor maps well to the GLM pipeline diagram on the dashboard index. Consider a brief mention:
-  > *"For an interactive version of the GLM 'circuit', see the [GLM Dashboard](https://jonminton.github.io/glm-dashboard-explainer/)"*
+  > *"For an interactive version of the GLM 'circuit', see the [GLM Dashboard](https://stats-board.jonminton.net/)"*
 
 ---
 

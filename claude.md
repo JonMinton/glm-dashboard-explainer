@@ -53,7 +53,7 @@ Where:
 - **Code examples**: R and Python for follow-along exercises (tabbed display)
 - **Interactive visualisations**: Canvas API, D3.js, Plotly.js - all vanilla JS (no build step)
 - **Math rendering**: KaTeX (CDN-based)
-- **Hosting**: GitHub Pages (static site from `docs/` folder)
+- **Hosting**: GitHub Pages (static site from `docs/` folder) at **https://stats-board.jonminton.net/** (custom domain via `docs/CNAME`; DNS CNAME record lives in Netlify DNS for jonminton.net; old jonminton.github.io/glm-dashboard-explainer/ URLs 301-redirect with paths preserved)
 - **No build step**: All HTML files are self-contained with inline CSS/JS
 
 *Note: The project originally planned to use Quarto but moved to standalone HTML for simplicity and faster iteration. Quarto files have been removed.*
