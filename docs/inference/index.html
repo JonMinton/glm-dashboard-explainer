@@ -176,7 +176,6 @@
     .readout .label {
       font-size: 0.8em;
       color: #666;
-      text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
@@ -236,7 +235,7 @@
       margin-top: 8px;
     }
 
-    .legend span::before {
+    .legend > span::before {
       content: '';
       display: inline-block;
       width: 12px;
@@ -328,19 +327,19 @@
       </div>
       <div class="readout-grid">
         <div class="readout">
-          <div class="label">Peak location &mu;&#770;</div>
+          <div class="label">PEAK LOCATION &mu;&#770;</div>
           <div class="value" id="mu-hat">&ndash;</div>
         </div>
         <div class="readout info">
-          <div class="label">Curvature &ell;&Prime;(&mu;&#770;)</div>
+          <div class="label">CURVATURE &ell;&Prime;(&mu;&#770;)</div>
           <div class="value" id="curvature">&ndash;</div>
         </div>
         <div class="readout se">
-          <div class="label">Standard error</div>
+          <div class="label">STANDARD ERROR</div>
           <div class="value" id="se">&ndash;</div>
         </div>
         <div class="readout ci">
-          <div class="label">95% interval for &mu;</div>
+          <div class="label">95% INTERVAL FOR &mu;</div>
           <div class="value" id="ci">&ndash;</div>
         </div>
       </div>
@@ -466,7 +465,10 @@
     const canvas = document.getElementById('ll-canvas');
     const ctx = canvas.getContext('2d');
 
-    const MU_MIN = 66, MU_MAX = 80;   // bpm, fixed so sharpening is visible
+    // Window set once from the data (in the fetch handler below): one fixed
+    // scale so sharpening is visible, wide enough that every peak and 95%
+    // interval the slider can produce stays on-screen.
+    let MU_MIN = 60, MU_MAX = 74;
     const LL_MIN = -8, LL_MAX = 0.6;  // normalised log-likelihood units
     const CUT = -1.92;                // chi-squared(1)/2 at 95%
     const margin = { top: 20, right: 20, bottom: 45, left: 55 };
@@ -525,7 +527,8 @@
       ctx.fillStyle = '#666';
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
-      for (let mu = MU_MIN; mu <= MU_MAX; mu += 2) {
+      const tickStep = (MU_MAX - MU_MIN) > 20 ? 4 : 2;
+      for (let mu = MU_MIN; mu <= MU_MAX; mu += tickStep) {
         ctx.fillText(mu, xPix(mu), margin.top + plotH + 18);
         ctx.strokeStyle = '#f0f0f0';
         ctx.beginPath();
@@ -628,6 +631,17 @@
       .then(r => r.json())
       .then(json => {
         allY = json.data.map(d => d.y);
+        // Fix the window to cover every peak and 95% interval reachable
+        // from the slider, so the green dot never leaves the plot.
+        let lo = Infinity, hi = -Infinity;
+        for (let n = 10; n <= 200; n += 5) {
+          const st = stats(n);
+          const se = Math.sqrt(st.sigma2 / st.n);
+          lo = Math.min(lo, st.muHat - 1.96 * se - 1);
+          hi = Math.max(hi, st.muHat + 1.96 * se + 1);
+        }
+        MU_MIN = Math.floor(lo);
+        MU_MAX = Math.ceil(hi);
         ghost = null;
         draw(parseInt(slider.value, 10));
       })

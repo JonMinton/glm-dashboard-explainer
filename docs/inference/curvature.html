@@ -355,7 +355,6 @@
     .readout .label {
       font-size: 0.78em;
       color: #666;
-      text-transform: uppercase;
       letter-spacing: 0.04em;
     }
 
@@ -427,7 +426,7 @@
       margin-top: 8px;
     }
 
-    .legend span::before {
+    .legend > span::before {
       content: '';
       display: inline-block;
       width: 12px;
@@ -626,11 +625,11 @@
       </div>
       <div class="readout-grid">
         <div class="readout">
-          <div class="label">&beta;&#770;&#8320; (intercept)</div>
+          <div class="label">&beta;&#770;&#8320; (INTERCEPT)</div>
           <div class="value" id="ro-b0">&ndash;</div>
         </div>
         <div class="readout">
-          <div class="label">&beta;&#770;&#8321; (slope)</div>
+          <div class="label">&beta;&#770;&#8321; (SLOPE)</div>
           <div class="value" id="ro-b1">&ndash;</div>
         </div>
         <div class="readout se">
@@ -642,11 +641,11 @@
           <div class="value" id="ro-se1">&ndash;</div>
         </div>
         <div class="readout ci">
-          <div class="label">95% CI for &beta;&#8321;</div>
+          <div class="label">95% CI FOR &beta;&#8321;</div>
           <div class="value" id="ro-ci1">&ndash;</div>
         </div>
         <div class="readout">
-          <div class="label">Draws inside ellipse</div>
+          <div class="label">DRAWS INSIDE ELLIPSE</div>
           <div class="value" id="ro-inside">&ndash;</div>
         </div>
       </div>

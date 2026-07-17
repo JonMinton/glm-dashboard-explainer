@@ -233,7 +233,7 @@
       margin-top: 8px;
     }
 
-    .legend span::before {
+    .legend > span::before {
       content: '';
       display: inline-block;
       width: 12px;
@@ -788,6 +788,27 @@ print(fit.conf_int())    # Wald 95% intervals
     let walkSamples = [];
     let walkRng = mulberry32(7);
     let walking = false;
+    // The likelihood surface never changes, so each portrait renders it once
+    // to an offscreen canvas and blits it per frame (keeps the walk animation
+    // fast: recomputing the surface per chunk cost ~3 s a frame).
+    const surfaceCaches = { quad: null, walk: null };
+
+    function blitSurface(key, ctx, sc, w, h, colours) {
+      let cache = surfaceCaches[key];
+      if (!cache || cache.w !== w || cache.h !== h) {
+        const off = document.createElement('canvas');
+        const dpr = window.devicePixelRatio || 1;
+        off.width = Math.round(w * dpr);
+        off.height = Math.round(h * dpr);
+        const octx = off.getContext('2d');
+        octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawLogisticSurface(octx, sc, colours, mle.peakLL);
+        drawPortraitAxes(octx, sc);
+        cache = { canvas: off, w, h };
+        surfaceCaches[key] = cache;
+      }
+      ctx.drawImage(cache.canvas, 0, 0, w, h);
+    }
 
     const BANDS = [-0.5, -1.15, -2.3, -3.0, -4.6, -7, -10, -15, -25, -40];
     const QUAD_COLOURS = [
@@ -864,8 +885,7 @@ print(fit.conf_int())    # Wald 95% intervals
       const { ctx, w, h } = setupCanvas(quadCanvas);
       const sc = makePScales(w, h);
       ctx.clearRect(0, 0, w, h);
-      drawLogisticSurface(ctx, sc, QUAD_COLOURS, mle.peakLL);
-      drawPortraitAxes(ctx, sc);
+      blitSurface('quad', ctx, sc, w, h, QUAD_COLOURS);
 
       ctx.fillStyle = 'rgba(155, 89, 182, 0.35)';
       for (const d of mvnCloud) {
@@ -893,8 +913,7 @@ print(fit.conf_int())    # Wald 95% intervals
       const { ctx, w, h } = setupCanvas(walkCanvas);
       const sc = makePScales(w, h);
       ctx.clearRect(0, 0, w, h);
-      drawLogisticSurface(ctx, sc, WALK_COLOURS, mle.peakLL);
-      drawPortraitAxes(ctx, sc);
+      blitSurface('walk', ctx, sc, w, h, WALK_COLOURS);
 
       ctx.fillStyle = 'rgba(14, 120, 100, 0.4)';
       for (const s of walkSamples) {
@@ -1011,21 +1030,24 @@ print(fit.conf_int())    # Wald 95% intervals
       walking = true;
       walkBtn.disabled = true;
       const target = 3000;
+      const perFrame = 12;      // small chunks so the cloud visibly accumulates (~4 s total)
       const logDens = (b0, b1) => logisticLL(lx, ly, b0, b1);   // flat prior
       const proposal = { x: mle.vcov.se0, y: mle.vcov.se1 };
       let added = 0;
+      let accepted = 0;
       function chunk() {
         // Continue from the walker's last position; burn in only on the very first chunk
         const from = walkSamples.length
           ? walkSamples[walkSamples.length - 1]
           : { x: mle.b0, y: mle.b1 };
-        const step = metropolis(logDens, from, proposal, 150, walkRng,
+        const step = metropolis(logDens, from, proposal, perFrame, walkRng,
           walkSamples.length ? 0 : 200);
         walkSamples.push(...step.samples);
-        added += 150;
+        added += perFrame;
+        accepted += step.acceptanceRate * perFrame;
         drawWalkPortrait();
         walkStatus.textContent = 'Walking… ' + walkSamples.length +
-          ' samples (acceptance ' + (100 * step.acceptanceRate).toFixed(0) + '%).';
+          ' samples (acceptance ' + (100 * accepted / added).toFixed(0) + '%).';
         if (added < target) {
           requestAnimationFrame(chunk);
         } else {
