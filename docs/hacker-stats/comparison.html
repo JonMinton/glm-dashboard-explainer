@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three Routes to the Same Question | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.sec { color: #ca6f1e; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #fdf6ee;
+      border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    .scenario-btn {
+      padding: 10px 16px;
+      border: 1px solid #f0d5b8;
+      border-radius: 8px;
+      background: white;
+      color: #af601a;
+      font-weight: 600;
+      font-size: 0.9em;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .scenario-btn.active {
+      background: #e67e22;
+      border-color: #e67e22;
+      color: white;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+      height: 240px;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .routes-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.93em;
+    }
+
+    .routes-table th, .routes-table td {
+      padding: 9px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+
+    .routes-table th {
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.88em;
+    }
+
+    .routes-table td.interval {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .routes-table tr.wald td.interval { color: #7d3c98; }
+    .routes-table tr.boot td.interval { color: #ca6f1e; }
+    .routes-table tr.bayes td.interval { color: #16a085; }
+
+    .verdict-box {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #e67e22;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Three Routes to the Same Question</h1>
+      <p>Curvature, resampling, walking &mdash; run all three and read the disagreements.</p>
+      <div class="nav-links">
+        <a href="../inference/index.html">&larr; Inference</a>
+        <a href="index.html">Why Resample?</a>
+        <a href="bootstrap.html" class="sec">Bootstrap</a>
+        <a href="permutation.html" class="sec">Permutation</a>
+        <a href="comparison.html" class="current">Three Routes</a>
+        <a href="when-to-use.html" class="sec">When to Use</a>
+        <a href="poststratification.html" class="sec">Post-stratification</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>One dataset, three traditions</h2>
+      <p>
+        This site has now built three independent ways of pricing uncertainty: the
+        <strong style="color:#7d3c98;">curvature route</strong> (Wald intervals from the
+        <a href="../inference/curvature.html">Hessian</a>), the
+        <strong style="color:#ca6f1e;">resampling route</strong> (bootstrap percentile
+        intervals from <a href="bootstrap.html">the loop</a>), and the
+        <strong style="color:#16a085;">sampling route</strong> (credible intervals from the
+        <a href="../inference/bayes.html">walked posterior</a>). They rest on different
+        assumptions, so their pattern of agreement is itself information. Three scenarios,
+        computed live from this site's validated datasets and seeds:
+      </p>
+      <div class="controls-row">
+        <button class="scenario-btn active" id="sc-a">Well-behaved<br><small>Gaussian slope, n = 60</small></button>
+        <button class="scenario-btn" id="sc-b">Small &amp; skewed<br><small>logistic slope, n = 30</small></button>
+        <button class="scenario-btn" id="sc-c">At the boundary<br><small>2 events in 20</small></button>
+      </div>
+      <canvas id="bars-canvas" class="chart"></canvas>
+      <table class="routes-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">Route</th>
+            <th style="width: 28%;">95% interval</th>
+            <th>How it got there</th>
+          </tr>
+        </thead>
+        <tbody id="routes-body">
+          <tr><td colspan="3" style="text-align:center; color:#999;">computing&hellip;</td></tr>
+        </tbody>
+      </table>
+      <div class="verdict-box" id="verdict-box"></div>
+    </div>
+
+    <div class="card">
+      <h2>Reading agreement and disagreement</h2>
+      <p>
+        <strong>All three agree</strong> (the well-behaved case): every route is trustworthy
+        here; report the parametric one, which readers know, and move on. The agreement is not
+        redundancy &mdash; it is the <em>evidence</em> that the assumptions behind the fast
+        method hold.
+      </p>
+      <p>
+        <strong>Bootstrap and posterior agree, Wald differs</strong> (the small-skewed case):
+        the two methods that follow the surface's actual shape are outvoting the one that
+        assumed a quadratic. Believe the shape-followers, and be suspicious of every
+        symmetric $\pm 1.96\,\text{SE}$ statement made about this parameter &mdash; including
+        the ones inside <code>summary()</code>.
+      </p>
+      <p>
+        <strong>Every route strains</strong> (the boundary case): Wald leaks into impossible
+        territory; the bootstrap respects the boundary but goes granular (only 21 possible
+        resample proportions exist, and its interval snaps to that lattice, here bottoming out
+        at exactly zero); the posterior stays smooth and in-bounds. Near boundaries with tiny
+        $n$, the sampling route is the only comfortable one &mdash; which is precisely why the
+        <a href="../inference/bayes.html">Bayesian page</a> opened with this example.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Practical habit.</strong> The cheap routes run in milliseconds &mdash; so run
+          them <em>both</em> (Wald and bootstrap) as a matter of routine, and escalate to the
+          walked posterior when they split or when the answer matters enough to pay for. The
+          point of having three traditions is not choosing a team; it is triangulation.
+        </p>
+      </div>
+      <div class="crosslink-box">
+        <strong>Where each route was built:</strong>
+        <a href="../inference/curvature.html">Standard Errors from Curvature</a> (purple),
+        <a href="bootstrap.html">Bootstrap Confidence Intervals</a> (amber),
+        <a href="../inference/bayes.html">Beyond the Quadratic</a> (teal). The JonStats
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">Hacker
+        Stats course</a> makes the same case for triangulation in R.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="permutation.html">&larr; Permutation Tests</a>
+      <a class="next" href="when-to-use.html">When Does It Matter? &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    // All intervals computed live; every number matches the validation
+    // scripts (generate_inference_data.py for Wald/credible,
+    // validate_hacker_stats.py for the seeded bootstrap runs).
+    import {
+      mulberry32, bootstrapIndices, olsFit, logisticFit, usableLogistic,
+      percentileCI,
+    } from '../js/hacker-stats/resampling.js';
+    import {
+      gaussianProfileHessian, hessianToVcov, binomialGridPosterior,
+      logisticGridPosterior, gridQuantile,
+    } from '../js/inference/inference-math.js';
+
+    const barsCanvas = document.getElementById('bars-canvas');
+    let scenarios = null;
+    let current = 'sc-a';
+
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = rect.height * dpr;
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    const ROUTE_META = {
+      wald: { colour: '#9b59b6', name: 'Curvature (Wald)' },
+      boot: { colour: '#e67e22', name: 'Resampling (bootstrap)' },
+      bayes: { colour: '#1abc9c', name: 'Sampling (flat-prior posterior)' },
+    };
+
+    function drawBars() {
+      if (!scenarios) return;
+      const sc = scenarios[current];
+      const { ctx, w, h } = setupCanvas(barsCanvas);
+      const m = { top: 18, right: 30, bottom: 40, left: 220 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const xPix = v => m.left + (v - sc.axis[0]) / (sc.axis[1] - sc.axis[0]) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      // Impossible region shading (boundary scenario)
+      if (sc.impossibleBelow !== undefined && sc.axis[0] < sc.impossibleBelow) {
+        ctx.fillStyle = 'rgba(231, 76, 60, 0.08)';
+        ctx.fillRect(xPix(sc.axis[0]), m.top,
+          xPix(sc.impossibleBelow) - xPix(sc.axis[0]), plotH);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xPix(sc.impossibleBelow), m.top);
+        ctx.lineTo(xPix(sc.impossibleBelow), m.top + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#c0392b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('impossible', xPix(sc.axis[0]) + 5, m.top + 12);
+      }
+
+      // Axis
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      const [a0, a1] = sc.axis;
+      const step = sc.tickStep;
+      for (let v = Math.ceil(a0 / step) * step; v <= a1 + 1e-9; v += step) {
+        ctx.fillText(v.toFixed(sc.tickDp), xPix(v), m.top + plotH + 15);
+      }
+      ctx.fillText(sc.axisLabel, m.left + plotW / 2, m.top + plotH + 31);
+
+      // Point estimate line
+      ctx.strokeStyle = '#27ae60';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPix(sc.est), m.top);
+      ctx.lineTo(xPix(sc.est), m.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Interval bars
+      const rows = sc.routes.filter(r => r.ci);
+      const slotH = plotH / rows.length;
+      rows.forEach((r, i) => {
+        const y = m.top + slotH * (i + 0.5);
+        const meta = ROUTE_META[r.key];
+        ctx.strokeStyle = meta.colour;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(xPix(Math.max(r.ci[0], a0)), y);
+        ctx.lineTo(xPix(Math.min(r.ci[1], a1)), y);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.fillStyle = meta.colour;
+        ctx.textAlign = 'right';
+        ctx.font = '600 12px sans-serif';
+        ctx.fillText(meta.name, m.left - 10, y + 4);
+      });
+    }
+
+    function fmtCI(ci, dp) {
+      return '(' + ci[0].toFixed(dp) + ', ' + ci[1].toFixed(dp) + ')';
+    }
+
+    function fillTable() {
+      const sc = scenarios[current];
+      document.getElementById('routes-body').innerHTML = sc.routes.map(r =>
+        '<tr class="' + r.key + '">' +
+        '<td><strong style="color:' + ROUTE_META[r.key].colour + ';">' +
+        ROUTE_META[r.key].name + '</strong></td>' +
+        '<td class="interval">' + (r.ci ? fmtCI(r.ci, sc.dp) : r.answer) + '</td>' +
+        '<td>' + r.how + '</td></tr>'
+      ).join('');
+      document.getElementById('verdict-box').innerHTML =
+        '<p style="margin-bottom: 0;"><strong>Verdict.</strong> ' + sc.verdict + '</p>';
+    }
+
+    function show(id) {
+      current = id;
+      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      drawBars();
+      fillTable();
+    }
+
+    ['sc-a', 'sc-b', 'sc-c'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => show(id));
+    });
+    window.addEventListener('resize', drawBars);
+
+    Promise.all([
+      fetch('../data/inference-rest-hr.json').then(r => r.json()),
+      fetch('../data/inference-logistic.json').then(r => r.json()),
+    ]).then(([hr, lg]) => {
+      // --- Scenario A: Gaussian slope, n = 60 ---
+      const x60 = hr.data.slice(0, 60).map(d => d.x);
+      const y60 = hr.data.slice(0, 60).map(d => d.y);
+      const fit = olsFit(x60, y60);
+      const vc = hessianToVcov(gaussianProfileHessian(fit, fit.sigma2ML));
+      const waldA = [fit.b1 - 1.96 * vc.se1, fit.b1 + 1.96 * vc.se1];
+      let rng = mulberry32(202);
+      const bootsA = [];
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(60, rng);
+        bootsA.push(olsFit(idx.map(i => x60[i]), idx.map(i => y60[i])).b1);
+      }
+      const bootA = percentileCI(bootsA);
+
+      // --- Scenario B: logistic slope, n = 30 ---
+      const lx = lg.data.map(d => d.x);
+      const ly = lg.data.map(d => d.y);
+      const lfit = logisticFit(lx, ly);
+      const waldB = [lfit.b1 - 1.96 * lfit.vcov.se1, lfit.b1 + 1.96 * lfit.vcov.se1];
+      rng = mulberry32(404);
+      const bootsB = [];
+      let dropped = 0;
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(30, rng);
+        const f = logisticFit(idx.map(i => lx[i]), idx.map(i => ly[i]));
+        if (usableLogistic(f)) bootsB.push(f.b1);
+        else dropped++;
+      }
+      const bootB = percentileCI(bootsB);
+      const post = logisticGridPosterior(lx, ly,
+        { b0: lfit.b0, b1: lfit.b1 }, { se0: lfit.vcov.se0, se1: lfit.vcov.se1 });
+      const bayesB = [post.b1.lo, post.b1.hi];
+
+      // --- Scenario C: 2 of 20 ---
+      const pHat = 0.1;
+      const seW = Math.sqrt(pHat * (1 - pHat) / 20);
+      const waldC = [pHat - 1.96 * seW, pHat + 1.96 * seW];
+      const events = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+      rng = mulberry32(707);
+      const bootsC = [];
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(20, rng);
+        let s = 0;
+        idx.forEach(i => { s += events[i]; });
+        bootsC.push(s / 20);
+      }
+      const bootC = percentileCI(bootsC);
+      const gp = binomialGridPosterior(2, 20);
+      const bayesC = [gridQuantile(gp.ps, gp.dens, 0.025), gridQuantile(gp.ps, gp.dens, 0.975)];
+
+      scenarios = {
+        'sc-a': {
+          est: fit.b1, axis: [-2.1, -0.3], tickStep: 0.3, tickDp: 1, dp: 3,
+          axisLabel: 'heart-rate slope β₁ (bpm per weekly hour)',
+          routes: [
+            { key: 'wald', ci: waldA, how: 'One fit; SE from the Hessian; ±1.96 SE.' },
+            { key: 'boot', ci: bootA, how: '1,000 refits on resampled rows (seed 202); middle 95%.' },
+            { key: 'bayes', ci: null, answer: '≈ the Wald interval',
+              how: 'With n = 60 and a well-behaved surface the flat-prior posterior is ' +
+                'near-quadratic — the walked answer adds nothing here. (The permutation ' +
+                'test agrees too: 0 of 1,000 shuffles reach the observed slope.)' },
+          ],
+          verdict: 'Agreement everywhere, to two decimal places. The quadratic assumption ' +
+            'holds, so take the cheap answer and spend your scepticism elsewhere.',
+        },
+        'sc-b': {
+          est: lfit.b1, axis: [0, 6.2], tickStep: 1, tickDp: 0, dp: 3,
+          axisLabel: 'biomarker slope β₁ (log-odds per unit)',
+          routes: [
+            { key: 'wald', ci: waldB, how: 'One fit; ±1.96 SE — symmetric by construction.' },
+            { key: 'boot', ci: bootB,
+              how: '1,000 refits (seed 404); ' + dropped + ' separated resamples dropped; ' +
+                'middle 95% of the rest.' },
+            { key: 'bayes', ci: bayesB, how: 'Flat-prior grid posterior (240×240), marginal quantiles.' },
+          ],
+          verdict: 'The bootstrap and the posterior — one frequentist, one Bayesian, neither ' +
+            'assuming a shape — agree with each other and disagree with Wald, whose symmetric ' +
+            'interval reaches implausibly low. Two independent witnesses beat one assumption: ' +
+            'the surface really is skewed.',
+        },
+        'sc-c': {
+          est: 0.1, axis: [-0.12, 0.42], tickStep: 0.1, tickDp: 1, dp: 3,
+          impossibleBelow: 0,
+          axisLabel: 'event proportion p',
+          routes: [
+            { key: 'wald', ci: waldC, how: '±1.96 √(p̂(1−p̂)/n) — crosses zero.' },
+            { key: 'boot', ci: bootC,
+              how: '1,000 resamples of the 20 patients (seed 707). Only 21 proportions are ' +
+                'possible, so the interval snaps to the lattice — bottoming at exactly 0.' },
+            { key: 'bayes', ci: bayesC, how: 'Flat-prior posterior on a fine grid — smooth and strictly inside (0, 1).' },
+          ],
+          verdict: 'The boundary breaks the quadratic (negative probabilities), hobbles the ' +
+            'bootstrap (granularity), and inconveniences the posterior not at all. Tiny n at ' +
+            'a boundary is the sampling route’s home turf.',
+        },
+      };
+      show(current);
+    }).catch(() => {
+      document.getElementById('routes-body').innerHTML =
+        '<tr><td colspan="3" style="color:#e74c3c;">Could not load ../data/*.json — ' +
+        'serve the site over HTTP.</td></tr>';
+    });
+  </script>
+</body>
+</html>

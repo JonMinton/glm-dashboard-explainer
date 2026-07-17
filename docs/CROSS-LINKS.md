@@ -112,6 +112,20 @@ Cross-link before the nav buttons (list item in tutorials 1–2, teal box in 3�
   NegBin); one-sentence teal nods on wald (credible intervals) and model-comparison (Bayes
   factors/LOO) point across the fork.
 
+### Hacker Stats section (added 2026-07-17)
+- New amber (#e67e22) top-level section `docs/hacker-stats/` (6 pages: index, bootstrap,
+  permutation, comparison, when-to-use, poststratification). Every page's crosslink box points
+  to the [JonStats Hacker Stats course](https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/);
+  the section deliberately reuses the course's devices (meat/silicon brains, the
+  "equally likely, equally precise" dialogue, the 12-red/8-blue two-coins example with the same
+  9/12 vs 3/8 data, the taxonomy flowchart as clickable routing, the alpha-and-omega closing
+  argument) so the two sites tell one story.
+- Inbound: site index card; inference/index.html testing-toolkit card; bayes.html
+  choosing-a-route card → `hacker-stats/comparison.html`; bootstrap.html reuses the same n=60
+  rest-HR subsample and Wald numbers as `inference/curvature.html` (the "handshake").
+- Outbound to inference: comparison.html cites curvature/bayes pages; permutation.html cites
+  the curvature SE; when-to-use rows link wald/lr-test/model-comparison/bayes.
+
 ### Optimisation → Inference internal links (added 2026-07)
 - All optimisation nav bars now end with an **Uncertainty** item → `../inference/index.html` (and 2d/3d/4d regained the missing MCMC nav item).
 - `2d.html`: foreshadowing line — the steepness of the surface "turns out to be the standard error".

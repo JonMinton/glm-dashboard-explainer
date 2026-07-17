@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post-stratification: Repairing a Biased Sample | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.sec { color: #ca6f1e; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #fdf6ee;
+      border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .warning-box {
+      background: #fdf3f0;
+      border-left: 4px solid #e74c3c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 160px;
+      accent-color: #e67e22;
+    }
+
+    .toggle-group {
+      display: inline-flex;
+      background: #eef0f3;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .tg-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.86em;
+      color: #666;
+    }
+
+    .tg-btn.active {
+      background: white;
+      color: #ca6f1e;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .cells-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin: 15px 0;
+    }
+
+    .cell {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.88em;
+    }
+
+    .cell h4 {
+      font-size: 1em;
+      margin-bottom: 6px;
+    }
+
+    .cell .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 3px 0;
+    }
+
+    .cell .bar-label {
+      width: 52px;
+      color: #666;
+      font-size: 0.9em;
+    }
+
+    .cell .bar-track {
+      flex: 1;
+      height: 10px;
+      background: #f0f2f4;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .cell .bar-fill {
+      height: 100%;
+      border-radius: 5px;
+    }
+
+    .cell .bar-fill.pop { background: #27ae60; }
+    .cell .bar-fill.samp { background: #e67e22; }
+
+    .cell .support {
+      margin-top: 6px;
+      color: #555;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+      height: 210px;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.naive .value { color: #c0392b; }
+    .readout.post .value { color: #ca6f1e; }
+    .readout.truth .value { color: #1e8449; }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #e67e22;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Post-stratification: Repairing a Biased Sample</h1>
+      <p>When who you asked isn't who you care about, reweight until it is.</p>
+      <div class="nav-links">
+        <a href="../inference/index.html">&larr; Inference</a>
+        <a href="index.html">Why Resample?</a>
+        <a href="bootstrap.html" class="sec">Bootstrap</a>
+        <a href="permutation.html" class="sec">Permutation</a>
+        <a href="comparison.html" class="sec">Three Routes</a>
+        <a href="when-to-use.html" class="sec">When to Use</a>
+        <a href="poststratification.html" class="current">Post-stratification</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>The Xbox election poll</h2>
+      <p>
+        In the run-up to the 2012 US presidential election, Wang, Rothschild, Goel and Gelman
+        collected hundreds of thousands of opt-in survey responses through the <strong>Xbox
+        gaming platform</strong> &mdash; about as unrepresentative a political sample as could
+        be designed on purpose: overwhelmingly male, overwhelmingly young. Taken at face value
+        the raw numbers were junk; they &ldquo;predicted&rdquo; the wrong winner outright.
+      </p>
+      <p>
+        Then the researchers did something almost insolently simple in concept. They split the
+        respondents into thousands of small demographic cells (age &times; sex &times; race
+        &times; state &times; education &times;&hellip;), took each cell's answer, and
+        recombined the cells <strong>weighted by how common each cell is in the actual
+        electorate</strong> &mdash; not in the Xbox sample. The reweighted estimates tracked
+        the campaign's final weeks to within about a percentage point of the eventual result,
+        outperforming many conventional telephone polls
+        (<em>Forecasting elections with non-representative polls</em>, International Journal of
+        Forecasting, 2015).
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The bargain.</strong> A biased sample is not useless &mdash; it is a
+          collection of small, internally honest samples <em>of the wrong sizes</em>. If young
+          men who answer Xbox polls support candidates like young men generally do, then the
+          sample's only sin is proportions, and proportions can be fixed with a weighted sum.
+          That conditional &mdash; <em>if</em> &mdash; is the entire assumption, and the
+          interactive below lets you watch it hold and fail.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: skew the sample, then repair it</h2>
+      <p>
+        A toy electorate with four demographic cells (age band &times; gender). Each cell has a
+        known population share (green) and a true support rate for some proposal; the population
+        truth is $0.519$. Drag the slider to make the sample increasingly &ldquo;gamer
+        shaped&rdquo; (orange) &mdash; young men flood in, older women all but vanish &mdash;
+        and watch the naive sample mean drift away from the truth. Then choose what to
+        post-stratify on.
+      </p>
+      <div class="controls-row">
+        <label for="bias-slider">Sampling bias:</label>
+        <input type="range" id="bias-slider" min="0" max="1" step="0.05" value="1">
+        <span style="font-weight:700; color:#ca6f1e;" id="bias-display">full gamer skew</span>
+      </div>
+      <div class="controls-row">
+        <label>Post-stratify on:</label>
+        <span class="toggle-group" id="strat-toggle">
+          <button class="tg-btn active" data-strat="both">age &times; gender</button>
+          <button class="tg-btn" data-strat="gender">gender only</button>
+          <button class="tg-btn" data-strat="age">age only</button>
+        </span>
+        <label style="margin-left: 10px;">Mode:</label>
+        <span class="toggle-group" id="mode-toggle">
+          <button class="tg-btn active" data-mode="ideal">idealised (expected)</button>
+          <button class="tg-btn" data-mode="draw">one real sample (n = 1,000, seeded)</button>
+        </span>
+      </div>
+      <div class="cells-grid" id="cells-grid"></div>
+      <canvas id="est-canvas" class="chart"></canvas>
+      <div class="readout-grid">
+        <div class="readout naive">
+          <div class="label">NAIVE SAMPLE MEAN</div>
+          <div class="value" id="ro-naive">&ndash;</div>
+        </div>
+        <div class="readout post">
+          <div class="label">POST-STRATIFIED</div>
+          <div class="value" id="ro-post">&ndash;</div>
+        </div>
+        <div class="readout truth">
+          <div class="label">POPULATION TRUTH</div>
+          <div class="value">0.519</div>
+        </div>
+        <div class="readout">
+          <div class="label">REMAINING ERROR</div>
+          <div class="value" id="ro-err">&ndash;</div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>What the toggles teach.</strong> Stratifying on <em>both</em> variables
+          repairs the full-skew sample completely (in expectation) &mdash; every scrap of bias
+          ran through age and gender, so weighting them fixes it. Stratify on gender alone and
+          a residual error of $\approx 0.08$ survives: <em>within</em> the men, young men are
+          still over-represented, and no gender weight can see that. The repair only reaches
+          as far as the variables you stratify on &mdash; bias flowing through anything else
+          passes straight through. That is the method's one assumption, made visible.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>From weighted cells to Mister P</h2>
+      <p>
+        Real applications hit an immediate snag: stratify on enough variables to make the
+        assumption credible and the cells go thin (the seeded sample above already puts only a
+        few dozen people in its rarest cell &mdash; imagine age &times; sex &times; race
+        &times; education &times; state). The fix is to stop taking each cell's raw mean and
+        instead fit a <strong>multilevel model</strong> that lets sparse cells borrow strength
+        from their neighbours &mdash; partial pooling, exactly the hierarchical idea from the
+        Bayesian tradition &mdash; and then post-stratify the model's predictions. The
+        combination is <em>multilevel regression and post-stratification</em>: MRP, or
+        affectionately, <strong>Mister P</strong> (Gelman &amp; Little, 1997). It is what the
+        Xbox study actually ran, and it has since become a standard tool for constituency-level
+        election forecasting.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>An editorial aside.</strong> It says something about incentives that this
+          machinery is famous for election forecasting &mdash; arguably one of the least
+          valuable things statistical inference can do, since the election will shortly reveal
+          its own answer at no analytic cost. The same machinery answers questions that
+          <em>never</em> announce their own answers: estimating smoking prevalence, vaccine
+          uptake or depression rates for small areas and subgroups no survey could ever sample
+          densely &mdash; the small-area estimation behind tools like the CDC's local health
+          estimates. Same maths; considerably better use of it.
+        </p>
+      </div>
+      <div class="warning-box">
+        <p style="margin-bottom: 0;">
+          <strong>Still not magic.</strong> Post-stratification needs the population cell
+          counts to be <em>known</em> (a census or equivalent), and the
+          within-cell-representativeness assumption never becomes testable from the sample
+          alone &mdash; the gender-only toggle above shows how silently it can fail. Weighting
+          repairs <em>measured</em> bias only.
+        </p>
+      </div>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong> the
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">Hacker
+        Stats course</a> introduces post-stratification as the taxonomy's non-uniform-sampling
+        branch, with a hands-on red-coin/blue-coin reweighting example in R.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="when-to-use.html">&larr; When Does It Matter?</a>
+      <a class="next" href="../index.html">Back to Tutorials &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    // Validated in scripts/py/validate_hacker_stats.py:
+    //   truth 0.5190; idealised at bias 1.0: naive 0.3920, gender-only
+    //   0.4388, age-only 0.4862, both 0.5190; seeded draw (seed 808,
+    //   n=1000) at bias 1.0: naive 0.4060, poststrat(both) 0.5082,
+    //   cell counts [607, 153, 166, 74].
+    import { mulberry32 } from '../js/hacker-stats/resampling.js';
+
+    const CELLS = [
+      { name: 'Young men (18–39)', pop: 0.18, support: 0.30, gamer: 0.60 },
+      { name: 'Young women (18–39)', pop: 0.19, support: 0.45, gamer: 0.15 },
+      { name: 'Older men (40+)', pop: 0.30, support: 0.55, gamer: 0.18 },
+      { name: 'Older women (40+)', pop: 0.33, support: 0.65, gamer: 0.07 },
+    ];
+    const TRUTH = CELLS.reduce((s, c) => s + c.pop * c.support, 0);
+    // Cell groupings for partial stratification: men (0,2), women (1,3);
+    // young (0,1), older (2,3)
+    const GROUPS = {
+      gender: [[0, 2], [1, 3]],
+      age: [[0, 1], [2, 3]],
+    };
+
+    const biasSlider = document.getElementById('bias-slider');
+    const estCanvas = document.getElementById('est-canvas');
+    let strat = 'both';
+    let mode = 'ideal';
+
+    function sampleShares(lam) {
+      return CELLS.map(c => (1 - lam) * c.pop + lam * c.gamer);
+    }
+
+    // Estimates from cell tallies {share or n, support estimate} per cell
+    function estimates(cellShare, cellSupport) {
+      const naive = cellShare.reduce((s, sh, g) => s + sh * cellSupport[g], 0) /
+        cellShare.reduce((s, sh) => s + sh, 0);
+      let post;
+      if (strat === 'both') {
+        post = CELLS.reduce((s, c, g) => s + c.pop * cellSupport[g], 0);
+      } else {
+        post = 0;
+        for (const group of GROUPS[strat]) {
+          const popShare = group.reduce((s, g) => s + CELLS[g].pop, 0);
+          const sampShare = group.reduce((s, g) => s + cellShare[g], 0);
+          const pGroup = group.reduce((s, g) => s + cellShare[g] * cellSupport[g], 0) / sampShare;
+          post += popShare * pGroup;
+        }
+      }
+      return { naive, post };
+    }
+
+    function idealised(lam) {
+      const shares = sampleShares(lam);
+      return {
+        shares,
+        counts: null,
+        ...estimates(shares, CELLS.map(c => c.support)),
+      };
+    }
+
+    function seededDraw(lam) {
+      // Mirrors validate_hacker_stats.py simulate() exactly (seed 808)
+      const shares = sampleShares(lam);
+      const cum = [shares[0], shares[0] + shares[1],
+        shares[0] + shares[1] + shares[2], 1.0];
+      const rng = mulberry32(808);
+      const n = 1000;
+      const cellN = [0, 0, 0, 0];
+      const cellY = [0, 0, 0, 0];
+      for (let i = 0; i < n; i++) {
+        const u1 = rng();
+        let g = 0;
+        while (u1 >= cum[g]) g++;
+        const u2 = rng();
+        cellN[g]++;
+        if (u2 < CELLS[g].support) cellY[g]++;
+      }
+      const cellSupport = cellY.map((y, g) => cellN[g] ? y / cellN[g] : 0);
+      return {
+        shares: cellN.map(c => c / n),
+        counts: cellN,
+        ...estimates(cellN.map(c => c / n), cellSupport),
+      };
+    }
+
+    function renderCells(state) {
+      document.getElementById('cells-grid').innerHTML = CELLS.map((c, g) => {
+        const samp = state.shares[g];
+        return '<div class="cell">' +
+          '<h4>' + c.name + '</h4>' +
+          '<div class="bar-row"><span class="bar-label">popn</span>' +
+          '<div class="bar-track"><div class="bar-fill pop" style="width:' +
+          (c.pop / 0.65 * 100).toFixed(1) + '%"></div></div>' +
+          '<span>' + (100 * c.pop).toFixed(0) + '%</span></div>' +
+          '<div class="bar-row"><span class="bar-label">sample</span>' +
+          '<div class="bar-track"><div class="bar-fill samp" style="width:' +
+          (samp / 0.65 * 100).toFixed(1) + '%"></div></div>' +
+          '<span>' + (100 * samp).toFixed(0) + '%' +
+          (state.counts ? ' (' + state.counts[g] + ')' : '') + '</span></div>' +
+          '<div class="support">true support: ' + c.support.toFixed(2) + '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = rect.height * dpr;
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    function drawEstimates(state) {
+      const { ctx, w, h } = setupCanvas(estCanvas);
+      const m = { top: 16, right: 30, bottom: 38, left: 150 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const E_MIN = 0.30, E_MAX = 0.62;
+      const xPix = v => m.left + (v - E_MIN) / (E_MAX - E_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 0.30; v <= 0.62; v += 0.05) {
+        ctx.fillText(v.toFixed(2), xPix(v), m.top + plotH + 15);
+      }
+      ctx.fillText('estimated population support', m.left + plotW / 2, m.top + plotH + 31);
+
+      // Truth line
+      ctx.strokeStyle = '#27ae60';
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(xPix(TRUTH), m.top);
+      ctx.lineTo(xPix(TRUTH), m.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#1e8449';
+      ctx.textAlign = 'left';
+      ctx.fillText('truth 0.519', xPix(TRUTH) + 5, m.top + 11);
+
+      const rows = [
+        { label: 'naive sample mean', v: state.naive, colour: '#c0392b' },
+        { label: 'post-stratified', v: state.post, colour: '#e67e22' },
+      ];
+      const slotH = plotH / rows.length;
+      rows.forEach((r, i) => {
+        const y = m.top + slotH * (i + 0.5);
+        ctx.fillStyle = r.colour;
+        ctx.beginPath();
+        ctx.arc(xPix(r.v), y, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        // error whisker to truth
+        ctx.strokeStyle = r.colour;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(xPix(r.v), y);
+        ctx.lineTo(xPix(TRUTH), y);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 1;
+        ctx.textAlign = 'right';
+        ctx.fillText(r.label, m.left - 10, y + 4);
+        ctx.textAlign = 'center';
+        ctx.fillText(r.v.toFixed(3), xPix(r.v), y - 14);
+      });
+    }
+
+    function update() {
+      const lam = parseFloat(biasSlider.value);
+      document.getElementById('bias-display').textContent =
+        lam === 0 ? 'none (representative)'
+          : lam === 1 ? 'full gamer skew'
+            : (100 * lam).toFixed(0) + '% of the way to gamer';
+      const state = mode === 'ideal' ? idealised(lam) : seededDraw(lam);
+      renderCells(state);
+      drawEstimates(state);
+      document.getElementById('ro-naive').textContent = state.naive.toFixed(3);
+      document.getElementById('ro-post').textContent = state.post.toFixed(3);
+      document.getElementById('ro-err').textContent =
+        Math.abs(state.post - TRUTH).toFixed(3);
+    }
+
+    biasSlider.addEventListener('input', update);
+
+    document.querySelectorAll('#strat-toggle .tg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#strat-toggle .tg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        strat = btn.dataset.strat;
+        update();
+      });
+    });
+
+    document.querySelectorAll('#mode-toggle .tg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#mode-toggle .tg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        mode = btn.dataset.mode;
+        update();
+      });
+    });
+
+    window.addEventListener('resize', update);
+    update();
+  </script>
+</body>
+</html>

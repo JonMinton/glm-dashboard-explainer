@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bootstrap Confidence Intervals | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.sec { color: #ca6f1e; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #fdf6ee;
+      border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .dialogue {
+      background: #f8f9fa;
+      border: 1px dashed #d5d9de;
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.96em;
+    }
+
+    .dialogue p {
+      margin-bottom: 8px;
+    }
+
+    .dialogue .voice {
+      color: #af601a;
+      font-style: italic;
+    }
+
+    .aside-teal {
+      background: #f0faf8;
+      border: 1px dashed #7fd6c5;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 15px 0;
+      font-size: 0.93em;
+    }
+
+    .aside-teal a { color: #16a085; font-weight: 600; }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    #scatter-canvas { height: 330px; }
+    #slope-hist-canvas { height: 240px; }
+    #bp-canvas { height: 170px; }
+    #bp-hist-canvas { height: 240px; }
+    #logit-hist-canvas { height: 220px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 160px;
+      accent-color: #e67e22;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #e67e22;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .action-btn.secondary {
+      background: #e5e7eb;
+      color: #2c3e50;
+    }
+
+    .action-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.boot .value { color: #ca6f1e; }
+    .readout.wald .value { color: #9b59b6; }
+    .readout.warn .value { color: #c0392b; }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend > span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .obs::before { background: #2c3e50; border-radius: 50%; }
+    .legend .fitline::before { background: #27ae60; }
+    .legend .bootline::before { background: rgba(230, 126, 34, 0.5); }
+    .legend .bootci::before { background: #ca6f1e; }
+    .legend .waldci::before { background: #9b59b6; }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #e67e22;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Bootstrap Confidence Intervals</h1>
+      <p>Fit the model a thousand times on a thousand might-have-been datasets.</p>
+      <div class="nav-links">
+        <a href="../inference/index.html">&larr; Inference</a>
+        <a href="index.html">Why Resample?</a>
+        <a href="bootstrap.html" class="current">Bootstrap</a>
+        <a href="permutation.html" class="sec">Permutation</a>
+        <a href="comparison.html" class="sec">Three Routes</a>
+        <a href="when-to-use.html" class="sec">When to Use</a>
+        <a href="poststratification.html" class="sec">Post-stratification</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>The licence to resample</h2>
+      <p>
+        Why is drawing rows <em>with replacement</em> a legitimate way to manufacture new
+        datasets? The JonStats course justifies it with a short Socratic exchange, reproduced
+        here because there is no improving on it:
+      </p>
+      <div class="dialogue">
+        <p><span class="voice">&ldquo;Every observation in our dataset is equally likely.&rdquo;</span></p>
+        <p>Why is this?</p>
+        <p><span class="voice">&ldquo;Because each specific observation in our dataset has been
+          observed the same number of times.&rdquo;</span></p>
+        <p>Why do you say that?</p>
+        <p><span class="voice">&ldquo;Because each observation in the dataset has been observed
+          exactly one time, and 1&nbsp;=&nbsp;1!&rdquo;</span></p>
+        <p style="margin-bottom: 0;">And so a resampled dataset in which every row was drawn with
+          equal probability, with replacement, to the same size $n$, is as <strong>equally
+          likely</strong> and as <strong>equally precise</strong> as the dataset you actually
+          observed &mdash; a dataset that <em>might have happened</em>. Make a thousand of them,
+          fit your model to each, and the spread of the thousand answers estimates the sampling
+          distribution.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Act one: the handshake with the curvature route</h2>
+      <p>
+        Start where a formula already exists, so the loop can be checked. The
+        <a href="../inference/curvature.html">curvature route</a> priced the heart-rate slope at
+        $\hat\beta_1 = -1.271$ with SE $0.2915$ and Wald interval $(-1.84, -0.70)$. Now
+        bootstrap it: each click refits the line to resampled rows and adds a faint orange line;
+        the histogram collects the slopes.
+      </p>
+      <div class="controls-row">
+        <button class="action-btn" id="btn-add25">Add 25 resampled lines</button>
+        <button class="action-btn" id="btn-slope-full">Run all 1,000 (seeded)</button>
+        <button class="action-btn secondary" id="btn-slope-reset">Reset</button>
+      </div>
+      <canvas id="scatter-canvas" class="chart"></canvas>
+      <canvas id="slope-hist-canvas" class="chart" style="margin-top: 10px;"></canvas>
+      <div class="legend">
+        <span class="obs">observed data</span>
+        <span class="fitline">original fit</span>
+        <span class="bootline">bootstrap refits</span>
+        <span class="bootci">bootstrap 95% CI</span>
+        <span class="waldci">Wald 95% CI</span>
+      </div>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label">RESAMPLES B</div>
+          <div class="value" id="ro-slope-b">0</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">BOOTSTRAP SE*</div>
+          <div class="value" id="ro-slope-se">&ndash;</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">BOOTSTRAP 95% CI</div>
+          <div class="value" id="ro-slope-ci">&ndash;</div>
+        </div>
+        <div class="readout wald">
+          <div class="label">WALD (CURVATURE) 95% CI</div>
+          <div class="value">(&minus;1.843, &minus;0.700)</div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The handshake.</strong> Run the full thousand: SE* $= 0.2964$ against the
+          curvature route's $0.2915$; interval $(-1.840, -0.668)$ against $(-1.843, -0.700)$.
+          Two utterly different arguments &mdash; second derivatives of a log-likelihood versus
+          brute re-fitting &mdash; arriving at the same place. This is the well-behaved case;
+          when the two <em>disagree</em>, believe the disagreement and investigate
+          (<a href="comparison.html">Three Routes</a> stages exactly that).
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Act two: the statistic with no formula</h2>
+      <p>
+        Now the headline act. Below are 80 resting blood-pressure readings &mdash; right-skewed,
+        as blood pressure is (Tutorial&nbsp;5 models this shape with a
+        <a href="../tutorials/05-gamma/systematic.html">Gamma GLM</a>). For skewed data the
+        natural summaries are quantiles &mdash; the median, the 10th percentile, the 90th
+        &mdash; and none of them has a <code>Std. Error</code> column anywhere in classical
+        output. The loop does not care. Pick a quantile, run the resamples, read off its
+        interval.
+      </p>
+      <div class="controls-row">
+        <label for="q-slider">Quantile:</label>
+        <input type="range" id="q-slider" min="0" max="4" step="1" value="2">
+        <span style="font-weight: 700; color: #ca6f1e; min-width: 60px;" id="q-display">median</span>
+        <button class="action-btn" id="btn-bp-full">Run 1,000 (seeded)</button>
+      </div>
+      <canvas id="bp-canvas" class="chart"></canvas>
+      <canvas id="bp-hist-canvas" class="chart" style="margin-top: 10px;"></canvas>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label" id="ro-bp-label">SAMPLE MEDIAN</div>
+          <div class="value" id="ro-bp-point">&ndash;</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">BOOTSTRAP 95% CI</div>
+          <div class="value" id="ro-bp-ci">&ndash;</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">CI WIDTH</div>
+          <div class="value" id="ro-bp-width">&ndash;</div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Watch the tails.</strong> The 10th percentile's interval is about 6 mm Hg
+          wide; the 90th's is over 19 &mdash; three times the uncertainty, because the sparse
+          upper tail of a skewed sample pins its high quantiles far more loosely than its low
+          ones. Intervals can also come out <em>asymmetric</em> around the estimate: percentile
+          intervals inherit whatever shape the bootstrap distribution actually has, rather than
+          imposing $\pm 1.96\,\text{SE}$ symmetry.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>When resamples break: a feature, not a bug</h2>
+      <p>
+        Bootstrap the small-$n$ logistic model from the
+        <a href="../inference/bayes.html">Bayesian page</a> (biomarker slope, $n = 30$) and
+        something instructive happens: some resampled datasets are <em>perfectly
+        separated</em> &mdash; every low-biomarker patient a non-responder, every high one a
+        responder &mdash; and the refit diverges.
+      </p>
+      <div class="controls-row">
+        <button class="action-btn" id="btn-logit-full">Run 1,000 logistic refits (seeded)</button>
+      </div>
+      <canvas id="logit-hist-canvas" class="chart"></canvas>
+      <div class="readout-grid">
+        <div class="readout warn">
+          <div class="label">SEPARATED / DIVERGED</div>
+          <div class="value" id="ro-logit-dropped">&ndash;</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">BOOTSTRAP 95% CI (USABLE FITS)</div>
+          <div class="value" id="ro-logit-ci">&ndash;</div>
+        </div>
+        <div class="readout wald">
+          <div class="label">WALD 95% CI</div>
+          <div class="value">(0.743, 4.123)</div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Read the breakage.</strong> 115 of 1,000 resamples separate &mdash; the
+          bootstrap telling you, bluntly, that these 30 observations sit close to the edge of
+          what logistic regression can estimate. And the usable refits give $(1.51, 5.41)$:
+          right-shifted and asymmetric, agreeing with the flat-prior credible interval
+          $(1.37, 5.53)$ far better than with the symmetric Wald $(0.74, 4.12)$. Two
+          assumption-light methods siding with each other against the quadratic &mdash; the
+          full line-up is on <a href="comparison.html">Three Routes</a>.
+        </p>
+      </div>
+      <div class="aside-teal">
+        <strong>The same trick, read in the other tradition.</strong> Replace the multinomial
+        resampling weights with draws from a Dirichlet distribution and you have Rubin's
+        <em>Bayesian bootstrap</em> (1981): computationally near-identical, but its output is a
+        <em>posterior</em> for the statistic &mdash; genuine credible intervals for a median,
+        with no likelihood ever written down. The amber and
+        <a href="../inference/bayes.html">teal</a> routes are closer cousins than they look.
+      </div>
+      <p style="font-size: 0.93em; color: #555;">
+        Refinements exist beyond the percentile method used here &mdash; BCa
+        (bias-corrected and accelerated) intervals adjust for bias and skew in the bootstrap
+        distribution &mdash; but the percentile interval is where every treatment starts, and
+        usually where practice ends.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>In code: the loop you just watched</h2>
+      <p>
+        Real runs (R and numpy use their own random streams, so their digits differ slightly
+        from the seeded interactives above &mdash; the method, not the digits, is the point):
+      </p>
+      <div style="margin-top: 15px;">
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre>set.seed(42)
+boot_slopes <- replicate(1000, {
+  idx <- sample(60, replace = TRUE)          # rows, with replacement
+  coef(lm(y ~ x, data = hr[idx, ]))[2]       # refit, keep the slope
+})
+sd(boot_slopes)                              # bootstrap SE
+quantile(boot_slopes, c(0.025, 0.975))       # percentile CI
+
+set.seed(42)                                 # any statistic at all:
+boot_med <- replicate(1000, median(sample(bp, replace = TRUE)))
+quantile(boot_med, c(0.025, 0.975))
+
+<span class="output"># sd(boot_slopes)            0.3032
+# 2.5%    97.5%
+# -1.8486  -0.6641
+#
+# median BP:  2.5%   97.5%
+#              115     126</span></pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>rng = np.random.default_rng(42)
+slopes = []
+for _ in range(1000):
+    idx = rng.integers(0, 60, 60)            # rows, with replacement
+    slopes.append(np.polyfit(x[idx], y[idx], 1)[0])
+print(np.std(slopes, ddof=1))                # bootstrap SE
+print(np.percentile(slopes, [2.5, 97.5]))    # percentile CI
+
+rng = np.random.default_rng(42)              # any statistic at all:
+meds = [np.median(rng.choice(bp, 80)) for _ in range(1000)]
+print(np.percentile(meds, [2.5, 97.5]))
+
+<span class="output"># 0.2909
+# [-1.8144  -0.652 ]
+#
+# [115.  126.]</span></pre>
+      </div>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong> the
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">Hacker
+        Stats course</a> covers bootstrapping's definition, history and key assumption, with
+        two base-R implementations worked in full.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="index.html">&larr; Why Resample?</a>
+      <a class="next" href="permutation.html">Permutation Tests &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+  </script>
+  <script type="module">
+    // Seeded full runs reproduce scripts/py/validate_hacker_stats.py exactly:
+    //   slope   (seed 202): SE* 0.2964, CI (-1.8403, -0.6679)
+    //   BP q's  (seed 303): e.g. median CI (115.00, 126.50)
+    //   logistic(seed 404): 115 dropped, CI (1.5104, 5.4122)
+    // Exploratory "Add 25" uses its own stream (seed 2).
+    import {
+      mulberry32, bootstrapIndices, olsFit, logisticFit, usableLogistic,
+      mean, sd, quantileType7, percentileCI,
+    } from '../js/hacker-stats/resampling.js';
+
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = rect.height * dpr;
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    // ---------------- Act one: slope ----------------
+
+    const scatterCanvas = document.getElementById('scatter-canvas');
+    const slopeHistCanvas = document.getElementById('slope-hist-canvas');
+    let x60 = [], y60 = [];
+    let obsFit = null;
+    let bootLines = [];    // {b0, b1} of each bootstrap refit
+    let exploreRng = mulberry32(2);
+
+    const SX_MIN = -0.3, SX_MAX = 10.3, SY_MIN = 48, SY_MAX = 82;
+
+    function drawScatter() {
+      const { ctx, w, h } = setupCanvas(scatterCanvas);
+      const m = { top: 12, right: 15, bottom: 40, left: 40 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const xPix = v => m.left + (v - SX_MIN) / (SX_MAX - SX_MIN) * plotW;
+      const yPix = v => m.top + (SY_MAX - v) / (SY_MAX - SY_MIN) * plotH;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.strokeRect(m.left, m.top, plotW, plotH);
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 0; v <= 10; v += 2) ctx.fillText(v, xPix(v), m.top + plotH + 15);
+      ctx.fillText('weekly exercise hours', m.left + plotW / 2, m.top + plotH + 31);
+      ctx.textAlign = 'right';
+      for (let v = 50; v <= 80; v += 10) ctx.fillText(v, m.left - 6, yPix(v) + 4);
+
+      // Bootstrap refit lines (cap the drawing at 400 for speed; count shown anyway)
+      ctx.strokeStyle = 'rgba(230, 126, 34, 0.10)';
+      ctx.lineWidth = 1;
+      const drawN = Math.min(bootLines.length, 400);
+      for (let i = bootLines.length - drawN; i < bootLines.length; i++) {
+        const L = bootLines[i];
+        ctx.beginPath();
+        ctx.moveTo(xPix(0), yPix(L.b0));
+        ctx.lineTo(xPix(10), yPix(L.b0 + 10 * L.b1));
+        ctx.stroke();
+      }
+
+      // Data + original fit
+      ctx.fillStyle = 'rgba(44, 62, 80, 0.75)';
+      for (let i = 0; i < x60.length; i++) {
+        ctx.beginPath();
+        ctx.arc(xPix(x60[i]), yPix(y60[i]), 3, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      if (obsFit) {
+        ctx.strokeStyle = '#27ae60';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xPix(0), yPix(obsFit.b0));
+        ctx.lineTo(xPix(10), yPix(obsFit.b0 + 10 * obsFit.b1));
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+    }
+
+    function drawSlopeHist() {
+      const { ctx, w, h } = setupCanvas(slopeHistCanvas);
+      const m = { top: 14, right: 25, bottom: 38, left: 25 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const H_MIN = -2.4, H_MAX = -0.2;
+      const xPix = v => m.left + (v - H_MIN) / (H_MAX - H_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = -2.2; v <= -0.3; v += 0.4) {
+        ctx.fillText(v.toFixed(1), xPix(v), m.top + plotH + 15);
+      }
+      ctx.fillText('bootstrap slope β₁*', m.left + plotW / 2, m.top + plotH + 31);
+
+      const slopes = bootLines.map(L => L.b1);
+      const BINS = 55;
+      const binW = (H_MAX - H_MIN) / BINS;
+      const bins = new Array(BINS).fill(0);
+      for (const s of slopes) {
+        const b = Math.floor((s - H_MIN) / binW);
+        if (b >= 0 && b < BINS) bins[b]++;
+      }
+      const maxBin = Math.max(...bins, 1);
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.55)';
+      bins.forEach((c, b) => {
+        if (!c) return;
+        const bh = c / maxBin * (plotH - 22);
+        ctx.fillRect(xPix(H_MIN + b * binW), m.top + plotH - bh, plotW / BINS - 1, bh);
+      });
+
+      // Wald CI bar (validated: -1.8425, -0.6997)
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(xPix(-1.8425), m.top + plotH - 12);
+      ctx.lineTo(xPix(-0.6997), m.top + plotH - 12);
+      ctx.stroke();
+
+      if (slopes.length >= 100) {
+        const [lo, hi] = percentileCI(slopes);
+        ctx.strokeStyle = '#ca6f1e';
+        ctx.beginPath();
+        ctx.moveTo(xPix(lo), m.top + plotH - 4);
+        ctx.lineTo(xPix(hi), m.top + plotH - 4);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 1;
+    }
+
+    function updateSlopeReadouts() {
+      const slopes = bootLines.map(L => L.b1);
+      document.getElementById('ro-slope-b').textContent = slopes.length;
+      document.getElementById('ro-slope-se').textContent =
+        slopes.length >= 2 ? sd(slopes).toFixed(4) : '–';
+      if (slopes.length >= 100) {
+        const [lo, hi] = percentileCI(slopes);
+        document.getElementById('ro-slope-ci').textContent =
+          '(' + lo.toFixed(3) + ', ' + hi.toFixed(3) + ')';
+      } else {
+        document.getElementById('ro-slope-ci').textContent = 'needs ≥ 100';
+      }
+    }
+
+    function slopeResample(rng) {
+      const idx = bootstrapIndices(60, rng);
+      const f = olsFit(idx.map(i => x60[i]), idx.map(i => y60[i]));
+      bootLines.push({ b0: f.b0, b1: f.b1 });
+    }
+
+    function redrawSlope() {
+      drawScatter();
+      drawSlopeHist();
+      updateSlopeReadouts();
+    }
+
+    document.getElementById('btn-add25').addEventListener('click', () => {
+      if (!x60.length) return;
+      for (let k = 0; k < 25; k++) slopeResample(exploreRng);
+      redrawSlope();
+    });
+
+    document.getElementById('btn-slope-full').addEventListener('click', () => {
+      if (!x60.length) return;
+      const rng = mulberry32(202);
+      bootLines = [];
+      for (let b = 0; b < 1000; b++) slopeResample(rng);
+      redrawSlope();
+    });
+
+    document.getElementById('btn-slope-reset').addEventListener('click', () => {
+      bootLines = [];
+      exploreRng = mulberry32(2);
+      redrawSlope();
+    });
+
+    // ---------------- Act two: BP quantiles ----------------
+
+    const bpCanvas = document.getElementById('bp-canvas');
+    const bpHistCanvas = document.getElementById('bp-hist-canvas');
+    const qSlider = document.getElementById('q-slider');
+    const Q_STOPS = [
+      { q: 0.10, label: '10th' },
+      { q: 0.25, label: '25th' },
+      { q: 0.50, label: 'median' },
+      { q: 0.75, label: '75th' },
+      { q: 0.90, label: '90th' },
+    ];
+    let bp = [];
+    let bpBoots = [];
+
+    const BP_MIN = 90, BP_MAX = 225;
+
+    function drawBP() {
+      const { ctx, w, h } = setupCanvas(bpCanvas);
+      const m = { top: 12, right: 25, bottom: 38, left: 25 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const xPix = v => m.left + (v - BP_MIN) / (BP_MAX - BP_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 100; v <= 220; v += 20) ctx.fillText(v, xPix(v), m.top + plotH + 15);
+      ctx.fillText('the 80 observed blood pressures (mm Hg) — note the long right tail',
+        m.left + plotW / 2, m.top + plotH + 31);
+
+      // Data histogram
+      const BINS = 45;
+      const binW = (BP_MAX - BP_MIN) / BINS;
+      const bins = new Array(BINS).fill(0);
+      for (const v of bp) {
+        const b = Math.min(BINS - 1, Math.floor((v - BP_MIN) / binW));
+        bins[b]++;
+      }
+      const maxBin = Math.max(...bins, 1);
+      ctx.fillStyle = 'rgba(44, 62, 80, 0.45)';
+      bins.forEach((c, b) => {
+        if (!c) return;
+        const bh = c / maxBin * (plotH - 10);
+        ctx.fillRect(xPix(BP_MIN + b * binW), m.top + plotH - bh, plotW / BINS - 1, bh);
+      });
+
+      // Current quantile marker
+      if (bp.length) {
+        const stop = Q_STOPS[parseInt(qSlider.value, 10)];
+        const v = quantileType7(bp, stop.q);
+        ctx.strokeStyle = '#ca6f1e';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xPix(v), m.top + plotH);
+        ctx.lineTo(xPix(v), m.top + 4);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+    }
+
+    function drawBPHist() {
+      const { ctx, w, h } = setupCanvas(bpHistCanvas);
+      const m = { top: 14, right: 25, bottom: 38, left: 25 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const stop = Q_STOPS[parseInt(qSlider.value, 10)];
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      const xPix = v => m.left + (v - BP_MIN) / (BP_MAX - BP_MIN) * plotW;
+      for (let v = 100; v <= 220; v += 20) ctx.fillText(v, xPix(v), m.top + plotH + 15);
+      ctx.fillText('bootstrap ' + stop.label + ' percentile* (B = ' + bpBoots.length + ')',
+        m.left + plotW / 2, m.top + plotH + 31);
+
+      if (!bpBoots.length) {
+        ctx.fillStyle = '#999';
+        ctx.textAlign = 'left';
+        ctx.fillText('press “Run 1,000 (seeded)”', m.left + 8, m.top + 14);
+        return;
+      }
+
+      const BINS = 90;
+      const binW = (BP_MAX - BP_MIN) / BINS;
+      const bins = new Array(BINS).fill(0);
+      for (const v of bpBoots) {
+        const b = Math.min(BINS - 1, Math.max(0, Math.floor((v - BP_MIN) / binW)));
+        bins[b]++;
+      }
+      const maxBin = Math.max(...bins, 1);
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.6)';
+      bins.forEach((c, b) => {
+        if (!c) return;
+        const bh = c / maxBin * (plotH - 20);
+        ctx.fillRect(xPix(BP_MIN + b * binW), m.top + plotH - bh, plotW / BINS - 0.5, bh);
+      });
+
+      const [lo, hi] = percentileCI(bpBoots);
+      ctx.strokeStyle = '#ca6f1e';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(xPix(lo), m.top + plotH - 4);
+      ctx.lineTo(xPix(hi), m.top + plotH - 4);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    function runBP() {
+      const stop = Q_STOPS[parseInt(qSlider.value, 10)];
+      const rng = mulberry32(303);   // same seed for every quantile, by design
+      bpBoots = [];
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(80, rng);
+        bpBoots.push(quantileType7(idx.map(i => bp[i]), stop.q));
+      }
+      updateBPReadouts();
+      drawBP();
+      drawBPHist();
+    }
+
+    function updateBPReadouts() {
+      const stop = Q_STOPS[parseInt(qSlider.value, 10)];
+      document.getElementById('q-display').textContent = stop.label;
+      document.getElementById('ro-bp-label').textContent =
+        'SAMPLE ' + (stop.q === 0.5 ? 'MEDIAN' : stop.label.toUpperCase() + ' PERCENTILE');
+      document.getElementById('ro-bp-point').textContent =
+        bp.length ? quantileType7(bp, stop.q).toFixed(1) + ' mm Hg' : '–';
+      if (bpBoots.length) {
+        const [lo, hi] = percentileCI(bpBoots);
+        document.getElementById('ro-bp-ci').textContent =
+          '(' + lo.toFixed(1) + ', ' + hi.toFixed(1) + ')';
+        document.getElementById('ro-bp-width').textContent = (hi - lo).toFixed(1) + ' mm Hg';
+      } else {
+        document.getElementById('ro-bp-ci').textContent = '–';
+        document.getElementById('ro-bp-width').textContent = '–';
+      }
+    }
+
+    qSlider.addEventListener('input', () => {
+      bpBoots = [];
+      updateBPReadouts();
+      drawBP();
+      drawBPHist();
+    });
+
+    document.getElementById('btn-bp-full').addEventListener('click', () => {
+      if (bp.length) runBP();
+    });
+
+    // ---------------- Logistic separation demo ----------------
+
+    const logitHistCanvas = document.getElementById('logit-hist-canvas');
+    let lx = [], ly = [];
+    let logitBoots = [];
+    let logitDropped = 0;
+
+    function drawLogitHist() {
+      const { ctx, w, h } = setupCanvas(logitHistCanvas);
+      const m = { top: 14, right: 25, bottom: 38, left: 25 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const H_MIN = 0, H_MAX = 12;
+      const xPix = v => m.left + (v - H_MIN) / (H_MAX - H_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 0; v <= 12; v += 2) ctx.fillText(v, xPix(v), m.top + plotH + 15);
+      ctx.fillText('bootstrap biomarker slope β₁* (usable refits only)',
+        m.left + plotW / 2, m.top + plotH + 31);
+
+      if (!logitBoots.length) {
+        ctx.fillStyle = '#999';
+        ctx.textAlign = 'left';
+        ctx.fillText('press “Run 1,000 logistic refits”', m.left + 8, m.top + 14);
+        return;
+      }
+
+      const BINS = 60;
+      const binW = (H_MAX - H_MIN) / BINS;
+      const bins = new Array(BINS).fill(0);
+      for (const v of logitBoots) {
+        const b = Math.min(BINS - 1, Math.max(0, Math.floor((v - H_MIN) / binW)));
+        bins[b]++;
+      }
+      const maxBin = Math.max(...bins, 1);
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.6)';
+      bins.forEach((c, b) => {
+        if (!c) return;
+        const bh = c / maxBin * (plotH - 20);
+        ctx.fillRect(xPix(H_MIN + b * binW), m.top + plotH - bh, plotW / BINS - 0.5, bh);
+      });
+
+      // Wald CI for contrast
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(xPix(0.7425), m.top + plotH - 12);
+      ctx.lineTo(xPix(4.1233), m.top + plotH - 12);
+      ctx.stroke();
+      const [lo, hi] = percentileCI(logitBoots);
+      ctx.strokeStyle = '#ca6f1e';
+      ctx.beginPath();
+      ctx.moveTo(xPix(lo), m.top + plotH - 4);
+      ctx.lineTo(xPix(hi), m.top + plotH - 4);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    document.getElementById('btn-logit-full').addEventListener('click', () => {
+      if (!lx.length) return;
+      const rng = mulberry32(404);
+      logitBoots = [];
+      logitDropped = 0;
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(30, rng);
+        const f = logisticFit(idx.map(i => lx[i]), idx.map(i => ly[i]));
+        if (usableLogistic(f)) logitBoots.push(f.b1);
+        else logitDropped++;
+      }
+      document.getElementById('ro-logit-dropped').textContent =
+        logitDropped + ' of 1,000';
+      const [lo, hi] = percentileCI(logitBoots);
+      document.getElementById('ro-logit-ci').textContent =
+        '(' + lo.toFixed(3) + ', ' + hi.toFixed(3) + ')';
+      drawLogitHist();
+    });
+
+    // ---------------- boot ----------------
+
+    window.addEventListener('resize', () => {
+      redrawSlope();
+      drawBP();
+      drawBPHist();
+      drawLogitHist();
+    });
+
+    Promise.all([
+      fetch('../data/inference-rest-hr.json').then(r => r.json()),
+      fetch('../data/hacker-bp.json').then(r => r.json()),
+      fetch('../data/inference-logistic.json').then(r => r.json()),
+    ]).then(([hr, bpJson, lg]) => {
+      x60 = hr.data.slice(0, 60).map(d => d.x);
+      y60 = hr.data.slice(0, 60).map(d => d.y);
+      obsFit = olsFit(x60, y60);
+      bp = bpJson.data;
+      lx = lg.data.map(d => d.x);
+      ly = lg.data.map(d => d.y);
+      redrawSlope();
+      updateBPReadouts();
+      drawBP();
+      drawBPHist();
+      drawLogitHist();
+    }).catch(() => {
+      const { ctx } = setupCanvas(scatterCanvas);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText('Could not load ../data/*.json — serve the site over HTTP.', 30, 40);
+    });
+  </script>
+</body>
+</html>

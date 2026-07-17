@@ -180,7 +180,9 @@ glm-dashboard-explainer/
 │   ├── js/
 │   │   ├── feedback.js       # Feedback widget
 │   │   ├── inference/        # Shared ES6 modules for inference section
-│   │   │   └── inference-math.js  # OLS/logistic fits, Hessian→vcov, grid posteriors, Metropolis (validated vs Python/R)
+│   │   │   └── inference-math.js  # OLS/logistic fits, Hessian→vcov, grid posteriors, Metropolis, gammaQ/normalSf/chiSqSf, olsFitK, aic/bic (validated vs Python/R)
+│   │   ├── hacker-stats/     # Shared ES6 modules for resampling section
+│   │   │   └── resampling.js # Seeded bootstrap/permutation/quantiles — mulberry32 ported bit-faithfully to scripts/py/validate_hacker_stats.py
 │   │   └── optimization/     # Shared ES6 modules
 │   │       ├── algorithms.js # Optimization algorithms (gradient, Newton, MCMC)
 │   │       ├── terrain.js    # Elevation lookup, Hessian, ellipse functions
@@ -199,13 +201,20 @@ glm-dashboard-explainer/
 │   │   ├── 4d.html           # 4D+ beyond visualisation
 │   │   ├── multi-optima.html # Speed/Accuracy/Representativeness comparison
 │   │   └── mcmc.html         # Bayesian MCMC exploration
-│   └── inference/            # Statistical inference section (follows optimisation; forks after curvature)
-│       ├── index.html        # Why uncertainty: peak shape → error bar (1D); route cards
-│       ├── curvature.html    # Hessian → vcov → SEs; barefoot probes; ellipse; fork buttons
-│       ├── wald.html         # (purple branch) z = β̂/SE; rejection picture; CI = unrejected nulls
-│       ├── lr-test.html      # (purple branch) two peaks compared; Λ on χ²₁; profile CIs
-│       ├── model-comparison.html # (purple branch) AIC/BIC ladder; junk-predictor demo
-│       └── bayes.html        # (teal branch) quadratic-approx failures; credible intervals
+│   ├── inference/            # Statistical inference section (follows optimisation; forks after curvature)
+│   │   ├── index.html        # Why uncertainty: peak shape → error bar (1D); route cards
+│   │   ├── curvature.html    # Hessian → vcov → SEs; barefoot probes; ellipse; fork buttons
+│   │   ├── wald.html         # (purple branch) z = β̂/SE; rejection picture; CI = unrejected nulls
+│   │   ├── lr-test.html      # (purple branch) two peaks compared; Λ on χ²₁; profile CIs
+│   │   ├── model-comparison.html # (purple branch) AIC/BIC ladder; junk-predictor demo
+│   │   └── bayes.html        # (teal branch) quadratic-approx failures; credible intervals
+│   └── hacker-stats/         # Resampling section (amber; seeded runs reproduce validation exactly)
+│       ├── index.html        # Why resample: median hook; calibrate-on-the-mean loop; taxonomy router
+│       ├── bootstrap.html    # Slope handshake vs Wald; median/quantile CIs; separation demo
+│       ├── permutation.html  # Two-coins card shuffle (JonStats data); shuffle-Y regression null
+│       ├── comparison.html   # Three routes: Wald | bootstrap | credible on three scenarios
+│       ├── when-to-use.html  # Decision guide; bias/exchangeability limits
+│       └── poststratification.html # Xbox study; skew-and-repair demo; MrP outro
 ├── scripts/
 │   ├── build/                # Site processing scripts (Python)
 │   ├── R/                    # R validation scripts

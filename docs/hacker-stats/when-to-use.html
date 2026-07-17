@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>When Does It Matter? | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.sec { color: #ca6f1e; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #fdf6ee;
+      border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .warning-box {
+      background: #fdf3f0;
+      border-left: 4px solid #e74c3c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    details.row {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    details.row summary {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 1fr 0.9fr;
+      gap: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      background: #f8f9fa;
+      font-size: 0.93em;
+      align-items: center;
+      list-style: none;
+    }
+
+    details.row summary::-webkit-details-marker { display: none; }
+
+    details.row[open] summary { background: #fdf6ee; }
+
+    details.row summary .sit { font-weight: 700; }
+    details.row summary .par { color: #7d3c98; }
+    details.row summary .cmp { color: #ca6f1e; }
+    details.row summary .rec { font-weight: 700; color: #1e8449; }
+
+    details.row .body {
+      padding: 14px 18px;
+      font-size: 0.95em;
+      border-top: 1px solid #eee;
+    }
+
+    .head-row {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 1fr 0.9fr;
+      gap: 12px;
+      padding: 8px 16px;
+      font-size: 0.8em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #e67e22;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>When Does It Matter?</h1>
+      <p>A field guide: parametric, computational, or both.</p>
+      <div class="nav-links">
+        <a href="../inference/index.html">&larr; Inference</a>
+        <a href="index.html">Why Resample?</a>
+        <a href="bootstrap.html" class="sec">Bootstrap</a>
+        <a href="permutation.html" class="sec">Permutation</a>
+        <a href="comparison.html" class="sec">Three Routes</a>
+        <a href="when-to-use.html" class="current">When to Use</a>
+        <a href="poststratification.html" class="sec">Post-stratification</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>The decision guide</h2>
+      <p>
+        Click any row for the reasoning and a pointer to where this site demonstrates it.
+      </p>
+      <div class="head-row">
+        <span>SITUATION</span><span>PARAMETRIC ROUTE</span><span>COMPUTATIONAL ROUTE</span><span>LEAN</span>
+      </div>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Large n, model assumptions met</span>
+          <span class="par">fast, familiar, exact enough</span>
+          <span class="cmp">slower, same answer</span>
+          <span class="rec">parametric</span>
+        </summary>
+        <div class="body">
+          When the quadratic approximation holds, the Wald machinery is unimprovable in
+          practice, and every reader knows how to interpret it. The
+          <a href="bootstrap.html">bootstrap handshake</a> on the heart-rate slope showed the
+          two routes matching to two decimal places &mdash; agreement you can bank, and a
+          reason <em>not</em> to burn compute. Report <code>summary()</code>.
+        </div>
+      </details>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Small n (&lt; 30&ndash;50)</span>
+          <span class="par">SEs may mislead</span>
+          <span class="cmp">honest about asymmetry</span>
+          <span class="rec">bootstrap + check</span>
+        </summary>
+        <div class="body">
+          Small samples are where surfaces go non-quadratic and Wald intervals go symmetric
+          anyway. The <a href="comparison.html">three-route comparison</a>'s logistic scenario
+          ($n = 30$) shows the bootstrap and the posterior agreeing against Wald. Run the
+          bootstrap; if it splits from Wald, trust the split &mdash; and consider the
+          <a href="../inference/bayes.html">walked posterior</a> as referee.
+        </div>
+      </details>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Skewed data, quantile summaries</span>
+          <span class="par">no formula to use</span>
+          <span class="cmp">works unchanged</span>
+          <span class="rec">bootstrap (only option)</span>
+        </summary>
+        <div class="body">
+          Medians, deciles, ratios of quantiles, trimmed means, gaps between group medians
+          &mdash; anything you can compute, the loop can interval. The
+          <a href="bootstrap.html">blood-pressure demo</a> put honest error bars on five
+          different percentiles with one identical recipe. There is no parametric column to
+          compare against; that is the point.
+        </div>
+      </details>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Testing &ldquo;no effect&rdquo; (&beta; = 0)</span>
+          <span class="par">Wald or LR test</span>
+          <span class="cmp">permutation test</span>
+          <span class="rec">either &mdash; agree usually</span>
+        </summary>
+        <div class="body">
+          For decent samples the <a href="../inference/wald.html">Wald</a>,
+          <a href="../inference/lr-test.html">likelihood-ratio</a> and
+          <a href="permutation.html">permutation</a> answers coincide (the slope permutation
+          rebuilt the analytic SE almost exactly). The permutation test earns its keep with
+          small groups, odd statistics, or audiences who distrust distributional assumptions
+          &mdash; a p-value that is literally a count is hard to argue with.
+        </div>
+      </details>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Parameter near a boundary</span>
+          <span class="par">intervals leak out of range</span>
+          <span class="cmp">in range but granular</span>
+          <span class="rec">Bayesian, bootstrap 2nd</span>
+        </summary>
+        <div class="body">
+          The 2-events-in-20 scenario on <a href="comparison.html">Three Routes</a>: Wald
+          crosses zero, the bootstrap snaps to a 21-point lattice, the flat-prior posterior
+          glides smoothly inside $(0, 1)$. Boundaries are the sampling route's home turf; the
+          bootstrap is the respectable second choice.
+        </div>
+      </details>
+
+      <details class="row">
+        <summary>
+          <span class="sit">Model comparison / selection</span>
+          <span class="par">AIC/BIC</span>
+          <span class="cmp">cross-validation</span>
+          <span class="rec">either (related!)</span>
+        </summary>
+        <div class="body">
+          <a href="../inference/model-comparison.html">AIC</a> approximates out-of-sample
+          prediction error analytically; cross-validation estimates the same thing
+          computationally &mdash; the meat-brain and silicon-brain answers to one question
+          (asymptotically, leave-one-out CV and AIC even select the same models). The same
+          duality this whole section is built on, one level up.
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>What resampling cannot fix</h2>
+      <div class="warning-box">
+        <p>
+          <strong>A biased sample, faithfully rebiased.</strong> The bootstrap's licence &mdash;
+          <em>the sample stands in for the population</em> &mdash; is also its only demand, and
+          when it fails, resampling fails silently. If your data over-represent the young, every
+          resample over-represents the young with beautiful precision, and your immaculately
+          bootstrapped confidence interval brackets the wrong number. No amount of silicon fixes
+          representativeness by resampling alone.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>Exchangeability, for permutation tests.</strong> Shuffling assumes that under
+          the null, labels are arbitrary &mdash; observations are exchangeable. Clustered,
+          paired or time-ordered data violate this: shuffle within clusters or blocks, or the
+          null distribution you build answers a question nobody asked.
+        </p>
+      </div>
+      <p>
+        The first failure has a repair, and it is the taxonomy's third branch: reweight the
+        sample to known population totals. That is
+        <a href="poststratification.html">post-stratification</a>, next &mdash; including the
+        study that turned a wildly unrepresentative Xbox poll into an accurate election
+        forecast.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>House rule.</strong> When in doubt, run both routes. If they agree, report the
+          parametric result (more familiar) with a clear conscience. If they disagree, the
+          disagreement is a finding: something in the assumptions is broken, and
+          <a href="comparison.html">reading which routes cluster</a> usually tells you what.
+        </p>
+      </div>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong> the
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">Hacker
+        Stats course</a> closes with the same argument &mdash; resampling as both the
+        <em>alpha</em> (intuition-builder) and <em>omega</em> (last resort) of statistics
+        &mdash; and demonstrates the tidy <code>infer</code> pipeline for doing all of this
+        declaratively in R.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="comparison.html">&larr; Three Routes</a>
+      <a class="next" href="poststratification.html">Post-stratification &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+</body>
+</html>

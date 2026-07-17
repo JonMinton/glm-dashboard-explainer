@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hacker Stats: Inference from a For-Loop | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.sec { color: #ca6f1e; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #fdf6ee;
+      border-left: 4px solid #e67e22;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    #strip-canvas { height: 130px; }
+    #hist-canvas { height: 280px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .toggle-group {
+      display: inline-flex;
+      background: #eef0f3;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .stat-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88em;
+      color: #666;
+    }
+
+    .stat-btn.active {
+      background: white;
+      color: #ca6f1e;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      background: #e67e22;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+
+    .action-btn.secondary {
+      background: #e5e7eb;
+      color: #2c3e50;
+    }
+
+    .action-btn:hover {
+      filter: brightness(1.05);
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.boot .value { color: #ca6f1e; }
+    .readout.theory .value { color: #667eea; }
+
+    .tree {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin: 20px 0 5px 0;
+    }
+
+    .tree .node {
+      background: #f8f9fa;
+      border: 1px solid #dfe3e8;
+      border-radius: 10px;
+      padding: 10px 20px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .tree .q {
+      background: #fdf6ee;
+      border-color: #f0d5b8;
+      color: #af601a;
+    }
+
+    .tree .arrow {
+      color: #b8bfc7;
+      font-size: 1.1em;
+      line-height: 1;
+    }
+
+    .tree .split {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tree .branch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tree .branch .lbl {
+      font-size: 0.82em;
+      color: #888;
+      font-weight: 600;
+    }
+
+    .tree a.leaf {
+      display: inline-block;
+      background: #e67e22;
+      color: white;
+      border-radius: 10px;
+      padding: 12px 22px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .tree a.leaf:hover {
+      filter: brightness(1.06);
+    }
+
+    .tree a.leaf small {
+      display: block;
+      font-weight: 400;
+      font-size: 0.8em;
+      opacity: 0.9;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Hacker Stats: Inference from a For-Loop</h1>
+      <p>No formulas, no tables &mdash; resample the data you already have.</p>
+      <div class="nav-links">
+        <a href="../inference/index.html">&larr; Inference</a>
+        <a href="index.html" class="current">Why Resample?</a>
+        <a href="bootstrap.html" class="sec">Bootstrap</a>
+        <a href="permutation.html" class="sec">Permutation</a>
+        <a href="comparison.html" class="sec">Three Routes</a>
+        <a href="when-to-use.html" class="sec">When to Use</a>
+        <a href="poststratification.html" class="sec">Post-stratification</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>Where's the standard error of a median?</h2>
+      <p>
+        The <a href="../inference/index.html">inference section</a> built uncertainty from
+        calculus: a likelihood surface, its curvature at the peak, a Hessian to invert. That
+        machinery is powerful &mdash; and strangely picky about what it will serve. Ask it for
+        the standard error of a <em>median</em> and it has nothing to offer: no likelihood, no
+        surface, no second derivative. The <code>summary()</code> table has no row for it.
+      </p>
+      <p>
+        Analytic answers do exist, technically &mdash; the asymptotic variance of a median
+        involves $1/\left[2f(m)\sqrt{n}\right]$, where $f(m)$ is the density of the data at the
+        median&hellip; which you would have to estimate, fragilely, before you could use it.
+        The moment your statistic steps off the well-trodden path (means, GLM coefficients),
+        each new case needs its own bespoke derivation &mdash; or gives up entirely.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The hacker's move.</strong> Skip the derivation. If you can compute the
+          statistic once, you can compute it a thousand times on a thousand resampled versions
+          of your data &mdash; and the spread of those thousand answers <em>is</em> the
+          uncertainty. One recipe, any statistic. All it costs is silicon.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Meat brain vs silicon brain</h2>
+      <p>
+        The <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">JonStats
+        Hacker Stats course</a> frames the trade honestly: resampling methods substitute
+        <em>silicon-brain effort</em> (computation) for <em>meat-brain effort</em> (deriving and
+        recalling analytic solutions). They are theoretically <em>thin but deep</em> &mdash;
+        each rests on one simple, strong idea rather than a stack of distributional theory
+        &mdash; and they are approximate, stochastic and general where classical recipes are
+        precise, deterministic and specialist.
+      </p>
+      <p>
+        When Bradley Efron formalised the bootstrap in 1979, other names considered for it
+        reportedly included <em>Swiss Army Knife</em>, <em>Meat Axe</em> and
+        <em>Shotgun</em>. The first of those captures it best: not the sharpest tool for any
+        single job, but the one that handles nearly every job you will actually meet.
+      </p>
+      <p style="font-size: 0.95em; color: #555;">
+        JonStats argues these methods could be both the <em>alpha</em> of statistics (the
+        clearest way to build intuition about null distributions and sampling variation, with
+        no algebra in the way) and its <em>omega</em> (the only practical answer when no
+        analytic solution exists). This section aims to show both ends.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: the loop, calibrated then unleashed</h2>
+      <p>
+        Below are the first 20 resting heart rates from
+        <a href="../inference/curvature.html">this site's heart-rate study</a>. Resample them
+        <em>with replacement</em>: some values get picked twice or three times (badges), others
+        not at all (faded). Each resample's statistic drops onto the histogram. Start with the
+        <strong>mean</strong> &mdash; the textbook curve $\text{SE} = s/\sqrt{n}$ is drawn for
+        comparison, so you can watch the loop rediscover it. Then switch to the
+        <strong>median</strong>: the textbook curve vanishes, and the loop keeps working.
+      </p>
+      <div class="controls-row">
+        <span class="toggle-group" id="stat-toggle">
+          <button class="stat-btn active" data-stat="mean">Mean</button>
+          <button class="stat-btn" data-stat="median">Median</button>
+        </span>
+        <button class="action-btn" id="btn-once">Resample once</button>
+        <button class="action-btn" id="btn-100">&times;100</button>
+        <button class="action-btn" id="btn-full">Run all 1,000 (seeded)</button>
+        <button class="action-btn secondary" id="btn-reset">Reset</button>
+      </div>
+      <canvas id="strip-canvas" class="chart"></canvas>
+      <canvas id="hist-canvas" class="chart" style="margin-top: 10px;"></canvas>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label" id="ro-stat-label">SAMPLE MEAN</div>
+          <div class="value" id="ro-stat">&ndash;</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">RESAMPLES SO FAR</div>
+          <div class="value" id="ro-b">0</div>
+        </div>
+        <div class="readout boot">
+          <div class="label">BOOTSTRAP SE*</div>
+          <div class="value" id="ro-se">&ndash;</div>
+        </div>
+        <div class="readout theory">
+          <div class="label" id="ro-theory-label">TEXTBOOK SE = s/&radic;n</div>
+          <div class="value" id="ro-theory">&ndash;</div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The bootstrap principle.</strong> The sample stands in for the population, so
+          the resample stands in for the sample: variation between resamples mimics the
+          variation you would have seen between repeated real studies. For the mean, the loop's
+          answer converges on the formula's (run all 1,000: SE* $\approx 1.26$ against the
+          textbook $1.27$) &mdash; that agreement is what licenses trusting the loop where no
+          formula exists.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>The family tree</h2>
+      <p>
+        One idea, three methods, distinguished by two questions about how you resample
+        (after the taxonomy in the JonStats course):
+      </p>
+      <div class="tree">
+        <div class="node">Sample data</div>
+        <div class="arrow">&darr;</div>
+        <div class="node q">Resample every row with equal probability?</div>
+        <div class="split">
+          <div class="branch">
+            <div class="lbl">YES &mdash; then&hellip;</div>
+            <div class="node q">With replacement?</div>
+            <div class="split">
+              <div class="branch">
+                <div class="lbl">YES</div>
+                <a class="leaf" href="bootstrap.html">Bootstrap
+                  <small>uncertainty for any statistic</small></a>
+              </div>
+              <div class="branch">
+                <div class="lbl">NO &mdash; shuffle</div>
+                <a class="leaf" href="permutation.html">Permutation test
+                  <small>build the null yourself</small></a>
+              </div>
+            </div>
+          </div>
+          <div class="branch">
+            <div class="lbl">NO &mdash; weight by population</div>
+            <a class="leaf" href="poststratification.html">Post-stratification
+              <small>repair a biased sample</small></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>How this section relates to the rest of the site</h2>
+      <p>
+        The <a href="../inference/curvature.html">curvature route</a> reached the sampling
+        distribution by calculus; this section reaches it by loop. Where both apply, they
+        agree &mdash; the <a href="bootstrap.html">bootstrap page</a> shows the handshake, and
+        <a href="comparison.html">Three Routes</a> lines resampling up against the Wald and
+        Bayesian answers on the same data. Where the calculus runs out (medians, quantiles,
+        awkward statistics), the loop carries on alone.
+      </p>
+      <div class="crosslink-box">
+        <strong>Companion reading on JonStats:</strong> the
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/hacker-stats/">Hacker
+        Stats course</a> develops all of this in R &mdash; base-R loops first, then the tidy
+        <code>infer</code> pipeline (<code>specify() |&gt; hypothesize() |&gt; generate() |&gt;
+        calculate()</code>), and post-stratification with the red-coin/blue-coin example.
+      </div>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+  </script>
+  <script type="module">
+    // Bootstrap-the-loop demo. Seeded full runs reproduce
+    // scripts/py/validate_hacker_stats.py exactly:
+    //   mean  (seed 101): SE* 1.2649, CI (61.2550, 66.2100)
+    //   median(seed 111): SE* 1.2952, CI (60.9000, 65.5500)
+    // Single-step exploration uses its own stream (seed 1) so it never
+    // disturbs the validated ones.
+    import {
+      mulberry32, bootstrapIndices, mean, median, sd, percentileCI,
+    } from '../js/hacker-stats/resampling.js';
+
+    const stripCanvas = document.getElementById('strip-canvas');
+    const histCanvas = document.getElementById('hist-canvas');
+
+    const SEEDS = { mean: 101, median: 111 };
+    let y20 = [];
+    let stat = 'mean';
+    let draws = [];            // bootstrap statistics so far
+    let counts = null;         // multiplicity of each point in the last resample
+    let exploreRng = mulberry32(1);
+
+    const statFn = v => stat === 'mean' ? mean(v) : median(v);
+
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = rect.height * dpr;
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    const Y_MIN = 50, Y_MAX = 78;
+
+    function drawStrip() {
+      const { ctx, w, h } = setupCanvas(stripCanvas);
+      const m = { left: 25, right: 25 };
+      const xPix = v => m.left + (v - Y_MIN) / (Y_MAX - Y_MIN) * (w - m.left - m.right);
+      const axisY = h - 30;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, axisY);
+      ctx.lineTo(w - m.right, axisY);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 52; v <= 76; v += 4) {
+        ctx.fillText(v, xPix(v), axisY + 16);
+      }
+      ctx.fillText('resting heart rate (bpm) — the 20 observed values', w / 2, axisY + 29);
+
+      y20.forEach((v, i) => {
+        const c = counts ? (counts[i] || 0) : 1;
+        ctx.fillStyle = counts
+          ? (c === 0 ? 'rgba(44, 62, 80, 0.15)' : '#e67e22')
+          : '#2c3e50';
+        ctx.beginPath();
+        ctx.arc(xPix(v), axisY - 14, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        if (counts && c > 1) {
+          ctx.fillStyle = '#af601a';
+          ctx.font = '700 10px sans-serif';
+          ctx.fillText('×' + c, xPix(v), axisY - 26);
+          ctx.font = '11px sans-serif';
+        }
+      });
+
+      // Statistic marker of the last resample
+      if (counts) {
+        const resampled = [];
+        y20.forEach((v, i) => { for (let k = 0; k < (counts[i] || 0); k++) resampled.push(v); });
+        const s = statFn(resampled);
+        ctx.strokeStyle = '#ca6f1e';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(xPix(s), axisY - 4);
+        ctx.lineTo(xPix(s), 8);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#ca6f1e';
+        ctx.textAlign = 'left';
+        ctx.fillText(stat + '* = ' + s.toFixed(2), xPix(s) + 6, 16);
+      }
+    }
+
+    function normalPdfLocal(z) {
+      return Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+    }
+
+    function drawHist() {
+      const { ctx, w, h } = setupCanvas(histCanvas);
+      const m = { top: 15, right: 25, bottom: 40, left: 25 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const H_MIN = 58, H_MAX = 70;
+      const xPix = v => m.left + (v - H_MIN) / (H_MAX - H_MIN) * plotW;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 58; v <= 70; v += 2) {
+        ctx.fillText(v, xPix(v), m.top + plotH + 16);
+      }
+      ctx.fillText('bootstrap ' + stat + '* (B so far: ' + draws.length + ')',
+        m.left + plotW / 2, m.top + plotH + 32);
+
+      // Histogram
+      const BINS = 48;
+      const binW = (H_MAX - H_MIN) / BINS;
+      const bins = new Array(BINS).fill(0);
+      for (const d of draws) {
+        const b = Math.floor((d - H_MIN) / binW);
+        if (b >= 0 && b < BINS) bins[b]++;
+      }
+      const maxBin = Math.max(...bins, 1);
+      ctx.fillStyle = 'rgba(230, 126, 34, 0.55)';
+      bins.forEach((c, b) => {
+        if (!c) return;
+        const bh = c / maxBin * (plotH - 25);
+        ctx.fillRect(xPix(H_MIN + b * binW), m.top + plotH - bh,
+          plotW / BINS - 1, bh);
+      });
+
+      // Theoretical overlay for the mean only
+      if (stat === 'mean' && y20.length) {
+        const se = sd(y20) / Math.sqrt(20);
+        const mu = mean(y20);
+        ctx.strokeStyle = '#667eea';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        for (let px = 0; px <= 400; px++) {
+          const v = H_MIN + (H_MAX - H_MIN) * px / 400;
+          const dens = normalPdfLocal((v - mu) / se);
+          const cy = m.top + plotH - dens / normalPdfLocal(0) * (plotH - 25);
+          px === 0 ? ctx.moveTo(xPix(v), cy) : ctx.lineTo(xPix(v), cy);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#5b6bd6';
+        ctx.textAlign = 'left';
+        ctx.fillText('textbook: Normal(x̄, s²/n)', m.left + 8, m.top + 12);
+      } else if (stat === 'median') {
+        ctx.fillStyle = '#999';
+        ctx.textAlign = 'left';
+        ctx.fillText('no textbook curve exists for this one', m.left + 8, m.top + 12);
+      }
+
+      // Percentile CI band once there is something to show
+      if (draws.length >= 100) {
+        const [lo, hi] = percentileCI(draws);
+        ctx.strokeStyle = '#ca6f1e';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(xPix(lo), m.top + plotH - 4);
+        ctx.lineTo(xPix(hi), m.top + plotH - 4);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+    }
+
+    function updateReadouts() {
+      document.getElementById('ro-stat-label').textContent =
+        'SAMPLE ' + stat.toUpperCase();
+      document.getElementById('ro-stat').textContent =
+        y20.length ? statFn(y20).toFixed(2) + ' bpm' : '–';
+      document.getElementById('ro-b').textContent = draws.length;
+      document.getElementById('ro-se').textContent =
+        draws.length >= 2 ? sd(draws).toFixed(4) : '–';
+      const theoryLabel = document.getElementById('ro-theory-label');
+      const theoryVal = document.getElementById('ro-theory');
+      if (stat === 'mean' && y20.length) {
+        theoryLabel.textContent = 'TEXTBOOK SE = s/√n';
+        theoryVal.textContent = (sd(y20) / Math.sqrt(20)).toFixed(4);
+      } else {
+        theoryLabel.textContent = 'TEXTBOOK SE';
+        theoryVal.textContent = 'none exists';
+      }
+    }
+
+    function resampleOnce() {
+      const idx = bootstrapIndices(20, exploreRng);
+      counts = new Array(20).fill(0);
+      idx.forEach(i => counts[i]++);
+      draws.push(statFn(idx.map(i => y20[i])));
+    }
+
+    function redraw() {
+      drawStrip();
+      drawHist();
+      updateReadouts();
+    }
+
+    function reset() {
+      draws = [];
+      counts = null;
+      exploreRng = mulberry32(1);
+      redraw();
+    }
+
+    document.getElementById('btn-once').addEventListener('click', () => {
+      if (!y20.length) return;
+      resampleOnce();
+      redraw();
+    });
+
+    document.getElementById('btn-100').addEventListener('click', () => {
+      if (!y20.length) return;
+      for (let k = 0; k < 100; k++) resampleOnce();
+      redraw();
+    });
+
+    document.getElementById('btn-full').addEventListener('click', () => {
+      if (!y20.length) return;
+      // Fresh seeded stream: reproduces the validated numbers exactly
+      const rng = mulberry32(SEEDS[stat]);
+      draws = [];
+      counts = null;
+      for (let b = 0; b < 1000; b++) {
+        const idx = bootstrapIndices(20, rng);
+        draws.push(statFn(idx.map(i => y20[i])));
+      }
+      redraw();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', reset);
+
+    document.querySelectorAll('#stat-toggle .stat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#stat-toggle .stat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        stat = btn.dataset.stat;
+        reset();
+      });
+    });
+
+    window.addEventListener('resize', redraw);
+
+    fetch('../data/inference-rest-hr.json')
+      .then(r => r.json())
+      .then(json => {
+        y20 = json.data.slice(0, 20).map(d => d.y);
+        redraw();
+      })
+      .catch(() => {
+        const { ctx } = setupCanvas(stripCanvas);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('Could not load ../data/inference-rest-hr.json — serve the site over HTTP.', 30, 40);
+      });
+  </script>
+</body>
+</html>

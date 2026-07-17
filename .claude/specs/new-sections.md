@@ -476,6 +476,19 @@ Learning points:
 
 ## Hacker Stats Section
 
+> **STATUS (2026-07-17):** FULLY BUILT as `docs/hacker-stats/` (amber #e67e22 identity), with
+> two agreed departures from this spec: (1) the motivating example is the **median/quantile**
+> (no analytic SE exists — Jon's suggestion), demonstrated on a new skewed BP dataset
+> `docs/data/hacker-bp.json`; (2) a sixth page `poststratification.html` (un-deferred by Jon)
+> covers the taxonomy's third branch with the Wang–Rothschild–Goel–Gelman Xbox study and an
+> omit-a-variable bias demo, framing MrP towards small-area estimation rather than election
+> forecasting. comparison.html became a THREE-way (Wald | bootstrap | credible), which the
+> spec predates. Resampling is seeded mulberry32, ported bit-faithfully to Python
+> (`scripts/py/validate_hacker_stats.py`) so displayed CIs/p-values reproduce exactly
+> (node parity: 32/32 + poststrat draws). Shared JS: `docs/js/hacker-stats/resampling.js`.
+> JonStats' 12-red/8-blue permutation example is reused with identical data (9/12 vs 3/8,
+> observed diff 0.375; our seeded p = 0.106 vs exact 0.113).
+
 ### Overview
 A new section introducing computational (non-parametric) approaches to inference: bootstrap and permutation testing. Methodologically orthogonal to everything else on the dashboard — no distributional assumptions, no log-likelihood, no link functions. Pure computation.
 
