@@ -66,6 +66,9 @@
       font-weight: 600;
     }
 
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
     .card {
       background: white;
       border-radius: 12px;
@@ -275,8 +278,11 @@
       <div class="nav-links">
         <a href="../optimization/index.html">&larr; Optimisation</a>
         <a href="index.html" class="current">Why Uncertainty?</a>
-        <a href="curvature.html">Curvature &rarr; Standard Errors</a>
-        <a href="bayes.html">Bayesian Uncertainty</a>
+        <a href="curvature.html" class="branch-curv">Curvature &rarr; Standard Errors</a>
+        <a href="wald.html" class="branch-curv">Wald Tests</a>
+        <a href="lr-test.html" class="branch-curv">LR Tests</a>
+        <a href="model-comparison.html" class="branch-curv">AIC/BIC</a>
+        <a href="bayes.html" class="branch-bayes">Bayesian Uncertainty</a>
         <a href="../index.html">Tutorials</a>
       </div>
     </header>
@@ -388,9 +394,20 @@
       <p>
         Everything on this page was one-dimensional. Real models have many parameters, and their
         likelihood surface can fall away at different rates in different directions &mdash; and the
-        directions can interact. The next two pages develop two complementary ways of turning the
-        shape of a multi-parameter peak into uncertainty statements.
+        directions can interact. From here the section <strong>forks</strong> into two parallel
+        traditions for turning the shape of a multi-parameter peak into uncertainty statements.
+        Neither is the advanced version of the other; take them in either order.
       </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>One surface, read two ways.</strong> The object both routes work on is the same
+          surface the optimisation section built. The curvature route reads it as a
+          <em>likelihood</em> to be maximised and then approximated; the sampling route reads it
+          (given a flat prior, to which it is proportional) as a <em>posterior</em> to be
+          explored. And the sampling route is not new to you &mdash; you already ran it when the
+          MCMC chains roamed <a href="../optimization/mcmc.html">Arthur's Seat</a>.
+        </p>
+      </div>
       <div class="routes-grid">
         <div class="route-card curvature">
           <h3>The curvature route</h3>
@@ -412,13 +429,16 @@
           </p>
           <a class="route-btn" href="bayes.html">Bayesian uncertainty &rarr;</a>
         </div>
-        <div class="route-card future">
-          <h3>Where this leads</h3>
+        <div class="route-card curvature">
+          <h3>The testing toolkit</h3>
           <p style="font-size: 0.95em;">
-            Once standard errors exist, hypothesis tests follow: Wald tests, likelihood-ratio tests
-            and model comparison (AIC/BIC), plus assumption-free resampling methods (the bootstrap).
-            Planned future additions to this section.
+            The curvature route continues: once standard errors exist,
+            <a href="wald.html">Wald tests</a> follow in one division; comparing whole peaks
+            gives the <a href="lr-test.html">likelihood-ratio test</a>; and
+            <a href="model-comparison.html">AIC/BIC</a> rank entire models. Assumption-free
+            resampling methods (the bootstrap) are a planned further section.
           </p>
+          <a class="route-btn" href="wald.html">Wald tests &rarr;</a>
         </div>
       </div>
     </div>

@@ -341,14 +341,18 @@ docs/tutorials/08-zeroinfl/
 
 ## Hypothesis Testing Section
 
-> **STATUS (2026-07-13):** Partially built as `docs/inference/`. Pages 1–2 of this spec exist as
-> `inference/index.html` (From the Peak to the Error Bar) and `inference/curvature.html`
-> (Standard Errors from Curvature), plus a page beyond this spec: `inference/bayes.html`
-> (Beyond the Quadratic: Bayesian Uncertainty — quadratic-approximation failures, flat-prior grid
-> posteriors, Wald vs credible intervals). Pages 3–5 (wald.html, lr-test.html,
-> model-comparison.html) remain UNBUILT. Data: `docs/data/inference-rest-hr.json`,
-> `docs/data/inference-logistic.json`; validation: `scripts/py/generate_inference_data.py`,
-> `scripts/R/validate-inference.R`; shared JS: `docs/js/inference/inference-math.js`.
+> **STATUS (2026-07-17):** FULLY BUILT as `docs/inference/`, restructured as a **fork** (agreed
+> with Jon): after index + curvature the section splits into the purple curvature branch
+> (wald.html, lr-test.html, model-comparison.html — this spec's pages 3–5) and the teal sampling
+> branch (bayes.html — beyond this spec: quadratic-approximation failures, flat-prior grid
+> posteriors, Wald vs credible intervals). curvature.html ends with dual fork buttons; nav bars
+> colour-code the branches; neither branch is presented as prerequisite to the other.
+> Data: `docs/data/inference-rest-hr.json`, `inference-logistic.json`,
+> `inference-model-comparison.json` (expanded HR study, seed 4242, age + junk shoe-size
+> predictor); validation: `scripts/py/generate_inference_data.py`,
+> `scripts/R/validate-inference.R`; shared JS: `docs/js/inference/inference-math.js`
+> (incl. gammaQ/normalSf/chiSqSf/chiSqPdf, olsFitK, aic/bic in the R k-includes-sigma
+> convention).
 
 ### Overview
 A new section (parallel to Tutorials and Optimisation) that teaches statistical inference — not "where is the peak?" but "how confident are we about the peak?" and "does this predictor matter?"

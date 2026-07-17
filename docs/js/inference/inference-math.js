@@ -255,6 +255,159 @@ export function logisticGridPosterior(xs, ys, centre, ses, G = 240, span = 6) {
   };
 }
 
+// ---------------------------------------------------------------
+// Additions for the testing trio (wald.html, lr-test.html,
+// model-comparison.html), 2026-07. Validated against
+// scripts/py/generate_inference_data.py (scipy) to 4 d.p.
+// ---------------------------------------------------------------
+
+/** Lanczos log-gamma (g=7, n=9), double precision. */
+function lnGamma(x) {
+  const c = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028,
+    771.32342877765313, -176.61502916214059, 12.507343278686905,
+    -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+  ];
+  if (x < 0.5) {
+    return Math.log(Math.PI / Math.sin(Math.PI * x)) - lnGamma(1 - x);
+  }
+  x -= 1;
+  let a = c[0];
+  const t = x + 7.5;
+  for (let i = 1; i < 9; i++) a += c[i] / (x + i);
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+}
+
+/** Regularised upper incomplete gamma Q(a, x) = Γ(a, x)/Γ(a). */
+export function gammaQ(a, x) {
+  if (x < 0 || a <= 0) return NaN;
+  if (x === 0) return 1;
+  if (x < a + 1) {
+    // series for P(a, x), then Q = 1 - P
+    let ap = a, sum = 1 / a, del = sum;
+    for (let i = 0; i < 500; i++) {
+      ap += 1;
+      del *= x / ap;
+      sum += del;
+      if (Math.abs(del) < Math.abs(sum) * 1e-15) break;
+    }
+    return 1 - sum * Math.exp(-x + a * Math.log(x) - lnGamma(a));
+  }
+  // Lentz continued fraction for Q(a, x)
+  const FPMIN = 1e-300;
+  let b = x + 1 - a, c = 1 / FPMIN, d = 1 / b, h = d;
+  for (let i = 1; i <= 500; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c;
+    if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-15) break;
+  }
+  return h * Math.exp(-x + a * Math.log(x) - lnGamma(a));
+}
+
+/** Upper tail of the standard normal: P(Z > z). */
+export function normalSf(z) {
+  const q = 0.5 * gammaQ(0.5, z * z / 2);
+  return z >= 0 ? q : 1 - q;
+}
+
+/** Standard normal CDF. */
+export function normalCdf(z) {
+  return 1 - normalSf(z);
+}
+
+/** Standard normal density. */
+export function normalPdf(z) {
+  return Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+}
+
+/** Upper tail of the chi-squared distribution with df degrees of freedom. */
+export function chiSqSf(x, df) {
+  if (x <= 0) return 1;
+  return gammaQ(df / 2, x / 2);
+}
+
+/** Chi-squared density with df degrees of freedom (for drawing the curve). */
+export function chiSqPdf(x, df) {
+  if (x <= 0) return 0;
+  return Math.exp((df / 2 - 1) * Math.log(x) - x / 2
+    - (df / 2) * Math.log(2) - lnGamma(df / 2));
+}
+
+/**
+ * OLS with k predictors via the normal equations (Gaussian elimination
+ * with partial pivoting; fine for the small k used on these pages).
+ * rows: array of predictor arrays (WITHOUT the intercept column —
+ * it is prepended automatically). Returns {beta, rss, n, k, llML} where
+ * llML is the Gaussian log-likelihood with sigma^2 at its ML value.
+ */
+export function olsFitK(rows, ys) {
+  const n = ys.length;
+  const k = rows.length + 1;
+  const X = [];
+  for (let i = 0; i < n; i++) {
+    const r = [1];
+    for (const col of rows) r.push(col[i]);
+    X.push(r);
+  }
+  // Normal equations A beta = b
+  const A = Array.from({ length: k }, () => new Float64Array(k + 1));
+  for (let i = 0; i < n; i++) {
+    for (let p = 0; p < k; p++) {
+      for (let q = 0; q < k; q++) A[p][q] += X[i][p] * X[i][q];
+      A[p][k] += X[i][p] * ys[i];
+    }
+  }
+  // Elimination with partial pivoting
+  for (let col = 0; col < k; col++) {
+    let piv = col;
+    for (let r = col + 1; r < k; r++) {
+      if (Math.abs(A[r][col]) > Math.abs(A[piv][col])) piv = r;
+    }
+    [A[col], A[piv]] = [A[piv], A[col]];
+    for (let r = 0; r < k; r++) {
+      if (r === col) continue;
+      const f = A[r][col] / A[col][col];
+      for (let cc = col; cc <= k; cc++) A[r][cc] -= f * A[col][cc];
+    }
+  }
+  const beta = [];
+  for (let p = 0; p < k; p++) beta.push(A[p][k] / A[p][p]);
+  let rss = 0;
+  for (let i = 0; i < n; i++) {
+    let mu = 0;
+    for (let p = 0; p < k; p++) mu += X[i][p] * beta[p];
+    rss += (ys[i] - mu) ** 2;
+  }
+  return { beta, rss, n, k, llML: gaussianMLLogLik(n, rss) };
+}
+
+/** Gaussian max log-likelihood given n and the residual sum of squares. */
+export function gaussianMLLogLik(n, rss) {
+  const s2 = rss / n;
+  return -0.5 * n * (Math.log(2 * Math.PI * s2) + 1);
+}
+
+/**
+ * AIC/BIC in the R convention: k counts every estimated parameter,
+ * INCLUDING sigma^2 for Gaussian models (so a line fit has k = 3).
+ * Matches R's AIC()/BIC(); statsmodels' OLS .aic omits sigma (differs
+ * by a constant 2, which never changes a ranking).
+ */
+export function aic(ll, k) {
+  return -2 * ll + 2 * k;
+}
+
+export function bic(ll, k, n) {
+  return -2 * ll + Math.log(n) * k;
+}
+
 /**
  * Random-walk Metropolis on an arbitrary log-density, for the "walked
  * portrait" of the posterior. Returns the chain (post burn-in).

@@ -66,6 +66,29 @@
       font-weight: 600;
     }
 
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
+    .fork-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .fork-buttons a {
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+      color: white;
+    }
+
+    .fork-buttons a.curv { background: #9b59b6; }
+    .fork-buttons a.bayes { background: #1abc9c; }
+
     .card {
       background: white;
       border-radius: 12px;
@@ -467,7 +490,10 @@
         <a href="../optimization/index.html">&larr; Optimisation</a>
         <a href="index.html">Why Uncertainty?</a>
         <a href="curvature.html" class="current">Curvature &rarr; Standard Errors</a>
-        <a href="bayes.html">Bayesian Uncertainty</a>
+        <a href="wald.html" class="branch-curv">Wald Tests</a>
+        <a href="lr-test.html" class="branch-curv">LR Tests</a>
+        <a href="model-comparison.html" class="branch-curv">AIC/BIC</a>
+        <a href="bayes.html" class="branch-bayes">Bayesian Uncertainty</a>
         <a href="../index.html">Tutorials</a>
       </div>
     </header>
@@ -774,8 +800,8 @@ print(np.sqrt(np.diag(vcov)))</pre>
           centred on the MLE. For large samples and well-behaved models this is an excellent
           approximation. But when it fails &mdash; small samples, parameters near boundaries,
           skewed or ridge-shaped surfaces &mdash; the ellipse becomes a poor portrait of the real
-          uncertainty. The <a href="bayes.html">next page</a> shows it failing, and what to do
-          instead.
+          uncertainty. The <a href="bayes.html">Bayesian page</a> shows it failing, and what to
+          do instead.
         </p>
       </div>
       <div class="crosslink-box">
@@ -786,6 +812,21 @@ print(np.sqrt(np.diag(vcov)))</pre>
         <a href="https://jonminton.github.io/JonStats/pages/main-course/complete-simulation-example/">Complete
         Simulation Example</a> then applies it end-to-end with <code>coefficients()</code>,
         <code>vcov()</code> and <code>sigma()</code> to produce honest quantities of interest.
+      </div>
+    </div>
+
+    <div class="card" style="text-align: center;">
+      <h2>The section forks here &mdash; choose a route</h2>
+      <p style="max-width: 700px; margin: 0 auto 5px auto;">
+        With standard errors in hand, the <span style="color:#7d3c98; font-weight:600;">curvature
+        route</span> continues into hypothesis testing. Or cross to the
+        <span style="color:#16a085; font-weight:600;">sampling route</span>, which prices
+        uncertainty by walking the surface instead of assuming its shape. Neither route requires
+        the other first.
+      </p>
+      <div class="fork-buttons">
+        <a class="curv" href="wald.html">Continue this route: Wald tests &rarr;</a>
+        <a class="bayes" href="bayes.html">The other route: Bayesian uncertainty &rarr;</a>
       </div>
     </div>
 

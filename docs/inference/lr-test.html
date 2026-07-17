@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Likelihood-Ratio Tests: Compare the Peaks | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    .surface-layout {
+      display: flex;
+      gap: 15px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .surface-layout .main {
+      flex: 3;
+      min-width: 420px;
+    }
+
+    .surface-layout .gauge {
+      flex: 1;
+      min-width: 150px;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    #surface-canvas { height: 400px; }
+    #gauge-canvas { height: 400px; }
+    #chisq-canvas { height: 280px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 180px;
+      accent-color: #9b59b6;
+    }
+
+    .controls-row .n-value {
+      font-weight: 700;
+      color: #9b59b6;
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend > span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .full::before { background: #27ae60; border-radius: 50%; }
+    .legend .rest::before { background: #e67e22; border-radius: 50%; }
+    .legend .ridge::before { background: #ffffff; border: 1px dashed #999; }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.full .value { color: #27ae60; }
+    .readout.rest .value { color: #e67e22; }
+    .readout.lam .value { color: #9b59b6; }
+    .readout.p .value { color: #667eea; }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.92em;
+    }
+
+    .compare-table th, .compare-table td {
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+      vertical-align: top;
+    }
+
+    .compare-table th {
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.9em;
+    }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #9b59b6;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Likelihood-Ratio Tests: Compare the Peaks</h1>
+      <p>Fit both models. The height difference on the surface settles the argument.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html">Why Uncertainty?</a>
+        <a href="curvature.html" class="branch-curv">Curvature &rarr; Standard Errors</a>
+        <a href="wald.html" class="branch-curv">Wald Tests</a>
+        <a href="lr-test.html" class="current">LR Tests</a>
+        <a href="model-comparison.html" class="branch-curv">AIC/BIC</a>
+        <a href="bayes.html" class="branch-bayes">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>Two models, one surface</h2>
+      <p>
+        The <a href="wald.html">Wald test</a> never left the summit: it judged &ldquo;is the
+        slope zero?&rdquo; from the full model's peak and its local curvature alone. The
+        likelihood-ratio test does something more direct. It actually <em>fits the rival
+        model</em> &mdash; the one where the slope is fixed at zero &mdash; and asks how much
+        log-likelihood was lost by the restriction:
+      </p>
+      <p>
+        $$\Lambda \;=\; 2\left[\,\ell(\hat\beta_{\text{full}}) - \ell(\hat\beta_{\text{restricted}})\,\right]$$
+      </p>
+      <p>
+        The restricted model here is an old friend: with $\beta_1 = 0$, all that remains is a
+        single mean &mdash; exactly the one-parameter model whose likelihood curve opened
+        <a href="index.html">this section</a>. On the heart-rate data at $n = 60$ the full peak
+        reaches $\ell = -196.12$ while the best mean-only fit manages $-204.38$: a drop of
+        $8.26$ log-likelihood units, so $\Lambda = 16.51$.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>How big is big?</strong> Wilks' theorem: if the restriction were true, $\Lambda$
+          would follow a $\chi^2$ distribution with degrees of freedom equal to the number of
+          parameters pinned down (here 1). A $\Lambda$ of 16.51 lands far beyond the 95% cut of
+          $3.84$: $p \approx 4.8 \times 10^{-5}$. The nested model always sits lower &mdash; the
+          question is only whether the drop exceeds what chance alone would cost.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: two peaks on the surface</h2>
+      <p>
+        The surface below is the profile log-likelihood over $(\beta_0, \beta_1)$ for the
+        heart-rate data. The <strong style="color:#1e8449;">green dot</strong> is the full
+        model's peak. The restricted model may only move along the dashed line $\beta_1 = 0$;
+        the best it can do there is the <strong style="color:#ca6f1e;">orange dot</strong>.
+        The height gauge on the right compares the two &mdash; the bracket <em>is</em> the test
+        statistic. Drag the sample size and watch the gap grow as evidence accumulates.
+      </p>
+      <div class="controls-row">
+        <label for="n-slider">Sample size $n$:</label>
+        <input type="range" id="n-slider" min="20" max="200" step="5" value="60">
+        <span class="n-value" id="n-display">60</span>
+      </div>
+      <div class="surface-layout">
+        <div class="main">
+          <canvas id="surface-canvas" class="chart"></canvas>
+        </div>
+        <div class="gauge">
+          <canvas id="gauge-canvas" class="chart"></canvas>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="full">full-model peak</span>
+        <span class="rest">restricted peak (on the ridge)</span>
+        <span class="ridge">the &beta;&#8321; = 0 ridge</span>
+      </div>
+      <div class="readout-grid">
+        <div class="readout full">
+          <div class="label">&ell; FULL MODEL</div>
+          <div class="value" id="ro-full">&ndash;</div>
+        </div>
+        <div class="readout rest">
+          <div class="label">&ell; MEAN-ONLY</div>
+          <div class="value" id="ro-rest">&ndash;</div>
+        </div>
+        <div class="readout lam">
+          <div class="label">&Lambda; = 2 &times; GAP</div>
+          <div class="value" id="ro-lam">&ndash;</div>
+        </div>
+        <div class="readout p">
+          <div class="label">&chi;&sup2;(1) p-VALUE</div>
+          <div class="value" id="ro-p">&ndash;</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Where &Lambda; lands on the &chi;&sup2; curve</h2>
+      <p>
+        Under the null, $\Lambda$ is a draw from the $\chi^2_1$ distribution below. The dashed
+        line marks its 95% point, $3.84$ &mdash; algebraically the square of the Wald cut
+        $1.96$, which is no coincidence: for one parameter the two tests agree exactly when the
+        surface is perfectly quadratic, and drift apart as it isn't. The purple needle is the
+        $\Lambda$ from your current sample size above.
+      </p>
+      <canvas id="chisq-canvas" class="chart"></canvas>
+    </div>
+
+    <div class="card">
+      <h2>The same test where Wald wobbled</h2>
+      <p>
+        On the <a href="wald.html">Wald page</a>, the small-sample logistic model rejected
+        &ldquo;no biomarker effect&rdquo; with $p = 0.0048$. The likelihood-ratio route fits
+        both logistic models and compares peaks: $\ell_{\text{full}} = -8.36$ against
+        $\ell_{\text{null}} = -19.10$, giving $\Lambda = 21.47$ and $p = 3.6 \times 10^{-6}$
+        &mdash; evidence a thousand times sharper from the same data.
+      </p>
+      <p>
+        The discrepancy is the Wald test's local approximation at work: with $n = 30$ the
+        surface is skewed (as the <a href="bayes.html">Bayesian page</a> shows in detail), the
+        standard error is inflated, and the Wald ratio understates what the whole surface knows.
+        The LR test walked to both peaks and measured the actual drop.
+      </p>
+      <div style="margin-top: 15px;">
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre># Gaussian: full vs mean-only (n = 60)
+full       <- lm(y ~ x, data = hr)
+restricted <- lm(y ~ 1, data = hr)
+lambda <- as.numeric(2 * (logLik(full) - logLik(restricted)))
+pchisq(lambda, df = 1, lower.tail = FALSE)
+
+# Logistic: full vs null (n = 30)
+anova(glm(y ~ 1, data = trial, family = binomial),
+      glm(y ~ x, data = trial, family = binomial), test = "Chisq")
+
+<span class="output"># logLik(full)       -196.1212   logLik(restricted) -204.3777
+# lambda = 16.5131,  p = 4.832e-05
+
+# Analysis of Deviance Table
+#   Resid. Df Resid. Dev Df Deviance Pr(&gt;Chi)
+# 1        29     38.191
+# 2        28     16.719  1   21.472 3.59e-06 ***</span></pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>from scipy import stats
+import statsmodels.api as sm
+
+# Gaussian: full vs mean-only (n = 60)
+full = sm.OLS(y, sm.add_constant(x)).fit()
+restricted = sm.OLS(y, np.ones_like(y)).fit()
+lam = 2 * (full.llf - restricted.llf)
+p = stats.chi2.sf(lam, df=1)
+
+# Logistic: statsmodels stores the null fit for you
+logit = sm.Logit(resp, sm.add_constant(bio)).fit()
+lam2 = 2 * (logit.llf - logit.llnull)
+
+<span class="output"># full.llf = -196.1212   restricted.llf = -204.3777
+# lam = 16.5131,  p = 4.832e-05
+
+# logit.llf = -8.3593    logit.llnull = -19.0954
+# lam2 = 21.4723,  p = 3.59e-06</span></pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Wald vs likelihood ratio: local vs global</h2>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Wald</th>
+            <th>Likelihood ratio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Fits needed</strong></td>
+            <td>One (the full model)</td>
+            <td>Two (full and restricted)</td>
+          </tr>
+          <tr>
+            <td><strong>Information used</strong></td>
+            <td>Peak location + local curvature</td>
+            <td>Actual surface heights at both optima</td>
+          </tr>
+          <tr>
+            <td><strong>Fails when</strong></td>
+            <td>Surface non-quadratic: boundaries, separation, small $n$</td>
+            <td>Rarely earlier than Wald; needs <em>nested</em> models</td>
+          </tr>
+          <tr>
+            <td><strong>In the wild</strong></td>
+            <td>Every <code>summary()</code> row</td>
+            <td><code>anova(..., test = "Chisq")</code>, deviance tables,
+                <code>confint()</code> profiles</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Already met, in disguise.</strong> R's <code>confint()</code> on a GLM reports
+          <em>profile-likelihood</em> intervals: it slides each parameter along its axis and
+          keeps the values whose likelihood drop stays under the $\chi^2$ cut &mdash; the LR
+          test inverted, exactly as the Wald test inverted into $\hat\beta \pm 1.96\,\text{SE}$
+          on the <a href="wald.html">previous page</a>. That is why <code>confint()</code> and
+          the <code>summary()</code> intervals disagree precisely when this page and the last
+          one do.
+        </p>
+      </div>
+      <p style="font-size: 0.95em; color: #555;">
+        Both tests need the models <em>nested</em> &mdash; one must be the other with parameters
+        pinned. Choosing among non-nested rivals needs a different tool:
+        <a href="model-comparison.html">AIC and BIC</a>, next. On the sampling branch, the
+        counterpart machinery is
+        <a href="bayes.html" style="color: #16a085; font-weight: 600;">posterior comparison</a>
+        rather than a test ritual.
+      </p>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="wald.html">&larr; Wald Tests</a>
+      <a class="next" href="model-comparison.html">Model Comparison (AIC/BIC) &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+  </script>
+  <script type="module">
+    // Profile log-likelihood surface (sigma^2 maximised out at every point),
+    // so the on-screen height gap between the two peaks is exactly Lambda/2.
+    // Numbers validated against scripts/py/generate_inference_data.py:
+    // n=60: ll_full -196.1212, ll_rest -204.3777, Lambda 16.5131.
+    import { chiSqSf, chiSqPdf } from '../js/inference/inference-math.js';
+
+    const surfaceCanvas = document.getElementById('surface-canvas');
+    const gaugeCanvas = document.getElementById('gauge-canvas');
+    const chisqCanvas = document.getElementById('chisq-canvas');
+    const slider = document.getElementById('n-slider');
+    const nDisplay = document.getElementById('n-display');
+
+    let allX = [], allY = [];
+    let B0_MIN = 58, B0_MAX = 82, B1_MIN = -2.6, B1_MAX = 0.8;
+
+    const BANDS = [-0.5, -1.15, -2.3, -3.84 / 2, -4.6, -7, -10, -15, -25, -40];
+    const COLOURS = [
+      '#f3eefa', '#e9e0f5', '#ded1ef', '#d2c1e8', '#c4b0e0',
+      '#b59ed7', '#a58ccd', '#9579c2', '#8467b6', '#7355a9', '#62449b',
+    ];
+
+    function setupCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    // Sufficient statistics for O(1) profile-LL evaluation per grid cell
+    function suffStats(n) {
+      const x = allX.slice(0, n), y = allY.slice(0, n);
+      let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
+      for (let i = 0; i < n; i++) {
+        sx += x[i]; sy += y[i];
+        sxx += x[i] * x[i]; sxy += x[i] * y[i]; syy += y[i] * y[i];
+      }
+      return { n, sx, sy, sxx, sxy, syy };
+    }
+
+    function rssAt(s, b0, b1) {
+      return s.syy + s.n * b0 * b0 + b1 * b1 * s.sxx
+        - 2 * b0 * s.sy - 2 * b1 * s.sxy + 2 * b0 * b1 * s.sx;
+    }
+
+    function profileLL(s, b0, b1) {
+      const rss = Math.max(rssAt(s, b0, b1), 1e-9);
+      return -0.5 * s.n * (Math.log(2 * Math.PI * rss / s.n) + 1);
+    }
+
+    function fits(n) {
+      const s = suffStats(n);
+      const xBar = s.sx / n, yBar = s.sy / n;
+      const b1 = (s.sxy - n * xBar * yBar) / (s.sxx - n * xBar * xBar);
+      const b0 = yBar - b1 * xBar;
+      const llFull = profileLL(s, b0, b1);
+      const llRest = profileLL(s, yBar, 0);
+      return { s, b0, b1, yBar, llFull, llRest, lambda: 2 * (llFull - llRest) };
+    }
+
+    function drawSurface(f) {
+      const { ctx, w, h } = setupCanvas(surfaceCanvas);
+      const m = { top: 12, right: 12, bottom: 42, left: 50 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const xPix = b0 => m.left + (b0 - B0_MIN) / (B0_MAX - B0_MIN) * plotW;
+      const yPix = b1 => m.top + (B1_MAX - b1) / (B1_MAX - B1_MIN) * plotH;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const cellsX = 110, cellsY = 100;
+      const cw = plotW / cellsX, ch = plotH / cellsY;
+      for (let i = 0; i < cellsX; i++) {
+        const b0 = B0_MIN + (B0_MAX - B0_MIN) * (i + 0.5) / cellsX;
+        for (let j = 0; j < cellsY; j++) {
+          const b1 = B1_MAX - (B1_MAX - B1_MIN) * (j + 0.5) / cellsY;
+          const dll = profileLL(f.s, b0, b1) - f.llFull;
+          let band = BANDS.length;
+          for (let k = 0; k < BANDS.length; k++) {
+            if (dll >= BANDS[k]) { band = k; break; }
+          }
+          ctx.fillStyle = COLOURS[band];
+          ctx.fillRect(m.left + i * cw, m.top + j * ch, cw + 0.5, ch + 0.5);
+        }
+      }
+
+      // Axes
+      ctx.strokeStyle = '#ccc';
+      ctx.strokeRect(m.left, m.top, plotW, plotH);
+      ctx.fillStyle = '#666';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      for (let b0 = 60; b0 <= 80; b0 += 5) {
+        ctx.fillText(b0, xPix(b0), m.top + plotH + 15);
+      }
+      ctx.fillText('β₀ (intercept, bpm)', m.left + plotW / 2, m.top + plotH + 32);
+      ctx.textAlign = 'right';
+      for (let b1 = -2.5; b1 <= 0.6; b1 += 0.5) {
+        ctx.fillText(b1.toFixed(1), m.left - 6, yPix(b1) + 4);
+      }
+      ctx.save();
+      ctx.translate(14, m.top + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('β₁ (slope, bpm per hour)', 0, 0);
+      ctx.restore();
+
+      // The beta1 = 0 ridge
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([7, 5]);
+      ctx.beginPath();
+      ctx.moveTo(m.left, yPix(0));
+      ctx.lineTo(m.left + plotW, yPix(0));
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineWidth = 1;
+
+      // Restricted peak
+      ctx.fillStyle = '#e67e22';
+      ctx.beginPath();
+      ctx.arc(xPix(f.yBar), yPix(0), 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Full peak
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.arc(xPix(f.b0), yPix(f.b1), 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = 'white';
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    function drawGauge(f) {
+      const { ctx, w, h } = setupCanvas(gaugeCanvas);
+      const m = { top: 25, right: 12, bottom: 42, left: 12 };
+      const plotH = h - m.top - m.bottom;
+      ctx.clearRect(0, 0, w, h);
+
+      // Fixed ll scale chosen per draw: show both levels with padding
+      const top = f.llFull + 2;
+      const span = Math.max(f.llFull - f.llRest, 1) + 8;
+      const yPix = ll => m.top + (top - ll) / span * plotH;
+
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#666';
+      ctx.fillText('log-likelihood', w / 2, 14);
+
+      const barX = w * 0.28, barW = w * 0.30;
+
+      // Full level
+      ctx.strokeStyle = '#27ae60';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(barX, yPix(f.llFull));
+      ctx.lineTo(barX + barW, yPix(f.llFull));
+      ctx.stroke();
+      ctx.fillStyle = '#1e8449';
+      ctx.textAlign = 'left';
+      ctx.fillText(f.llFull.toFixed(1), barX, yPix(f.llFull) - 7);
+
+      // Restricted level
+      ctx.strokeStyle = '#e67e22';
+      ctx.beginPath();
+      ctx.moveTo(barX, yPix(f.llRest));
+      ctx.lineTo(barX + barW, yPix(f.llRest));
+      ctx.stroke();
+      ctx.fillStyle = '#ca6f1e';
+      ctx.fillText(f.llRest.toFixed(1), barX, yPix(f.llRest) + 16);
+      ctx.lineWidth = 1;
+
+      // Bracket
+      const bx = barX + barW + 14;
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bx, yPix(f.llFull));
+      ctx.lineTo(bx + 8, yPix(f.llFull));
+      ctx.lineTo(bx + 8, yPix(f.llRest));
+      ctx.lineTo(bx, yPix(f.llRest));
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#7d3c98';
+      ctx.save();
+      ctx.translate(bx + 24, (yPix(f.llFull) + yPix(f.llRest)) / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.fillText('Λ = 2 × ' + (f.lambda / 2).toFixed(2) + ' = ' + f.lambda.toFixed(2), 0, 0);
+      ctx.restore();
+    }
+
+    function drawChisq(f) {
+      const { ctx, w, h } = setupCanvas(chisqCanvas);
+      const m = { top: 20, right: 20, bottom: 42, left: 20 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const X_MAX = 25;
+      const xPix = v => m.left + v / X_MAX * plotW;
+      const Y_MAX = 1.1;
+      const yPix = d => m.top + plotH - Math.min(d, Y_MAX) / Y_MAX * plotH;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Tail shading beyond observed Lambda
+      ctx.fillStyle = 'rgba(155, 89, 182, 0.15)';
+      ctx.fillRect(xPix(Math.min(f.lambda, X_MAX)), m.top, plotW - (xPix(Math.min(f.lambda, X_MAX)) - m.left), plotH);
+
+      // Axis
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let v = 0; v <= X_MAX; v += 5) {
+        ctx.fillText(v, xPix(v), m.top + plotH + 16);
+      }
+      ctx.fillText('Λ under the null: χ²₁', m.left + plotW / 2, m.top + plotH + 34);
+
+      // Density
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let px = 0; px <= 500; px++) {
+        const v = 0.02 + (X_MAX - 0.02) * px / 500;
+        const cx = xPix(v), cy = yPix(chiSqPdf(v, 1));
+        px === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+
+      // 95% critical value
+      ctx.strokeStyle = '#e74c3c';
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPix(3.8415), m.top);
+      ctx.lineTo(xPix(3.8415), m.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#c0392b';
+      ctx.textAlign = 'left';
+      ctx.fillText('3.84 (95%)', xPix(3.8415) + 5, m.top + 14);
+
+      // Observed Lambda needle
+      const drawL = Math.min(f.lambda, X_MAX - 0.3);
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xPix(drawL), m.top + plotH);
+      ctx.lineTo(xPix(drawL), m.top + 24);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#7d3c98';
+      ctx.textAlign = 'center';
+      ctx.fillText('Λ = ' + f.lambda.toFixed(2) + (f.lambda > X_MAX - 0.3 ? ' →' : ''),
+        xPix(drawL), m.top + 14);
+    }
+
+    function fmtP(p) {
+      if (p < 1e-4) return p.toExponential(1).replace('e-', ' × 10⁻');
+      return p.toFixed(4);
+    }
+
+    function redraw() {
+      const n = parseInt(slider.value, 10);
+      nDisplay.textContent = n;
+      const f = fits(n);
+      drawSurface(f);
+      drawGauge(f);
+      drawChisq(f);
+      document.getElementById('ro-full').textContent = f.llFull.toFixed(2);
+      document.getElementById('ro-rest').textContent = f.llRest.toFixed(2);
+      document.getElementById('ro-lam').textContent = f.lambda.toFixed(2);
+      document.getElementById('ro-p').textContent = fmtP(chiSqSf(f.lambda, 1));
+    }
+
+    slider.addEventListener('input', redraw);
+    window.addEventListener('resize', redraw);
+
+    fetch('../data/inference-rest-hr.json')
+      .then(r => r.json())
+      .then(json => {
+        allX = json.data.map(d => d.x);
+        allY = json.data.map(d => d.y);
+        // Window covering both peaks at every slider n, with padding
+        let b0lo = Infinity, b0hi = -Infinity, b1lo = Infinity, b1hi = -Infinity;
+        for (let n = 20; n <= 200; n += 5) {
+          const f = fits(n);
+          b0lo = Math.min(b0lo, f.b0, f.yBar);
+          b0hi = Math.max(b0hi, f.b0, f.yBar);
+          b1lo = Math.min(b1lo, f.b1, 0);
+          b1hi = Math.max(b1hi, f.b1, 0);
+        }
+        B0_MIN = Math.floor(b0lo - 3); B0_MAX = Math.ceil(b0hi + 3);
+        B1_MIN = b1lo - 0.7; B1_MAX = b1hi + 0.7;
+        redraw();
+      })
+      .catch(() => {
+        const { ctx } = setupCanvas(surfaceCanvas);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('Could not load ../data/inference-rest-hr.json — serve the site over HTTP.', 30, 40);
+      });
+  </script>
+</body>
+</html>

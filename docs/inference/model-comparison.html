@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Comparison: Ranking, Not Testing | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    #ladder-canvas { height: 380px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 180px;
+      accent-color: #9b59b6;
+    }
+
+    .controls-row .n-value {
+      font-weight: 700;
+      color: #9b59b6;
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .toggle-group {
+      display: inline-flex;
+      background: #eef0f3;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .conf-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88em;
+      color: #666;
+    }
+
+    .conf-btn.active {
+      background: white;
+      color: #9b59b6;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+      color: #555;
+      margin-top: 8px;
+    }
+
+    .legend > span::before {
+      content: '';
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .legend .fit::before { background: #667eea; }
+    .legend .pen::before { background: #c9b8dd; }
+    .legend .win::before { background: #27ae60; border-radius: 50%; }
+
+    .rank-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.92em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rank-table th, .rank-table td {
+      padding: 8px 10px;
+      text-align: right;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .rank-table th:first-child, .rank-table td:first-child {
+      text-align: left;
+    }
+
+    .rank-table th {
+      background: #f8f9fa;
+      color: #555;
+      font-size: 0.88em;
+    }
+
+    .rank-table tr.winner td {
+      background: #eef7f1;
+      font-weight: 700;
+    }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #1abc9c;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Model Comparison: Ranking, Not Testing</h1>
+      <p>Fit is not enough &mdash; every parameter must pay rent.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html">Why Uncertainty?</a>
+        <a href="curvature.html" class="branch-curv">Curvature &rarr; Standard Errors</a>
+        <a href="wald.html" class="branch-curv">Wald Tests</a>
+        <a href="lr-test.html" class="branch-curv">LR Tests</a>
+        <a href="model-comparison.html" class="current">AIC/BIC</a>
+        <a href="bayes.html" class="branch-bayes">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>When tests run out</h2>
+      <p>
+        The <a href="lr-test.html">likelihood-ratio test</a> compares exactly two models, one
+        nested inside the other, with a null-hypothesis ritual attached. But the everyday
+        question is usually broader: <em>of several candidate models, which should I use?</em>
+      </p>
+      <p>
+        Consider an expanded version of the heart-rate study: $n = 150$ participants, and this
+        time three things were measured alongside resting heart rate &mdash; weekly exercise
+        hours, age, and (because the research assistant got carried away) shoe size. Four
+        nested candidates present themselves, from intercept-only to everything-in.
+      </p>
+      <p>
+        Log-likelihood alone cannot referee this contest, because $\ell$ <strong>never goes
+        down</strong> when a predictor is added &mdash; the bigger model can always at worst
+        set the new coefficient to zero. Even shoe size buys a sliver of fit ($+0.0033$
+        log-likelihood units). Judged on fit alone, the biggest model always wins, junk and all.
+      </p>
+      <p>
+        The information criteria charge admission:
+      </p>
+      <p>
+        $$\text{AIC} = -2\ell(\hat\beta) + 2k \qquad\qquad
+        \text{BIC} = -2\ell(\hat\beta) + k\,\ln(n)$$
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Rent per parameter.</strong> On the $-2\ell$ scale, a pure-noise predictor
+          improves fit by about $1$ on average (half a $\chi^2_1$, doubled) &mdash; but AIC
+          charges $2$ for it, and BIC charges $\ln(n)$ ($\approx 5$ at $n = 150$). Useless
+          parameters lose money. Here $k$ counts every estimated parameter including
+          $\sigma$, matching R's <code>AIC()</code>; only <em>differences</em> between models
+          matter, so any consistent convention gives the same ranking.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: the ladder</h2>
+      <p>
+        Each bar is one model's score (lower is better). The dark segment is the misfit,
+        $-2\ell$; the pale segment on top is the penalty. Adding exercise slashes the misfit
+        &mdash; worth every penny of its rent. Adding age helps more modestly. Adding shoe size
+        barely dents the misfit while paying full rent, so its bar goes back <em>up</em>: the
+        signature of a junk predictor. Toggle the criterion and shrink the sample to watch the
+        verdicts shift.
+      </p>
+      <div class="controls-row">
+        <span class="toggle-group" id="crit-toggle">
+          <button class="conf-btn active" data-crit="aic">AIC</button>
+          <button class="conf-btn" data-crit="bic">BIC</button>
+        </span>
+        <label for="n-slider">Sample size $n$:</label>
+        <input type="range" id="n-slider" min="30" max="150" step="10" value="150">
+        <span class="n-value" id="n-display">150</span>
+      </div>
+      <canvas id="ladder-canvas" class="chart"></canvas>
+      <div class="legend">
+        <span class="fit">misfit (&minus;2&ell;)</span>
+        <span class="pen">penalty (rent)</span>
+        <span class="win">winner (lowest total)</span>
+      </div>
+      <table class="rank-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>k</th>
+            <th>logLik</th>
+            <th>AIC</th>
+            <th>&Delta;AIC</th>
+            <th>BIC</th>
+            <th>&Delta;BIC</th>
+          </tr>
+        </thead>
+        <tbody id="rank-body">
+          <tr><td colspan="7" style="text-align:center; color:#999;">loading&hellip;</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size: 0.92em; color: #555; margin-top: 8px;">
+        Rules of thumb (Burnham &amp; Anderson): models within $\Delta \le 2$ of the best are
+        essentially tied; $\Delta \ge 10$ means essentially no support.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Two philosophies, occasionally two answers</h2>
+      <p>
+        AIC and BIC look like siblings but ask different questions. <strong>AIC</strong> asks:
+        <em>which model will predict new data best?</em> (It approximates out-of-sample
+        prediction error &mdash; Kullback&ndash;Leibler divergence.) <strong>BIC</strong> asks:
+        <em>which model most plausibly generated these data?</em> (It approximates a Bayesian
+        posterior model probability.) BIC's rent, $\ln n$, exceeds AIC's flat 2 once $n \ge 8$,
+        so BIC pushes harder towards small models &mdash; increasingly so as data accumulate.
+      </p>
+      <p>
+        The slider above shows a live disagreement: at $n = 50$, AIC scores the
+        exercise-only and exercise-plus-age models as essentially tied ($314.70$ vs $314.77$)
+        &mdash; too little data to resolve whether age matters for prediction &mdash; while BIC
+        already votes clearly for the simpler model ($320.44$ vs $322.42$). By $n = 150$ both
+        agree that age has earned its place and shoe size hasn't.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Not a test.</strong> Nothing here is rejected, no p-value is produced, and the
+          candidates need not be nested. AIC/BIC simply <em>rank</em> &mdash; which is exactly
+          what you want when the question is &ldquo;which model do I take forward?&rdquo;
+          rather than &ldquo;is this coefficient zero?&rdquo;. You met this move in
+          <a href="../tutorials/04-negbin/distribution.html">Tutorial 4</a>, where AIC
+          adjudicated Poisson against Negative Binomial for the overdispersed counts &mdash;
+          non-nested rivals no LR test could referee directly.
+        </p>
+      </div>
+      <p style="font-size: 0.95em; color: #555;">
+        The sampling branch ranks models too, with its own tools &mdash; Bayes factors and
+        leave-one-out cross-validation (LOO, WAIC) play the roles that AIC and BIC play here;
+        the <a href="bayes.html" style="color: #16a085; font-weight: 600;">Bayesian page</a>
+        shows the machinery those tools are built on.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>In code: one line, four verdicts</h2>
+      <p>
+        Outputs below are from real runs on the expanded dataset
+        (<code>docs/data/inference-model-comparison.json</code>, seed 4242) &mdash; validation
+        scripts <code>scripts/R/validate-inference.R</code>,
+        <code>scripts/py/generate_inference_data.py</code>.
+      </p>
+      <div style="margin-top: 15px;">
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre>m0 <- lm(y ~ 1,                      data = hr2)
+m1 <- lm(y ~ exercise,               data = hr2)
+m2 <- lm(y ~ exercise + age,         data = hr2)
+m3 <- lm(y ~ exercise + age + shoe,  data = hr2)
+
+AIC(m0, m1, m2, m3)
+BIC(m0, m1, m2, m3)
+
+<span class="output">#    df       AIC            df       BIC
+# m0  2 1011.2890        m0  2 1017.3103
+# m1  3  933.9958        m1  3  943.0277
+# m2  4  921.3732   &lt;--  m2  4  933.4157   &lt;-- winner both ways at n = 150
+# m3  5  923.3666        m3  5  938.4198</span></pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>import numpy as np
+import statsmodels.api as sm
+
+for name, cols in [("M0", []), ("M1", ["exercise"]),
+                   ("M2", ["exercise", "age"]),
+                   ("M3", ["exercise", "age", "shoe"])]:
+    X = sm.add_constant(hr2[cols]) if cols else np.ones((len(hr2), 1))
+    fit = sm.OLS(hr2["y"], X).fit()
+    k = len(cols) + 2          # coefficients + sigma, matching R's AIC()
+    print(name, -2 * fit.llf + 2 * k, -2 * fit.llf + np.log(len(hr2)) * k)
+
+<span class="output"># M0 1011.2890 1017.3103
+# M1  933.9958  943.0277
+# M2  921.3732  933.4157   &lt;-- winner
+# M3  923.3666  938.4198
+# (statsmodels' own .aic omits sigma from k — a constant offset of 2
+#  that never changes a ranking)</span></pre>
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="lr-test.html">&larr; Likelihood-Ratio Tests</a>
+      <a class="next" href="bayes.html">The other route: Bayesian Uncertainty &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+  </script>
+  <script type="module">
+    // AIC/BIC ladder on the expanded heart-rate study. All numbers match
+    // scripts/py/generate_inference_data.py (seed 4242) and
+    // scripts/R/validate-inference.R; k counts coefficients + sigma (R's
+    // convention).
+    import { olsFitK, aic, bic } from '../js/inference/inference-math.js';
+
+    const canvas = document.getElementById('ladder-canvas');
+    const slider = document.getElementById('n-slider');
+    const nDisplay = document.getElementById('n-display');
+
+    const MODELS = [
+      { name: 'M0: intercept only', preds: [] },
+      { name: 'M1: + exercise', preds: ['exercise'] },
+      { name: 'M2: + age', preds: ['exercise', 'age'] },
+      { name: 'M3: + shoe size', preds: ['exercise', 'age', 'shoe'] },
+    ];
+
+    let cols = null;   // {exercise, age, shoe, y} arrays after load
+    let crit = 'aic';
+
+    function setupCanvas(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      cv.width = rect.width * dpr;
+      cv.height = rect.height * dpr;
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    function fitAll(n) {
+      return MODELS.map(mod => {
+        const preds = mod.preds.map(p => cols[p].slice(0, n));
+        const f = olsFitK(preds, cols.y.slice(0, n));
+        const k = f.k + 1;   // + sigma
+        return {
+          name: mod.name, k, ll: f.llML,
+          aic: aic(f.llML, k), bic: bic(f.llML, k, n),
+        };
+      });
+    }
+
+    function draw() {
+      if (!cols) return;
+      const n = parseInt(slider.value, 10);
+      nDisplay.textContent = n;
+      const fitsList = fitAll(n);
+      const score = f => crit === 'aic' ? f.aic : f.bic;
+      const penalty = f => crit === 'aic' ? 2 * f.k : Math.log(n) * f.k;
+      const best = Math.min(...fitsList.map(score));
+
+      // Zoomed baseline: axis zero is arbitrary, only differences matter
+      const base = Math.min(...fitsList.map(f => -2 * f.ll)) - 6;
+      const maxTotal = Math.max(...fitsList.map(score)) - base;
+
+      const { ctx, w, h } = setupCanvas(canvas);
+      const m = { top: 30, right: 20, bottom: 60, left: 20 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      ctx.clearRect(0, 0, w, h);
+
+      const slot = plotW / fitsList.length;
+      const barW = Math.min(slot * 0.55, 130);
+
+      fitsList.forEach((f, i) => {
+        const x = m.left + slot * i + (slot - barW) / 2;
+        const misfit = -2 * f.ll - base;
+        const total = misfit + penalty(f);
+        // 0.92 leaves headroom so the tallest bar's label clears the caption
+        const hMisfit = misfit / maxTotal * plotH * 0.92;
+        const hPen = penalty(f) / maxTotal * plotH * 0.92;
+        const yTop = m.top + plotH - hMisfit - hPen;
+
+        // Penalty segment (on top)
+        ctx.fillStyle = '#c9b8dd';
+        ctx.fillRect(x, yTop, barW, hPen);
+        // Misfit segment
+        ctx.fillStyle = '#667eea';
+        ctx.fillRect(x, yTop + hPen, barW, hMisfit);
+
+        // Total score label
+        const isWinner = Math.abs(score(f) - best) < 1e-9;
+        ctx.fillStyle = isWinner ? '#1e8449' : '#2c3e50';
+        ctx.font = (isWinner ? '700 ' : '') + '13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(score(f).toFixed(1) + (isWinner ? ' ✓' : ''), x + barW / 2, yTop - 8);
+
+        // Model name
+        ctx.fillStyle = '#555';
+        ctx.font = '12px sans-serif';
+        const parts = f.name.split(': ');
+        ctx.fillText(parts[0], x + barW / 2, m.top + plotH + 18);
+        ctx.fillText(parts[1], x + barW / 2, m.top + plotH + 34);
+        ctx.fillText('k = ' + f.k, x + barW / 2, m.top + plotH + 52);
+
+        if (isWinner) {
+          ctx.strokeStyle = '#27ae60';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(x - 2, yTop - 2, barW + 4, hPen + hMisfit + 4);
+          ctx.lineWidth = 1;
+        }
+      });
+
+      ctx.fillStyle = '#999';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(crit.toUpperCase() + ' (axis zero arbitrary — differences are what matter)',
+        m.left, 16);
+
+      // Table
+      const bestAic = Math.min(...fitsList.map(f => f.aic));
+      const bestBic = Math.min(...fitsList.map(f => f.bic));
+      document.getElementById('rank-body').innerHTML = fitsList.map(f => {
+        const win = Math.abs(score(f) - best) < 1e-9;
+        return '<tr' + (win ? ' class="winner"' : '') + '>' +
+          '<td>' + f.name + '</td>' +
+          '<td>' + f.k + '</td>' +
+          '<td>' + f.ll.toFixed(2) + '</td>' +
+          '<td>' + f.aic.toFixed(2) + '</td>' +
+          '<td>' + (f.aic - bestAic).toFixed(2) + '</td>' +
+          '<td>' + f.bic.toFixed(2) + '</td>' +
+          '<td>' + (f.bic - bestBic).toFixed(2) + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    document.querySelectorAll('#crit-toggle .conf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#crit-toggle .conf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        crit = btn.dataset.crit;
+        draw();
+      });
+    });
+
+    slider.addEventListener('input', draw);
+    window.addEventListener('resize', draw);
+
+    fetch('../data/inference-model-comparison.json')
+      .then(r => r.json())
+      .then(json => {
+        cols = {
+          exercise: json.data.map(d => d.exercise),
+          age: json.data.map(d => d.age),
+          shoe: json.data.map(d => d.shoe),
+          y: json.data.map(d => d.y),
+        };
+        draw();
+      })
+      .catch(() => {
+        const { ctx } = setupCanvas(canvas);
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('Could not load ../data/inference-model-comparison.json — serve the site over HTTP.', 30, 40);
+      });
+  </script>
+</body>
+</html>

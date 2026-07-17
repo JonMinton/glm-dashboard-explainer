@@ -199,10 +199,13 @@ glm-dashboard-explainer/
 │   │   ├── 4d.html           # 4D+ beyond visualisation
 │   │   ├── multi-optima.html # Speed/Accuracy/Representativeness comparison
 │   │   └── mcmc.html         # Bayesian MCMC exploration
-│   └── inference/            # Statistical inference section (follows optimisation)
-│       ├── index.html        # Why uncertainty: peak shape → error bar (1D)
-│       ├── curvature.html    # Hessian → vcov → SEs; barefoot probes; confidence ellipse
-│       └── bayes.html        # Quadratic-approx failures; credible intervals; Wald vs posterior
+│   └── inference/            # Statistical inference section (follows optimisation; forks after curvature)
+│       ├── index.html        # Why uncertainty: peak shape → error bar (1D); route cards
+│       ├── curvature.html    # Hessian → vcov → SEs; barefoot probes; ellipse; fork buttons
+│       ├── wald.html         # (purple branch) z = β̂/SE; rejection picture; CI = unrejected nulls
+│       ├── lr-test.html      # (purple branch) two peaks compared; Λ on χ²₁; profile CIs
+│       ├── model-comparison.html # (purple branch) AIC/BIC ladder; junk-predictor demo
+│       └── bayes.html        # (teal branch) quadratic-approx failures; credible intervals
 ├── scripts/
 │   ├── build/                # Site processing scripts (Python)
 │   ├── R/                    # R validation scripts

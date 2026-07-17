@@ -100,6 +100,18 @@ Further-reading note at the end of "The Bayesian Perspective" card: the marble-v
 Cross-link before the nav buttons (list item in tutorials 1–2, teal box in 3–8):
 > *"Where do the `Std. Error` columns in these outputs come from? See [Standard Errors from Curvature](../../inference/curvature.html)"*
 
+### Inference testing trio + fork structure (added 2026-07-17)
+- The inference section is now explicitly **branch-shaped**: `index.html`'s route cards present
+  the curvature route (purple: curvature → wald → lr-test → model-comparison) and the sampling
+  route (teal: bayes) as parallel traditions; `curvature.html` ends with dual fork buttons
+  ("Continue this route: Wald tests" / "The other route: Bayesian uncertainty"); nav bars on all
+  six pages colour-code branch membership.
+- `wald.html` → JonStats [P-Values and Statistical Significance](https://jonminton.github.io/JonStats/pages/extra-courses/p-values-stat-sig/)
+  (interpretation battles; the page covers only where the number comes from).
+- `model-comparison.html` → Tutorial 4's distribution page (AIC used in anger for Poisson vs
+  NegBin); one-sentence teal nods on wald (credible intervals) and model-comparison (Bayes
+  factors/LOO) point across the fork.
+
 ### Optimisation → Inference internal links (added 2026-07)
 - All optimisation nav bars now end with an **Uncertainty** item → `../inference/index.html` (and 2d/3d/4d regained the missing MCMC nav item).
 - `2d.html`: foreshadowing line — the steepness of the surface "turns out to be the standard error".

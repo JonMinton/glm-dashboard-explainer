@@ -656,16 +656,18 @@
       <h2>Statistical Inference</h2>
       <p>
         Optimisation finds the best estimate &mdash; inference asks how much to trust it.
-        The sharpness of the likelihood peak becomes standard errors and confidence ellipses;
-        walking the surface with MCMC gives credible intervals when the quadratic
-        approximation breaks down.
+        The section forks into two parallel traditions: the <strong>curvature route</strong>
+        (standard errors, Wald tests, likelihood-ratio tests, AIC/BIC) and the
+        <strong>sampling route</strong> (walking the surface for credible intervals when the
+        quadratic approximation breaks down). Same surface, read two ways.
       </p>
       <div class="flow-preview" style="margin: 20px 0;">
-        Peak (&beta;&#770;) &rarr; Curvature (Hessian) &rarr; Standard errors &rarr; Credible intervals
+        Peak (&beta;&#770;) &rarr; Curvature &rarr; Standard errors &rarr; Tests &amp; AIC/BIC &nbsp;&nbsp;&#8725;&nbsp;&nbsp; Peak &rarr; Walk &rarr; Credible intervals
       </div>
       <p style="margin-bottom: 15px;">
-        Probe the summit barefoot and blind, invert the Hessian, and see exactly when the
-        familiar <code>Std. Error</code> column can &mdash; and can't &mdash; be trusted.
+        Probe the summit barefoot and blind, invert the Hessian, slide a null hypothesis along
+        the axis, compare peaks, make every parameter pay rent &mdash; and see exactly when the
+        familiar <code>Std. Error</code> column can, and can't, be trusted.
       </p>
       <a href="inference/" class="start-btn" style="background: #16a085;">
         Explore Inference &rarr;

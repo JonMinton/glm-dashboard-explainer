@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wald Tests: From Standard Error to Test | GLM Explainer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      line-height: 1.6;
+      color: #2c3e50;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #666;
+      font-size: 1.1em;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+
+    .nav-links a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .nav-links a.current {
+      color: #2c3e50;
+      font-weight: 600;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      color: #2c3e50;
+    }
+
+    .card p {
+      margin-bottom: 12px;
+    }
+
+    .explanation {
+      background: #f8f9ff;
+      border-left: 4px solid #667eea;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .warning-box {
+      background: #fdf3f0;
+      border-left: 4px solid #e74c3c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+    }
+
+    .crosslink-box {
+      background: #f0faf8;
+      border-left: 4px solid #1abc9c;
+      border-radius: 0 8px 8px 0;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 0.95em;
+    }
+
+    .crosslink-box a {
+      color: #16a085;
+      font-weight: 600;
+    }
+
+    canvas.chart {
+      width: 100%;
+      background: white;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      display: block;
+    }
+
+    #reject-canvas { height: 330px; }
+    #null-canvas { height: 230px; }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 15px 0;
+    }
+
+    .controls-row label {
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .controls-row input[type="range"] {
+      flex: 1;
+      min-width: 180px;
+      accent-color: #9b59b6;
+    }
+
+    .toggle-group {
+      display: inline-flex;
+      background: #eef0f3;
+      border-radius: 8px;
+      padding: 3px;
+    }
+
+    .conf-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88em;
+      color: #666;
+    }
+
+    .conf-btn.active {
+      background: white;
+      color: #9b59b6;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    .example-btn {
+      padding: 8px 14px;
+      border: 1px solid #d6c3e4;
+      border-radius: 8px;
+      background: white;
+      color: #7d3c98;
+      font-weight: 600;
+      font-size: 0.88em;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .example-btn.active {
+      background: #9b59b6;
+      border-color: #9b59b6;
+      color: white;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .readout {
+      background: #f8f9fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+
+    .readout .label {
+      font-size: 0.78em;
+      color: #666;
+      letter-spacing: 0.04em;
+    }
+
+    .readout .value {
+      font-size: 1.15em;
+      font-weight: 700;
+      color: #2c3e50;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout.z .value { color: #9b59b6; }
+    .readout.p .value { color: #667eea; }
+
+    .verdict {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85em;
+    }
+
+    .verdict.reject { background: #fdecea; color: #c0392b; }
+    .verdict.keep { background: #eef7f1; color: #1e8449; }
+
+    /* Code tabs (match tutorial pages) */
+    .tab-btn {
+      padding: 10px 24px;
+      border: none;
+      background: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.95em;
+      font-weight: 600;
+      color: #666;
+      border-radius: 8px 8px 0 0;
+      margin-right: 4px;
+    }
+
+    .tab-btn:hover {
+      background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+      background: #2c3e50;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #2c3e50;
+      border-radius: 0 8px 8px 8px;
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .tab-content pre {
+      color: #e8e8e8;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+      font-size: 0.85em;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .tab-content .output {
+      border-top: 1px dashed #56708a;
+      margin-top: 14px;
+      padding-top: 14px;
+      color: #a3d9b1;
+    }
+
+    .tab-content .hl {
+      background: rgba(155, 89, 182, 0.35);
+      border-radius: 3px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin: 25px 0 10px 0;
+      flex-wrap: wrap;
+    }
+
+    .nav-buttons a {
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .nav-buttons a.back {
+      background: #eef0f3;
+      color: #2c3e50;
+    }
+
+    .nav-buttons a.next {
+      background: #9b59b6;
+      color: white;
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0 10px 0;
+      color: #666;
+    }
+
+    footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Wald Tests: From Standard Error to Test</h1>
+      <p>Divide the estimate by its standard error. That ratio is the whole test.</p>
+      <div class="nav-links">
+        <a href="../optimization/index.html">&larr; Optimisation</a>
+        <a href="index.html">Why Uncertainty?</a>
+        <a href="curvature.html" class="branch-curv">Curvature &rarr; Standard Errors</a>
+        <a href="wald.html" class="current">Wald Tests</a>
+        <a href="lr-test.html" class="branch-curv">LR Tests</a>
+        <a href="model-comparison.html" class="branch-curv">AIC/BIC</a>
+        <a href="bayes.html" class="branch-bayes">Bayesian Uncertainty</a>
+        <a href="../index.html">Tutorials</a>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2>The shortest hypothesis test in statistics</h2>
+      <p>
+        The <a href="curvature.html">previous page</a> priced the uncertainty of the heart-rate
+        slope: $\hat\beta_1 = -1.271$ with standard error $0.2915$. Now comes the question those
+        two numbers were made for: <em>could the true slope be zero?</em> Could exercise have no
+        relationship with resting heart rate at all, with the $-1.271$ just sampling noise?
+      </p>
+      <p>
+        The Wald test answers by measuring the distance from the estimate to the hypothesised
+        value <em>in standard-error units</em>:
+      </p>
+      <p>
+        $$z \;=\; \frac{\hat\beta - \beta^{H_0}}{\text{SE}(\hat\beta)}
+        \qquad\text{usually with } \beta^{H_0} = 0$$
+      </p>
+      <p>
+        Here $z = -1.271 / 0.2915 = -4.36$: the estimate sits 4.36 standard errors below zero.
+        If the true slope really were zero, the sampling distribution from the
+        <a href="curvature.html">curvature argument</a> says estimates this extreme turn up with
+        probability $p \approx 1.3 \times 10^{-5}$ &mdash; about once in 77,000 studies. Either
+        we have witnessed a small miracle, or the true slope is not zero.
+      </p>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>Why zero?</strong> $\beta = 0$ means the predictor drops out of the model
+          entirely &mdash; it is the sceptic's default, &ldquo;no effect&rdquo;. That is why
+          it is the hypothesis every <code>summary()</code> table tests by default. But the
+          formula accepts any $\beta^{H_0}$, and the second interactive below exploits that.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: the rejection picture</h2>
+      <p>
+        Under the null hypothesis, $z$ follows a standard normal distribution &mdash; the curve
+        below. The shaded tails are the <strong>rejection region</strong>: values so extreme
+        that, were the null true, they would occur with probability less than the chosen level.
+        Pick a real test from the buttons and see where its needle lands.
+      </p>
+      <div class="controls-row">
+        <span class="toggle-group" id="level-toggle">
+          <button class="conf-btn" data-level="0.90">90%</button>
+          <button class="conf-btn active" data-level="0.95">95%</button>
+          <button class="conf-btn" data-level="0.99">99%</button>
+        </span>
+        <button class="example-btn active" id="ex-slope">Heart-rate slope<br><small>Gaussian, n = 60</small></button>
+        <button class="example-btn" id="ex-bio">Biomarker slope<br><small>logistic, n = 30</small></button>
+        <button class="example-btn" id="ex-int">Logistic intercept<br><small>logistic, n = 30</small></button>
+      </div>
+      <canvas id="reject-canvas" class="chart"></canvas>
+      <div class="readout-grid">
+        <div class="readout z">
+          <div class="label">TEST STATISTIC z</div>
+          <div class="value" id="ro-z">&ndash;</div>
+        </div>
+        <div class="readout">
+          <div class="label">CRITICAL VALUE</div>
+          <div class="value" id="ro-crit">&ndash;</div>
+        </div>
+        <div class="readout p">
+          <div class="label">TWO-SIDED p</div>
+          <div class="value" id="ro-p">&ndash;</div>
+        </div>
+        <div class="readout">
+          <div class="label">VERDICT</div>
+          <div class="value"><span class="verdict" id="ro-verdict">&ndash;</span></div>
+        </div>
+      </div>
+      <p style="margin-top: 15px; font-size: 0.95em; color: #555;" id="reject-note"></p>
+    </div>
+
+    <div class="card">
+      <h2>Interactive: slide the null &mdash; and find the confidence interval</h2>
+      <p>
+        Zero is not special to the machinery. Drag the hypothesised value $\beta^{H_0}$ along
+        the axis and watch the test re-run against each candidate. Some nulls are rejected
+        (red); others survive (green). The survivors form a familiar object.
+      </p>
+      <div class="controls-row">
+        <label for="null-slider">Hypothesised slope $\beta^{H_0}$:</label>
+        <input type="range" id="null-slider" min="-2.70" max="0.30" step="0.01" value="0">
+        <span class="toggle-group" id="ci-level-toggle">
+          <button class="conf-btn" data-level="0.90">90%</button>
+          <button class="conf-btn active" data-level="0.95">95%</button>
+          <button class="conf-btn" data-level="0.99">99%</button>
+        </span>
+      </div>
+      <canvas id="null-canvas" class="chart"></canvas>
+      <div class="readout-grid">
+        <div class="readout">
+          <div class="label">NULL VALUE &beta;<sup>H&#8320;</sup></div>
+          <div class="value" id="ro2-null">&ndash;</div>
+        </div>
+        <div class="readout z">
+          <div class="label">z AGAINST THIS NULL</div>
+          <div class="value" id="ro2-z">&ndash;</div>
+        </div>
+        <div class="readout p">
+          <div class="label">TWO-SIDED p</div>
+          <div class="value" id="ro2-p">&ndash;</div>
+        </div>
+        <div class="readout">
+          <div class="label">VERDICT</div>
+          <div class="value"><span class="verdict" id="ro2-verdict">&ndash;</span></div>
+        </div>
+      </div>
+      <div class="explanation">
+        <p style="margin-bottom: 0;">
+          <strong>The duality.</strong> The green stretch of surviving nulls <em>is</em> the
+          confidence interval: a $95\%$ CI is exactly the set of hypothesised values a
+          $5\%$-level Wald test cannot reject. Interval and test are two costumes on one
+          calculation &mdash; which is why the interval $\hat\beta \pm 1.96\,\text{SE}$ from the
+          <a href="curvature.html">curvature page</a> reappears here without new mathematics.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Every <code>summary()</code> row is a Wald test</h2>
+      <p>
+        You have been reading Wald tests since Tutorial&nbsp;1. Each row of a fitted model's
+        coefficient table performs one: estimate, standard error, their ratio, and the tail
+        probability &mdash; highlighted below in the actual outputs for this section's two
+        datasets.
+      </p>
+      <div style="margin-top: 15px;">
+        <button class="tab-btn active" onclick="showTab('r')">R</button>
+        <button class="tab-btn" onclick="showTab('python')">Python</button>
+      </div>
+      <div class="tab-content active" id="tab-r">
+        <pre># Gaussian: resting heart rate ~ exercise hours (n = 60)
+summary(lm(y ~ x, data = hr))
+
+# Logistic: treatment response ~ biomarker (n = 30)
+summary(glm(y ~ x, data = trial, family = binomial))
+
+<span class="output"># lm coefficient table:
+#             Estimate Std. Error <span class="hl">t value</span> <span class="hl">Pr(&gt;|t|)</span>
+# (Intercept)  71.7714     1.7521 40.9634   &lt;2e-16
+# x            -1.2711     0.2965 -4.2867 6.93e-05
+
+# glm coefficient table:
+#             Estimate Std. Error <span class="hl">z value</span> <span class="hl">Pr(&gt;|z|)</span>
+# (Intercept)   0.9059     0.6618  1.3690   0.1710
+# x             2.4329     0.8625  2.8209   0.0048</span></pre>
+      </div>
+      <div class="tab-content" id="tab-python">
+        <pre>import statsmodels.api as sm
+
+# Gaussian (n = 60)
+print(sm.OLS(y, sm.add_constant(x)).fit().summary().tables[1])
+
+# Logistic (n = 30)
+print(sm.Logit(resp, sm.add_constant(bio)).fit().summary().tables[1])
+
+<span class="output"># OLS:      coef   std err        <span class="hl">t</span>     <span class="hl">P&gt;|t|</span>
+# const  71.7714     1.752   40.963     0.000
+# x1     -1.2711     0.296   -4.287     0.000
+
+# Logit:    coef   std err        <span class="hl">z</span>     <span class="hl">P&gt;|z|</span>
+# const   0.9059     0.662    1.369     0.171
+# x1      2.4329     0.862    2.821     0.005</span></pre>
+      </div>
+      <div class="explanation" style="margin-top: 15px;">
+        <p style="margin-bottom: 0;">
+          <strong>t or z?</strong> The logistic table reports exactly this page's $z$. The
+          Gaussian table refines it: <code>lm</code> uses the df-corrected standard error
+          ($0.2965$ rather than the ML $0.2915$ &mdash; the small print from the
+          <a href="curvature.html">curvature page</a>) and compares against a Student-$t$ with
+          $n-2$ degrees of freedom, which fattens the tails a little at small $n$. Same idea,
+          extra honesty about having estimated $\sigma$ too; by $n = 60$ the difference is
+          already in the third decimal place.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>When Wald wobbles</h2>
+      <p>
+        The Wald test inherits the curvature route's one assumption: that the peak is well
+        described by its local quadratic. Where that fails, the test fails with it:
+      </p>
+      <div class="warning-box">
+        <p>
+          <strong>Boundaries.</strong> On the <a href="bayes.html">Bayesian page</a>, the Wald
+          interval for 2 events in 20 patients dipped below zero &mdash; the same defect makes
+          Wald <em>tests</em> unreliable for parameters near their limits.
+        </p>
+        <p style="margin-bottom: 0;">
+          <strong>The Hauck&ndash;Donner effect.</strong> In logistic regression, as a predictor
+          approaches perfect separation, its estimated effect grows &mdash; but its standard
+          error grows <em>faster</em>. The ratio $z$ then <em>shrinks</em> as the evidence
+          strengthens, and the Wald test can fail to reject precisely when the effect is
+          overwhelming. R's <code>glm</code> will happily print the misleading row.
+        </p>
+      </div>
+      <p>
+        The sturdier alternative uses no local approximation at all: compare the heights of two
+        peaks on the actual likelihood surface. That is the
+        <a href="lr-test.html">likelihood-ratio test</a>, next.
+      </p>
+      <p style="font-size: 0.95em; color: #555;">
+        On the sampling branch, the counterpart summary is the <em>credible interval</em> read
+        directly from the walked posterior &mdash; see
+        <a href="bayes.html" style="color: #16a085; font-weight: 600;">Bayesian uncertainty</a>.
+      </p>
+      <div class="crosslink-box">
+        <strong>What a p-value does and doesn't mean:</strong> this page covers where the number
+        comes from; the interpretation battles (significance thresholds, multiple testing,
+        p-hacking) have their own JonStats course &mdash;
+        <a href="https://jonminton.github.io/JonStats/pages/extra-courses/p-values-stat-sig/">P-Values
+        and Statistical Significance</a>.
+      </div>
+    </div>
+
+    <div class="nav-buttons">
+      <a class="back" href="curvature.html">&larr; Standard Errors from Curvature</a>
+      <a class="next" href="lr-test.html">Likelihood-Ratio Tests &rarr;</a>
+    </div>
+
+    <footer>
+      <a href="../index.html">&larr; Back to Tutorials</a>
+    </footer>
+  </div>
+
+  <script src="../js/feedback.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ]
+      });
+    });
+
+    function showTab(language) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.querySelector('.tab-btn[onclick*="' + language + '"]').classList.add('active');
+      document.getElementById('tab-' + language).classList.add('active');
+    }
+  </script>
+  <script type="module">
+    // All statistics computed live from the section's validated datasets;
+    // numbers match scripts/py/generate_inference_data.py and
+    // scripts/R/validate-inference.R.
+    import {
+      olsFit, gaussianProfileHessian, hessianToVcov, logisticFit,
+      normalSf, normalPdf,
+    } from '../js/inference/inference-math.js';
+
+    const CRIT = { 0.90: 1.6449, 0.95: 1.9600, 0.99: 2.5758 };
+
+    const examples = {};        // filled after the data load
+    let currentExample = 'ex-slope';
+    let rejectLevel = 0.95;
+    let ciLevel = 0.95;
+
+    // ---------- shared canvas helpers ----------
+
+    function setupCanvas(canvas) {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx, w: rect.width, h: rect.height };
+    }
+
+    function fmtP(p) {
+      if (p < 1e-4) return p.toExponential(1).replace('e-', ' × 10⁻');
+      return p.toFixed(4);
+    }
+
+    // ---------- interactive 1: rejection picture ----------
+
+    const rejectCanvas = document.getElementById('reject-canvas');
+    const Z_RANGE = 5.4;
+
+    function drawReject() {
+      const ex = examples[currentExample];
+      if (!ex) return;
+      const { ctx, w, h } = setupCanvas(rejectCanvas);
+      const m = { top: 20, right: 20, bottom: 42, left: 20 };
+      const plotW = w - m.left - m.right;
+      const plotH = h - m.top - m.bottom;
+      const xPix = z => m.left + (z + Z_RANGE) / (2 * Z_RANGE) * plotW;
+      const yPix = d => m.top + plotH - d / 0.42 * plotH;
+      const zc = CRIT[rejectLevel];
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Rejection regions
+      ctx.fillStyle = 'rgba(231, 76, 60, 0.15)';
+      ctx.fillRect(xPix(-Z_RANGE), m.top, xPix(-zc) - xPix(-Z_RANGE), plotH);
+      ctx.fillRect(xPix(zc), m.top, xPix(Z_RANGE) - xPix(zc), plotH);
+
+      // Axis + ticks
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, m.top + plotH);
+      ctx.lineTo(m.left + plotW, m.top + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      for (let z = -5; z <= 5; z++) {
+        ctx.fillText(z, xPix(z), m.top + plotH + 16);
+      }
+      ctx.fillText('z (standard errors from the null)', m.left + plotW / 2, m.top + plotH + 34);
+
+      // Critical value markers
+      ctx.strokeStyle = '#e74c3c';
+      ctx.setLineDash([5, 4]);
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(xPix(s * zc), m.top);
+        ctx.lineTo(xPix(s * zc), m.top + plotH);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#c0392b';
+      ctx.textAlign = 'left';
+      ctx.fillText('+' + zc.toFixed(2), xPix(zc) + 5, m.top + 14);
+      ctx.textAlign = 'right';
+      ctx.fillText('−' + zc.toFixed(2), xPix(-zc) - 5, m.top + 14);
+
+      // Null density curve
+      ctx.strokeStyle = '#667eea';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let px = 0; px <= 400; px++) {
+        const z = -Z_RANGE + 2 * Z_RANGE * px / 400;
+        const cx = xPix(z), cy = yPix(normalPdf(z));
+        px === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+      ctx.lineWidth = 1;
+
+      // Observed needle (clamped into view with an arrow if beyond range)
+      const zObs = ex.z;
+      const zDraw = Math.max(-Z_RANGE + 0.15, Math.min(Z_RANGE - 0.15, zObs));
+      ctx.strokeStyle = '#27ae60';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(xPix(zDraw), m.top + plotH);
+      ctx.lineTo(xPix(zDraw), m.top + 24);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#1e8449';
+      ctx.textAlign = 'center';
+      const lbl = 'z = ' + zObs.toFixed(2) + (Math.abs(zObs) > Z_RANGE - 0.15 ? ' →' : '');
+      ctx.fillText(lbl, xPix(zDraw), m.top + 14);
+
+      // Readouts
+      const p = 2 * normalSf(Math.abs(zObs));
+      const reject = Math.abs(zObs) > zc;
+      document.getElementById('ro-z').textContent = zObs.toFixed(2);
+      document.getElementById('ro-crit').textContent = '±' + zc.toFixed(2);
+      document.getElementById('ro-p').textContent = fmtP(p);
+      const verdict = document.getElementById('ro-verdict');
+      verdict.textContent = reject ? 'reject H₀' : 'cannot reject';
+      verdict.className = 'verdict ' + (reject ? 'reject' : 'keep');
+      document.getElementById('reject-note').textContent = ex.note;
+    }
+
+    // ---------- interactive 2: slide the null ----------
+
+    const nullCanvas = document.getElementById('null-canvas');
+    const nullSlider = document.getElementById('null-slider');
+    const NULL_MIN = -2.70, NULL_MAX = 0.30;
+
+    function drawNull() {
+      const ex = examples['ex-slope'];
+      if (!ex) return;
+      const { ctx, w, h } = setupCanvas(nullCanvas);
+      const m = { top: 30, right: 25, bottom: 45, left: 25 };
+      const plotW = w - m.left - m.right;
+      const axisY = m.top + (h - m.top - m.bottom) * 0.55;
+      const xPix = b => m.left + (b - NULL_MIN) / (NULL_MAX - NULL_MIN) * plotW;
+      const zc = CRIT[ciLevel];
+      const lo = ex.est - zc * ex.se;
+      const hi = ex.est + zc * ex.se;
+      const b0h = parseFloat(nullSlider.value);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Surviving-nulls band (the CI)
+      ctx.fillStyle = 'rgba(39, 174, 96, 0.15)';
+      ctx.fillRect(xPix(lo), axisY - 26, xPix(hi) - xPix(lo), 52);
+      ctx.strokeStyle = '#27ae60';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(xPix(lo), axisY + 30);
+      ctx.lineTo(xPix(hi), axisY + 30);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#1e8449';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText((100 * ciLevel).toFixed(0) + '% CI: (' + lo.toFixed(2) + ', ' + hi.toFixed(2) + ')',
+        (xPix(lo) + xPix(hi)) / 2, axisY + 48);
+
+      // Axis
+      ctx.strokeStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(m.left, axisY);
+      ctx.lineTo(m.left + plotW, axisY);
+      ctx.stroke();
+      ctx.fillStyle = '#666';
+      for (let b = -2.5; b <= 0.25; b += 0.5) {
+        ctx.fillText(b.toFixed(1), xPix(b), axisY - 34);
+      }
+
+      // Conventional null at zero
+      ctx.strokeStyle = '#aaa';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPix(0), axisY - 26);
+      ctx.lineTo(xPix(0), axisY + 26);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Estimate
+      ctx.fillStyle = '#27ae60';
+      ctx.beginPath();
+      ctx.arc(xPix(ex.est), axisY, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#1e8449';
+      ctx.fillText('β̂₁ = ' + ex.est.toFixed(2), xPix(ex.est), axisY - 12);
+
+      // Dragged null marker
+      const z = (ex.est - b0h) / ex.se;
+      const reject = Math.abs(z) > zc;
+      ctx.fillStyle = reject ? '#e74c3c' : '#27ae60';
+      ctx.beginPath();
+      ctx.moveTo(xPix(b0h), axisY - 8);
+      ctx.lineTo(xPix(b0h) - 7, axisY - 22);
+      ctx.lineTo(xPix(b0h) + 7, axisY - 22);
+      ctx.closePath();
+      ctx.fill();
+
+      const p = 2 * normalSf(Math.abs(z));
+      document.getElementById('ro2-null').textContent = b0h.toFixed(2);
+      document.getElementById('ro2-z').textContent = z.toFixed(2);
+      document.getElementById('ro2-p').textContent = fmtP(p);
+      const verdict = document.getElementById('ro2-verdict');
+      verdict.textContent = reject ? 'reject this null' : 'survives';
+      verdict.className = 'verdict ' + (reject ? 'reject' : 'keep');
+    }
+
+    // ---------- wiring ----------
+
+    document.querySelectorAll('#level-toggle .conf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#level-toggle .conf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        rejectLevel = parseFloat(btn.dataset.level);
+        drawReject();
+      });
+    });
+
+    document.querySelectorAll('#ci-level-toggle .conf-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#ci-level-toggle .conf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        ciLevel = parseFloat(btn.dataset.level);
+        drawNull();
+      });
+    });
+
+    ['ex-slope', 'ex-bio', 'ex-int'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => {
+        document.querySelectorAll('.example-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        currentExample = id;
+        drawReject();
+      });
+    });
+
+    nullSlider.addEventListener('input', drawNull);
+    window.addEventListener('resize', () => { drawReject(); drawNull(); });
+
+    // ---------- data ----------
+
+    Promise.all([
+      fetch('../data/inference-rest-hr.json').then(r => r.json()),
+      fetch('../data/inference-logistic.json').then(r => r.json()),
+    ]).then(([hr, lg]) => {
+      const xs = hr.data.slice(0, 60).map(d => d.x);
+      const ys = hr.data.slice(0, 60).map(d => d.y);
+      const fit = olsFit(xs, ys);
+      const vcov = hessianToVcov(gaussianProfileHessian(fit, fit.sigma2ML));
+      examples['ex-slope'] = {
+        est: fit.b1, se: vcov.se1, z: fit.b1 / vcov.se1,
+        note: 'The heart-rate slope sits 4.36 standard errors below zero — far beyond every ' +
+          'conventional cut. The needle would leave the chart: this is what overwhelming ' +
+          'evidence looks like.',
+      };
+
+      const lx = lg.data.map(d => d.x);
+      const ly = lg.data.map(d => d.y);
+      const lfit = logisticFit(lx, ly);
+      examples['ex-bio'] = {
+        est: lfit.b1, se: lfit.vcov.se1, z: lfit.b1 / lfit.vcov.se1,
+        note: 'The biomarker effect rejects comfortably at every level shown — but with n = 30 ' +
+          'its needle sits close enough to the boundary that the level choice feels ' +
+          'consequential. Compare its Wald interval with the credible interval on the ' +
+          'Bayesian page.',
+      };
+      examples['ex-int'] = {
+        est: lfit.b0, se: lfit.vcov.se0, z: lfit.b0 / lfit.vcov.se0,
+        note: 'The logistic intercept (z = 1.37, p = 0.17) survives at every level: the data ' +
+          'are entirely consistent with a 50:50 response rate at biomarker zero. Not ' +
+          'rejecting is a finding too.',
+      };
+
+      drawReject();
+      drawNull();
+    }).catch(() => {
+      const { ctx } = setupCanvas(rejectCanvas);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillText('Could not load ../data/*.json — serve the site over HTTP.', 30, 40);
+    });
+  </script>
+</body>
+</html>

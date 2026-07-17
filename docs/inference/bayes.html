@@ -66,6 +66,9 @@
       font-weight: 600;
     }
 
+    .nav-links a.branch-curv { color: #9b59b6; }
+    .nav-links a.branch-bayes { color: #16a085; }
+
     .card {
       background: white;
       border-radius: 12px;
@@ -324,7 +327,10 @@
       <div class="nav-links">
         <a href="../optimization/index.html">&larr; Optimisation</a>
         <a href="index.html">Why Uncertainty?</a>
-        <a href="curvature.html">Curvature &rarr; Standard Errors</a>
+        <a href="curvature.html" class="branch-curv">Curvature &rarr; Standard Errors</a>
+        <a href="wald.html" class="branch-curv">Wald Tests</a>
+        <a href="lr-test.html" class="branch-curv">LR Tests</a>
+        <a href="model-comparison.html" class="branch-curv">AIC/BIC</a>
         <a href="bayes.html" class="current">Bayesian Uncertainty</a>
         <a href="../index.html">Tutorials</a>
       </div>
@@ -332,6 +338,12 @@
 
     <div class="card">
       <h2>The hidden assumption</h2>
+      <p>
+        This page is not an appendix to the curvature route &mdash; it is the <em>other
+        route</em>: the sampling tradition, whose machinery you already operated when the walkers
+        roamed <a href="../optimization/mcmc.html">Arthur's Seat</a>. It earns its place here by
+        what it can see that the quadratic cannot.
+      </p>
       <p>
         The <a href="curvature.html">curvature method</a> does something subtle: it measures the
         surface only <em>at</em> the peak, then extrapolates. From three numbers &mdash; two
