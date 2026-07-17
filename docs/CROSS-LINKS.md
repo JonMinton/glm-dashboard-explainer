@@ -37,16 +37,22 @@ Suggested links:
   - Gaussian LL derivation → `tutorials/01-gaussian/advanced.html`
   - Poisson LL derivation → `tutorials/03-poisson/advanced.html`
 
-### (2b) Likelihood and Simulation Theory → Inference section (PLANNED, not yet added to JonStats)
-Where the King (1998) variance formula and `optim(..., hessian = TRUE)` are introduced, link to the interactive versions:
-> *"Probe the curvature of a likelihood surface yourself, and watch the Hessian become a confidence ellipse: [Standard Errors from Curvature](https://stats-board.jonminton.net/inference/curvature.html)"*
+### (2b) Likelihood and Simulation Theory → Inference section (IMPLEMENTED 2026-07-17)
+Two links to [curvature.html](https://stats-board.jonminton.net/inference/curvature.html): after the
+King (1998) information-formula paragraph, and after the barefoot-and-blind curvature explanation
+(the "three probes filling in the Hessian matrix" pointer). Applied to both source .qmd (JonStats
+main, f8bc69b) and built gh-pages HTML (a7a5fe9) — no quarto re-render.
 
-Where the "barefoot and blind" metaphor appears:
-> *"An interactive version of this exact exercise — three probes filling in the Hessian matrix — is on the [GLM Dashboard](https://stats-board.jonminton.net/inference/curvature.html)"*
+### (3b) Complete Simulation Example → Inference section (IMPLEMENTED 2026-07-17)
+Sentence appended to the marble/jumping-bean paragraph → [Beyond the Quadratic: Bayesian
+Uncertainty](https://stats-board.jonminton.net/inference/bayes.html) ("the uncertainty payoff of
+the two framings side by side"). Same dual qmd + gh-pages application.
 
-### (3b) Complete Simulation Example → Inference section (PLANNED, not yet added to JonStats)
-Where the marble-vs-jumping-bean contrast is introduced:
-> *"See the two portraits side by side — Hessian ellipse vs Metropolis walker, with Wald and credible intervals compared numerically: [Beyond the Quadratic: Bayesian Uncertainty](https://stats-board.jonminton.net/inference/bayes.html)"*
+### JonStats extra courses → dashboard (IMPLEMENTED 2026-07-17)
+- Hacker Stats course overview → [hacker-stats/](https://stats-board.jonminton.net/hacker-stats/)
+  ("interactive companion to this whole course").
+- P-Values course background → [inference/](https://stats-board.jonminton.net/inference/) and
+  [hacker-stats/permutation.html](https://stats-board.jonminton.net/hacker-stats/permutation.html).
 
 ### (0) Statistics as Circuit Boards
 `pages/main-course/statistics-as-circuits/index.qmd`
